@@ -1,0 +1,2 @@
+# InsaneCpp
+Insane C++ sources.
