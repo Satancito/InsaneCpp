@@ -37,7 +37,7 @@
 
 #elif defined LINUXLIB
 #define NEW_LINE_STR u8"\n"
-#define NEW_LINE_WSTR L"\n" 
+#define NEW_LINE_WSTR L"\n"
 #elif defined MACOSLIB
 #elif defined EMSCRIPTENLIB
 #define NEW_LINE_STR u8"\n"
@@ -68,8 +68,6 @@ namespace Insane::Str {
 		static String RemoveAll(const String& data, const std::initializer_list <String>& toRemove);
 		static String InsertRepeat(const String& data, size_t repeatEvery, const String& toRepeat, bool includeEnd = false);
 		static std::vector<String> Split(const String& data, const String& toFind);
-		static String ToUpper(const String& data);//TODO GESTIONAR LOCALE
-		static String ToLower(const String& data);//TODO GESTIONAR LOCALE
 		static size_t TotalChars(const String& data);
 		static String Reverse(const String& data, bool asUTF8 = true);
 
@@ -78,11 +76,14 @@ namespace Insane::Str {
 		static WString RemoveAll(const WString& data, const WString& toRemove);
 		static WString InsertRepeat(const WString& data, size_t repeatEvery, const WString& toRepeat, bool includeEnd = false);
 		static std::vector<WString> Split(const WString& data, const WString& toFind);
-		static WString ToUpper(const WString& data);//TODO GESTIONAR LOCALE
-		static WString ToLower(const WString& data);//TODO GESTIONAR LOCALE
+	
 
-		static String WideStringToString(const WString& wstr, const String& locale = DEFAULT_LOCALE_STR);
-		static WString StringToWideString(const String& str, const String& locale = DEFAULT_LOCALE_STR);
+		static String WideStringToString(const WString& wstr);
+		static WString StringToWideString(const String& str);
+		static WString ToUpper(const WString& data);
+		static String ToUpper(const String& data);
+		static WString ToLower(const WString& data);
+		static String ToLower(const String& data);
 
 		static bool StartsWith(const String& data, const String& preffix);
 		static bool EndsWith(const String& data, const String& suffix);
@@ -92,8 +93,6 @@ namespace Insane::Str {
 
 	};
 
-#define StringsWideStringToStringF(data, locale) Insane::Str::Strings::WideStringToString(data, locale)
-#define StringsStringToWideStringF(data, locale) Insane::Str::Strings::StringToWideString(data, locale)
 #define StringsWideStringToString(data) Insane::Str::Strings::WideStringToString(data)
 #define StringsStringToWideString(data) Insane::Str::Strings::StringToWideString(data)
 

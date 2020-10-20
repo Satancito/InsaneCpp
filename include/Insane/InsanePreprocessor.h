@@ -2091,7 +2091,7 @@
 #define INSANE_REPEAT_ADVANCED(x,n,p1,p2,p3,p4,p5) INSANE_REPEAT_ADVANCED_##n(x,n,p1,p2,p3,p4,p5)
 
 #define VOID_TYPE() void
-#define STRING_TYPE() std::string
+#define STRING_TYPE() String
 #define INT32_TYPE() Int32
 #define Int64_TYPE() Int64
 

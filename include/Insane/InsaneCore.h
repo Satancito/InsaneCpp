@@ -1,10 +1,10 @@
 #pragma once
 #include <Insane/Insane.h>
 #include <Insane/InsaneString.h>
-
 #define USING_INSANE_CORE using namespace Insane::Core
 namespace Insane::Core
 {
+
 	class DateTimeManager
 	{
 	public:

@@ -51,7 +51,7 @@ String Insane::Str::Strings::RemoveAll(const String & data, const String & toRem
 	return result;
 }
 
-String Insane::Str::Strings::RemoveAll(const String& data, const std::initializer_list<String>& toRemove)
+String Insane::Str::Strings::RemoveAll(const String & data, const std::initializer_list<String> & toRemove)
 {
 	String result = data;
 	for (String value : toRemove)
@@ -283,7 +283,7 @@ std::vector<WString> Insane::Str::Strings::Split(const WString & data, const WSt
 	return v;
 }
 
-String Insane::Str::Strings::WideStringToString(const WString & wstr, const String & locale)
+String Insane::Str::Strings::WideStringToString(const WString & wstr)
 {
 	if (wstr.empty())
 	{
@@ -292,32 +292,29 @@ String Insane::Str::Strings::WideStringToString(const WString & wstr, const Stri
 	size_t pos;
 	size_t begin = 0;
 	String ret;
-	size_t  size;
+	size_t size;
 #ifdef WINDOWSLIB
-	_locale_t lc = _create_locale(LC_ALL, locale.c_str());
 	pos = wstr.find(static_cast<wchar_t>(0), begin);
 	while (pos != WString::npos && begin < wstr.length())
 	{
 		WString segment = WString(&wstr[begin], pos - begin);
-		_wcstombs_s_l(&size, nullptr, 0, &segment[0], _TRUNCATE, lc);
+		wcstombs_s(&size, nullptr, 0, &segment[0], _TRUNCATE);
 		String converted = String(size, 0);
-		_wcstombs_s_l(&size, &converted[0], size, &segment[0], _TRUNCATE, lc);
+		wcstombs_s(&size, &converted[0], size, &segment[0], _TRUNCATE);
 		ret.append(converted);
 		begin = pos + 1;
 		pos = wstr.find(static_cast<wchar_t>(0), begin);
 	}
-	if (begin <= wstr.length()) {
+	if (begin <= wstr.length())
+	{
 		WString segment = WString(&wstr[begin], wstr.length() - begin);
-		_wcstombs_s_l(&size, nullptr, 0, &segment[0], _TRUNCATE, lc);
+		wcstombs_s(&size, nullptr, 0, &segment[0], _TRUNCATE);
 		String converted = String(size, 0);
-		_wcstombs_s_l(&size, &converted[0], size, &segment[0], _TRUNCATE, lc);
+		wcstombs_s(&size, &converted[0], size, &segment[0], _TRUNCATE);
 		converted.resize(size - 1);
 		ret.append(converted);
 	}
-	_free_locale(lc);
 #elif defined LINUXLIB
-	String currentLocale = setlocale(LC_ALL, nullptr);
-	setlocale(LC_ALL, locale.c_str());
 	pos = wstr.find(static_cast<wchar_t>(0), begin);
 	while (pos != WString::npos && begin < wstr.length())
 	{
@@ -330,21 +327,21 @@ String Insane::Str::Strings::WideStringToString(const WString & wstr, const Stri
 		begin = pos + 1;
 		pos = wstr.find(static_cast<wchar_t>(0), begin);
 	}
-	if (begin <= wstr.length()) {
+	if (begin <= wstr.length())
+	{
 		WString segment = WString(&wstr[begin], wstr.length() - begin);
 		size = wcstombs(nullptr, segment.c_str(), 0);
 		String converted = String(size, 0);
 		wcstombs(&converted[0], segment.c_str(), converted.size());
 		ret.append(converted);
 	}
-	setlocale(LC_ALL, currentLocale.c_str());
 #elif defined MACOSLIB
 #endif
 
 	return ret;
 }
 
-WString Insane::Str::Strings::StringToWideString(const String & str, const String & locale)
+WString Insane::Str::Strings::StringToWideString(const String & str)
 {
 	if (str.empty())
 	{
@@ -354,34 +351,34 @@ WString Insane::Str::Strings::StringToWideString(const String & str, const Strin
 	size_t pos;
 	size_t begin = 0;
 	WString ret;
-	size_t  size;
+	size_t size;
 
 #ifdef WINDOWSLIB
-	_locale_t lc = _create_locale(LC_ALL, locale.c_str());
 	pos = str.find(static_cast<char>(0), begin);
-	while (pos != String::npos) {
+	while (pos != String::npos)
+	{
 		String segment = String(&str[begin], pos - begin);
 		WString converted = WString(segment.size() + 1, 0);
-		_mbstowcs_s_l(&size, &converted[0], converted.size(), &segment[0], _TRUNCATE, lc);
+
+		mbstowcs_s(&size, &converted[0], converted.size(), &segment[0], _TRUNCATE);
 		converted.resize(size - 1);
 		ret.append(converted);
 		ret.append({ 0 });
 		begin = pos + 1;
 		pos = str.find(static_cast<char>(0), begin);
 	}
-	if (begin < str.length()) {
+	if (begin < str.length())
+	{
 		String segment = String(&str[begin], str.length() - begin);
 		WString converted = WString(segment.size() + 1, 0);
-		_mbstowcs_s_l(&size, &converted[0], converted.size(), &segment[0], _TRUNCATE, lc);
+		mbstowcs_s(&size, &converted[0], converted.size(), &segment[0], _TRUNCATE);
 		converted.resize(size - 1);
 		ret.append(converted);
 	}
-	_free_locale(lc);
 #elif defined LINUXLIB
-	String currentLocale = setlocale(LC_ALL, nullptr);
-	setlocale(LC_ALL, locale.c_str());
 	pos = str.find(static_cast<char>(0), begin);
-	while (pos != String::npos) {
+	while (pos != String::npos)
+	{
 		String segment = String(&str[begin], pos - begin);
 		WString converted = WString(segment.size(), 0);
 		size = mbstowcs(&converted[0], &segment[0], converted.size());
@@ -391,31 +388,31 @@ WString Insane::Str::Strings::StringToWideString(const String & str, const Strin
 		begin = pos + 1;
 		pos = str.find(static_cast<char>(0), begin);
 	}
-	if (begin < str.length()) {
+	if (begin < str.length())
+	{
 		String segment = String(&str[begin], str.length() - begin);
 		WString converted = WString(segment.size(), 0);
 		size = mbstowcs(&converted[0], &segment[0], converted.size());
 		converted.resize(size);
 		ret.append(converted);
 	}
-	setlocale(LC_ALL, currentLocale.c_str());
 #elif defined MACOSLIB
 #endif
 
 	return ret;
 }
 
-bool Insane::Str::Strings::StartsWith(const String& data, const String& preffix)
+bool Insane::Str::Strings::StartsWith(const String & data, const String & preffix)
 {
 	return data.find(preffix) == 0;
 }
 
-bool Insane::Str::Strings::EndsWith(const String& data, const String& suffix)
+bool Insane::Str::Strings::EndsWith(const String & data, const String & suffix)
 {
 	return data.find(suffix, data.size() - suffix.size()) != std::string::npos;
 }
 
-bool Insane::Str::Strings::Contains(const String& data, const String& content)
+bool Insane::Str::Strings::Contains(const String & data, const String & content)
 {
 	return data.find(content) != std::string::npos;
 }

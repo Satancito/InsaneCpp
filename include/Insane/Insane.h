@@ -17,23 +17,25 @@
 #include <filesystem>
 #include <intrin.h>
 #include <conio.h>
+#endif
 
-#elif defined (__ANDROID__) || defined(ANDROID)//Android
+#if defined (__ANDROID__) || defined(ANDROID)//Android
 #define ANDROIDLIB 1
 #define DLLCALL CDECL
 #define DLLIMPORT
 #define DLLEXPORT __attribute__ ((visibility ("default")))
 #define DLLPRIVATE __attribute__ ((visibility ("hidden")))
+#endif
 
-
-#elif defined (__APPLE__)//iOS, Mac OS
+#if defined (__APPLE__)//iOS, Mac OS
 #define MACOSLIB 1
 #define DLLCALL CDECL
 #define DLLIMPORT
 #define DLLEXPORT __attribute__ ((visibility ("default")))
 #define DLLPRIVATE __attribute__ ((visibility ("hidden")))
+#endif
 
-#elif defined (__LINUX__) || defined(__gnu_linux__) || defined(__linux__) || defined(__linux) || defined(linux)//_Ubuntu - Fedora - Centos - RedHat
+#if (defined(__LINUX__) || defined(__gnu_linux__) || defined(__linux__) || defined(__linux) || defined(linux)) && !defined(__EMSCRIPTEN__)//_Ubuntu - Fedora - Centos - RedHat
 #define LINUXLIB 1
 #include <cpuid.h>
 #include <experimental/filesystem>
@@ -45,8 +47,9 @@
 #define DLLPRIVATE __attribute__ ((visibility ("hidden")))
 #define CoTaskMemAlloc(p) malloc(p)
 #define CoTaskMemFree(p) free(p)
+#endif 
 
-#elif defined (__EMSCRIPTEN__)
+#if defined (__EMSCRIPTEN__)
 #define EMSCRIPTENLIB 1
 #include <unistd.h>
 #include <termios.h>
@@ -54,7 +57,6 @@
 #define DLLIMPORT
 #define DLLEXPORT __attribute__ ((visibility ("default")))
 #define DLLPRIVATE __attribute__ ((visibility ("hidden")))
-
 #endif
 
 #define EXTERNC extern "C"
@@ -112,7 +114,7 @@ typedef unsigned long long UInt64;
 typedef std::string DefaultString;
 
 
-#elif defined MACOSLIB /* MacOS*/
+#elif MACOSLIB /* MacOS*/
 #endif
 
 typedef unsigned int UInt32;
