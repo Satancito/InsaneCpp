@@ -10,7 +10,7 @@ Insane::Str::Strings::~Strings()
 
 String Insane::Str::Strings::Empty()
 {
-	return EMPTY_STR;
+	return EMPTY_STRING;
 }
 
 String Insane::Str::Strings::ReplaceAll(const String & data, const String & toFind, const String & toReplace)
@@ -23,7 +23,6 @@ String Insane::Str::Strings::ReplaceAll(const String & data, const String & toFi
 		pos = result.find(toFind, pos);
 	}
 	return result;
-	//static_assert(std::is_same_v<std::pair<String, String>, std::pair<String, String>>);
 }
 
 String Insane::Str::Strings::ReplaceAll(const String & data, const std::initializer_list<std::pair<String, String>> & toFindAndReplace)
@@ -109,13 +108,8 @@ std::vector<String> Insane::Str::Strings::Split(const String & data, const Strin
 WString Insane::Str::Strings::ToUpper(const WString & data)
 {
 	WString result = data;
-	if (result.empty())
-	{
-		return result;
-	}
-	std::locale::global(std::locale(EMPTY_STR));
-	std::wcout.imbue(std::locale(EMPTY_STR));
-	auto& f = std::use_facet<std::ctype<wchar_t>>(std::locale());
+	auto &f = std::use_facet<std::ctype<wchar_t>>(std::locale());
+
 	f.toupper(&result[0], &result[0] + result.size());
 	return result;
 }
@@ -123,43 +117,19 @@ WString Insane::Str::Strings::ToUpper(const WString & data)
 WString Insane::Str::Strings::ToLower(const WString & data)
 {
 	WString result = data;
-	if (result.empty())
-	{
-		return result;
-	}
-	std::locale::global(std::locale(EMPTY_STR));
-	std::wcout.imbue(std::locale(EMPTY_STR));
-	auto& f = std::use_facet<std::ctype<wchar_t>>(std::locale());
+	auto &f = std::use_facet<std::ctype<wchar_t>>(std::locale());
 	f.tolower(&result[0], &result[0] + result.size());
 	return result;
 }
 
 String Insane::Str::Strings::ToUpper(const String & data)
 {
-	String result = data;
-	if (result.empty())
-	{
-		return result;
-	}
-	std::locale::global(std::locale(EMPTY_STR));
-	std::cout.imbue(std::locale(EMPTY_STR));
-	auto& f = std::use_facet<std::ctype<char>>(std::locale());
-	f.toupper(&result[0], &result[0] + result.size());
-	return result;
+	return WideStringToString(ToUpper(StringToWideString(data)));
 }
 
 String Insane::Str::Strings::ToLower(const String & data)
 {
-	String result = data;
-	if (result.empty())
-	{
-		return result;
-	}
-	std::locale::global(std::locale(EMPTY_STR));
-	std::cout.imbue(std::locale(EMPTY_STR));
-	auto& f = std::use_facet<std::ctype<char>>(std::locale());
-	f.tolower(&result[0], &result[0] + result.size());
-	return result;
+	return WideStringToString(ToLower(StringToWideString(data)));
 }
 
 size_t Insane::Str::Strings::TotalChars(const String & data)
@@ -210,7 +180,7 @@ String Insane::Str::Strings::Reverse(const String & data, bool asUTF8)
 
 WString Insane::Str::Strings::EmptyW()
 {
-	return EMPTY_WSTR;
+	return EMPTY_WSTRING;
 }
 
 WString Insane::Str::Strings::ReplaceAll(const WString & data, const WString & toFind, const WString & toReplace)
@@ -293,7 +263,7 @@ String Insane::Str::Strings::WideStringToString(const WString & wstr)
 	size_t begin = 0;
 	String ret;
 	size_t size;
-#ifdef WINDOWSLIB
+#if WINDOWS_PLATFORM
 	pos = wstr.find(static_cast<wchar_t>(0), begin);
 	while (pos != WString::npos && begin < wstr.length())
 	{
@@ -314,7 +284,7 @@ String Insane::Str::Strings::WideStringToString(const WString & wstr)
 		converted.resize(size - 1);
 		ret.append(converted);
 	}
-#elif defined LINUXLIB
+#elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
 	pos = wstr.find(static_cast<wchar_t>(0), begin);
 	while (pos != WString::npos && begin < wstr.length())
 	{
@@ -323,7 +293,7 @@ String Insane::Str::Strings::WideStringToString(const WString & wstr)
 		String converted = String(size, 0);
 		wcstombs(&converted[0], segment.c_str(), converted.size());
 		ret.append(converted);
-		ret.append({ 0 });
+		ret.append({0});
 		begin = pos + 1;
 		pos = wstr.find(static_cast<wchar_t>(0), begin);
 	}
@@ -335,9 +305,7 @@ String Insane::Str::Strings::WideStringToString(const WString & wstr)
 		wcstombs(&converted[0], segment.c_str(), converted.size());
 		ret.append(converted);
 	}
-#elif defined MACOSLIB
 #endif
-
 	return ret;
 }
 
@@ -353,7 +321,7 @@ WString Insane::Str::Strings::StringToWideString(const String & str)
 	WString ret;
 	size_t size;
 
-#ifdef WINDOWSLIB
+#ifdef WINDOWS_PLATFORM
 	pos = str.find(static_cast<char>(0), begin);
 	while (pos != String::npos)
 	{
@@ -363,7 +331,7 @@ WString Insane::Str::Strings::StringToWideString(const String & str)
 		mbstowcs_s(&size, &converted[0], converted.size(), &segment[0], _TRUNCATE);
 		converted.resize(size - 1);
 		ret.append(converted);
-		ret.append({ 0 });
+		ret.append({0});
 		begin = pos + 1;
 		pos = str.find(static_cast<char>(0), begin);
 	}
@@ -375,7 +343,7 @@ WString Insane::Str::Strings::StringToWideString(const String & str)
 		converted.resize(size - 1);
 		ret.append(converted);
 	}
-#elif defined LINUXLIB
+#elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
 	pos = str.find(static_cast<char>(0), begin);
 	while (pos != String::npos)
 	{
@@ -384,7 +352,7 @@ WString Insane::Str::Strings::StringToWideString(const String & str)
 		size = mbstowcs(&converted[0], &segment[0], converted.size());
 		converted.resize(size);
 		ret.append(converted);
-		ret.append({ 0 });
+		ret.append({0});
 		begin = pos + 1;
 		pos = str.find(static_cast<char>(0), begin);
 	}
@@ -396,25 +364,40 @@ WString Insane::Str::Strings::StringToWideString(const String & str)
 		converted.resize(size);
 		ret.append(converted);
 	}
-#elif defined MACOSLIB
 #endif
-
 	return ret;
 }
 
-bool Insane::Str::Strings::StartsWith(const String & data, const String & preffix)
+bool Insane::Str::Strings::StartsWith(const String & data, const String & preffix, const bool & caseSensitive)
 {
+	if(!caseSensitive)
+	{
+		String ndata = Strings::ToUpper(data);
+		String npreffix = Strings::ToUpper(preffix);
+		return ndata.find(npreffix) == 0;	
+	}
 	return data.find(preffix) == 0;
 }
 
-bool Insane::Str::Strings::EndsWith(const String & data, const String & suffix)
+bool Insane::Str::Strings::EndsWith(const String & data, const String & suffix , const bool & caseSensitive)
 {
+	if(!caseSensitive)
+	{
+		String ndata = Strings::ToUpper(data);
+		String nsuffix = Strings::ToUpper(suffix);
+		return ndata.find(nsuffix, ndata.size() - nsuffix.size()) != std::string::npos;
+	}
 	return data.find(suffix, data.size() - suffix.size()) != std::string::npos;
 }
 
-bool Insane::Str::Strings::Contains(const String & data, const String & content)
+bool Insane::Str::Strings::Contains(const String & data, const String & content , const bool & caseSensitive)
 {
+	if(!caseSensitive)
+	{
+		String ndata = Strings::ToUpper(data);
+		String ncontent = Strings::ToUpper(content);
+		return ndata.find(ncontent) != std::string::npos;
+	}
 	return data.find(content) != std::string::npos;
 }
-
 

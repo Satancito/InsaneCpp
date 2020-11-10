@@ -3,7 +3,7 @@
         {
             "name": "Emscripten",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}",
                 "${workspaceFolder}/../include",
                 "${workspaceFolder}/../../CommonCppIncludes",
                 "${workspaceFolder}/../../CommonCppLibs/Botan-2.13.0-Emscripten-llvm-Release/include/botan-2/**",
@@ -15,11 +15,10 @@
                 "_UNICODE",
                 "__EMSCRIPTEN__"
             ],
-            "windowsSdkVersion": "10.0.18362.0",
             "compilerPath": "${EMSCRIPTEN_DIR}/upstream/emscripten/em++",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "clang-x86"
+            "intelliSenseMode": "clang-x64"
         }
     ],
     "version": 4

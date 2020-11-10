@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __INSANE_PREPROCESSOR_H__
-#define __INSANE_PREPROCESSOR_H__
+#ifndef INSANE_PREPROCESSOR_H
+#define INSANE_PREPROCESSOR_H
 #include <Insane/Insane.h>
 #define INSANE_REPEAT_MAX 512
 
@@ -2095,4 +2095,4 @@
 #define INT32_TYPE() Int32
 #define Int64_TYPE() Int64
 
-#endif // __INSANE_PREPROCESSOR_H__
+#endif // !INSANE_PREPROCESSOR_H
