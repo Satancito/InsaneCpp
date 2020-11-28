@@ -69,6 +69,12 @@ String Insane::Crypto::HashManager::ToBase64(const String &data, size_t lineBrea
 	return ret;
 }
 
+String Insane::Crypto::HashManager::ToAlphanumericBase64(const String &data, size_t lineBreaks)
+{
+	USING_INSANE_STR;
+	return Strings::RemoveAll( ToBase64(data, lineBreaks), {u8"+"s, u8"-"s, u8"/"s, u8"_"s, u8"="s, u8","s});
+}
+
 String Insane::Crypto::HashManager::FromBase64(const String &base64)
 {
 	auto result = Botan::base64_decode(RemoveLineBreaks(ToDefaultEncodedBase64(base64)));
