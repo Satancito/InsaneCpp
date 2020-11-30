@@ -207,6 +207,7 @@ Insane::Crypto::AesManager::~AesManager() = default;
 
 String Insane::Crypto::AesManager::EncryptRaw(const String &data, const String &key) noexcept(false)
 {
+	USING_INSANE_EXCEPTION;
 	try
 	{
 		String secretKey = GenerateValidKey(key);
@@ -223,7 +224,11 @@ String Insane::Crypto::AesManager::EncryptRaw(const String &data, const String &
 	}
 	catch (const Botan::Exception &e)
 	{
-		throw Insane::Exception::CryptoException();
+		throw CryptoException(e.what(), e.error_code());
+	}
+	catch (...)
+	{
+		throw CryptoException();
 	}
 }
 
@@ -245,7 +250,7 @@ String Insane::Crypto::AesManager::DecryptRaw(const String &data, const String &
 	}
 	catch (...)
 	{
-		throw;
+		throw Insane::Exception::CryptoException();
 	}
 }
 
@@ -424,6 +429,7 @@ Insane::Crypto::RsaKeyPair Insane::Crypto::RsaManager::CreateKeyPair(const Size 
 
 String Insane::Crypto::RsaManager::EncryptRaw(const String &data, const String &publicKey, bool keyAsXml) noexcept(false)
 {
+	USING_INSANE_EXCEPTION;
 	try
 	{
 		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
@@ -452,12 +458,17 @@ String Insane::Crypto::RsaManager::EncryptRaw(const String &data, const String &
 	}
 	catch (const Botan::Exception &e)
 	{
-		throw Insane::Exception::CryptoException();
+		throw CryptoException(e.what(), e.error_code());
+	}
+	catch (...)
+	{
+		throw CryptoException();
 	}
 }
 
 String Insane::Crypto::RsaManager::DecryptRaw(const String &data, const String &privateKey, bool keyAsXml) noexcept(false)
 {
+	USING_INSANE_EXCEPTION;
 	try
 	{
 		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
@@ -490,7 +501,11 @@ String Insane::Crypto::RsaManager::DecryptRaw(const String &data, const String &
 	}
 	catch (const Botan::Exception &e)
 	{
-		throw Insane::Exception::CryptoException(e.what());
+		throw CryptoException(e.what(), e.error_code());
+	}
+	catch (...)
+	{
+		throw CryptoException();
 	}
 }
 
