@@ -487,13 +487,13 @@ Insane::Crypto::RsaKeyPair Insane::Crypto::RsaManager::CreateKeyPair(const Size 
 			rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
 			if (indent)
 			{
-				writer.SetIndent(u8'\t',1);
+				writer.SetIndent(u8'\t', 1);
 			}
 			else
 			{
-				writer.SetIndent(u8' ',0);
+				writer.SetIndent(u8' ', 0);
 			}
-			
+
 			writer.StartObject();
 			writer.String(RSA_KEY_MODULUS_NODE_STRING.c_str());
 			writer.String(modulus.c_str());
@@ -560,7 +560,7 @@ Insane::Crypto::RsaKeyEncoding Insane::Crypto::RsaManager::GetKeyEncoding(const 
 		}
 		else
 		{
-			if (Strings::StartsWith(key, RSA_PEM_PUBLIC_KEY_INITIAL_STRING))
+			if (Strings::StartsWith(key, RSA_PEM_PUBLIC_KEY_INITIAL_STRING) || Strings::StartsWith(key, RSA_PEM_PRIVATE_KEY_INITIAL_STRING) )
 			{
 				return RsaKeyEncoding::Pem;
 			}
@@ -569,17 +569,16 @@ Insane::Crypto::RsaKeyEncoding Insane::Crypto::RsaManager::GetKeyEncoding(const 
 	return RsaKeyEncoding::Ber;
 }
 
-String Insane::Crypto::RsaManager::EncryptRaw(const String &data, const String &publicKey, bool keyAsXml) noexcept(false)
+static std::unique_ptr<Botan::Public_Key> ParsePublicKey(const String &publicKey)
 {
-	USING_INSANE_STR;
+	USING_INSANE_CRYPTO;
 	USING_INSANE_EXCEPTION;
+	std::unique_ptr<Botan::BigInt> modulus;
+	std::unique_ptr<Botan::BigInt> exponent;
+	std::unique_ptr<Botan::Public_Key> pbk;
 	try
 	{
-		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
-		std::unique_ptr<Botan::BigInt> modulus = nullptr;
-		std::unique_ptr<Botan::BigInt> exponent = nullptr;
-		std::unique_ptr<Botan::Public_Key> pbk = nullptr;
-		RsaKeyEncoding encoding = GetKeyEncoding(publicKey);
+		RsaKeyEncoding encoding = RsaManager::GetKeyEncoding(publicKey);
 		switch (encoding)
 		{
 		case RsaKeyEncoding::Json:
@@ -588,7 +587,7 @@ String Insane::Crypto::RsaManager::EncryptRaw(const String &data, const String &
 			document.Parse(publicKey.c_str(), publicKey.length());
 			if (document.HasParseError())
 			{
-				throw Insane::Exception::CryptoException(u8"Unable to parse json public key."s);
+				throw Insane::Exception::CryptoException();
 			}
 			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_MODULUS_NODE_STRING.c_str()].GetString()));
 			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_EXPONENT_NODE_STRING.c_str()].GetString()));
@@ -612,12 +611,98 @@ String Insane::Crypto::RsaManager::EncryptRaw(const String &data, const String &
 		}
 		case RsaKeyEncoding::Ber:
 		{
-			Botan::SecureVector<uint8_t> keyBytes(Botan::base64_decode(publicKey));
+			Botan::SecureVector<uint8_t> keyBytes = Botan::base64_decode(publicKey);
 			pbk.reset(Botan::X509::load_key(std::vector<uint8_t>(keyBytes.begin(), keyBytes.end())));
 			break;
 		}
 		}
+	}
+	catch (...)
+	{
+		throw CryptoException("Unable to parse key.");
+	}
+	return pbk;
+}
 
+static std::unique_ptr<Botan::Private_Key> ParsePrivateKey(const String &privateKey)
+{
+	USING_INSANE_CRYPTO;
+	USING_INSANE_EXCEPTION;
+	std::unique_ptr<Botan::BigInt> modulus;
+	std::unique_ptr<Botan::BigInt> exponent;
+	std::unique_ptr<Botan::BigInt> P;
+	std::unique_ptr<Botan::BigInt> Q;
+	std::unique_ptr<Botan::BigInt> D;
+	std::unique_ptr<Botan::Private_Key> pvk;
+	try
+	{
+		RsaKeyEncoding encoding = RsaManager::GetKeyEncoding(privateKey);
+		switch (encoding)
+		{
+		case RsaKeyEncoding::Json:
+		{
+			rapidjson::Document document;
+			document.Parse(privateKey.c_str(), privateKey.length());
+			if (document.HasParseError())
+			{
+				throw Insane::Exception::CryptoException();
+			}
+			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_MODULUS_NODE_STRING.c_str()].GetString()));
+			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_EXPONENT_NODE_STRING.c_str()].GetString()));
+			P = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_P_NODE_STRING.c_str()].GetString()));
+			Q = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_Q_NODE_STRING.c_str()].GetString()));
+			D = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_D_NODE_STRING.c_str()].GetString()));
+			pvk = std::make_unique<Botan::RSA_PrivateKey>(*P, *Q, *exponent, *D, *modulus);
+			break;
+		}
+		case RsaKeyEncoding::Xml:
+		{
+			std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
+			std::string xml = std::string(privateKey);
+			doc->parse<0>(xml.data());
+			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_MODULUS_NODE_STRING.c_str())->value()));
+			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_EXPONENT_NODE_STRING.c_str())->value()));
+			P = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_P_NODE_STRING.c_str())->value()));
+			Q = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_Q_NODE_STRING.c_str())->value()));
+			D = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_D_NODE_STRING.c_str())->value()));
+			pvk = std::make_unique<Botan::RSA_PrivateKey>(*P, *Q, *exponent, *D, *modulus);
+			break;
+		}
+		case RsaKeyEncoding::Pem:
+		{
+			Botan::SecureVector<uint8_t> keyBytes(privateKey.begin(), privateKey.end());
+			std::unique_ptr<Botan::DataSource_Memory> source = std::make_unique<Botan::DataSource_Memory>(keyBytes);
+			pvk = Botan::PKCS8::load_key(*source);
+			break;
+		}
+		case RsaKeyEncoding::Ber:
+		{
+			Botan::SecureVector<uint8_t> keyBytes(Botan::base64_decode(privateKey));
+			std::unique_ptr<Botan::DataSource_Memory> source = std::make_unique<Botan::DataSource_Memory>(keyBytes);
+			pvk = Botan::PKCS8::load_key(*source);
+			break;
+		}
+		}
+	}
+	catch(Botan::Exception &exc)
+	{
+		throw CryptoException("Unable to parse key.");
+	}
+	catch (...)
+	{
+		throw CryptoException("Unable to parse key.");
+	}
+	return pvk;
+}
+
+String Insane::Crypto::RsaManager::EncryptRaw(const String &data, const String &publicKey) noexcept(false)
+{
+	USING_INSANE_STR;
+	USING_INSANE_EXCEPTION;
+	try
+	{
+		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
+		std::unique_ptr<Botan::Public_Key> pbk = ParsePublicKey(publicKey);
 		std::unique_ptr<Botan::PK_Encryptor_EME> enc = std::make_unique<Botan::PK_Encryptor_EME>(*pbk, *rng, RSA_PADDING_ALGORITHM_STRING);
 		Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
 		std::vector<uint8_t> encrypted = enc->encrypt(dataBytes, *rng);
@@ -629,42 +714,21 @@ String Insane::Crypto::RsaManager::EncryptRaw(const String &data, const String &
 	}
 	catch (...)
 	{
-		throw CryptoException("Unable to RsaEncrypt.");
+		throw CryptoException("Fatal error. Unable to RsaEncrypt.");
 	}
 }
 
-String Insane::Crypto::RsaManager::DecryptRaw(const String &data, const String &privateKey, bool keyAsXml) noexcept(false)
+String Insane::Crypto::RsaManager::DecryptRaw(const String &data, const String &privateKey) noexcept(false)
 {
 	USING_INSANE_EXCEPTION;
 	try
 	{
 		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
-		if (keyAsXml)
-		{
-			std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
-			std::string xml = std::string(privateKey);
-			doc->parse<0>(xml.data());
-			std::unique_ptr<Botan::BigInt> modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_MODULUS_NODE_STRING.c_str())->value()));
-			std::unique_ptr<Botan::BigInt> exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_EXPONENT_NODE_STRING.c_str())->value()));
-			std::unique_ptr<Botan::BigInt> P = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_P_NODE_STRING.c_str())->value()));
-			std::unique_ptr<Botan::BigInt> Q = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_Q_NODE_STRING.c_str())->value()));
-			std::unique_ptr<Botan::BigInt> D = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_D_NODE_STRING.c_str())->value()));
-			std::unique_ptr<Botan::RSA_PrivateKey> pk = std::make_unique<Botan::RSA_PrivateKey>(*P, *Q, *exponent, *D, *modulus);
-			std::unique_ptr<Botan::PK_Decryptor_EME> dec = std::make_unique<Botan::PK_Decryptor_EME>(*pk, *rng, RSA_PADDING_ALGORITHM_STRING);
-			Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
-			Botan::SecureVector<uint8_t> decrypted = dec->decrypt(dataBytes);
-			return std::string(decrypted.begin(), decrypted.end());
-		}
-		else
-		{
-			Botan::SecureVector<uint8_t> keyBytes(Botan::base64_decode(privateKey));
-			std::unique_ptr<Botan::DataSource_Memory> source = std::make_unique<Botan::DataSource_Memory>(keyBytes);
-			std::unique_ptr<Botan::Private_Key> pk(Botan::PKCS8::load_key(*source));
-			std::unique_ptr<Botan::PK_Decryptor_EME> dec = std::make_unique<Botan::PK_Decryptor_EME>(*pk, *rng, RSA_PADDING_ALGORITHM_STRING);
-			Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
-			Botan::SecureVector<uint8_t> decrypted = dec->decrypt(dataBytes);
-			return std::string(decrypted.begin(), decrypted.end());
-		}
+		std::unique_ptr<Botan::Private_Key> pvk = ParsePrivateKey(privateKey);
+		std::unique_ptr<Botan::PK_Decryptor_EME> dec = std::make_unique<Botan::PK_Decryptor_EME>(*pvk, *rng, RSA_PADDING_ALGORITHM_STRING);
+		Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
+		Botan::SecureVector<uint8_t> decrypted = dec->decrypt(dataBytes);
+		return std::string(decrypted.begin(), decrypted.end());
 	}
 	catch (const Botan::Exception &e)
 	{
@@ -676,12 +740,12 @@ String Insane::Crypto::RsaManager::DecryptRaw(const String &data, const String &
 	}
 }
 
-String Insane::Crypto::RsaManager::EncryptToBase64(const String &data, const String &publicKey, bool keyAsXml, bool urlEncoded) noexcept(false)
+String Insane::Crypto::RsaManager::EncryptToBase64(const String &data, const String &publicKey, bool urlEncoded) noexcept(false)
 {
-	return HashManager::ToBase64(EncryptRaw(data, publicKey, keyAsXml), NO_LINE_BREAKS, urlEncoded);
+	return HashManager::ToBase64(EncryptRaw(data, publicKey), NO_LINE_BREAKS, urlEncoded);
 }
 
-String Insane::Crypto::RsaManager::DecryptFromBase64(const String &data, const String &privateKey, bool keyAsXml) noexcept(false)
+String Insane::Crypto::RsaManager::DecryptFromBase64(const String &data, const String &privateKey) noexcept(false)
 {
-	return DecryptRaw(HashManager::FromBase64(data), privateKey, keyAsXml);
+	return DecryptRaw(HashManager::FromBase64(data), privateKey);
 }
