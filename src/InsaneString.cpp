@@ -1,23 +1,59 @@
 ﻿#include <Insane/InsaneString.h>
+// ███ Strings ███
 
-// ███ Strings ███ 
+Insane::Str::Strings::Strings() = default;
 
-Insane::Str::Strings::Strings()
-= default;
-
-Insane::Str::Strings::~Strings()
-= default;
+Insane::Str::Strings::~Strings() = default;
 
 String Insane::Str::Strings::Empty()
 {
 	return EMPTY_STRING;
 }
 
-String Insane::Str::Strings::ReplaceAll(const String & data, const String & toFind, const String & toReplace)
+bool Insane::Str::Strings::IsMatch(const String &input, const String &pattern)
+{
+	std::regex regex(pattern, std::regex_constants::ECMAScript);
+	return std::regex_match(input, regex);
+}
+
+String Insane::Str::Strings::TrimStart(const std::string &data) {
+	String s = data; 
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+	return s;
+}
+
+String Insane::Str::Strings::TrimEnd(const std::string &data) {
+	String s = data; 
+     s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+	return s;
+}
+
+String Insane::Str::Strings::Trim(const std::string &data) {
+	return TrimEnd(TrimStart(data)); 
+}
+
+
+String Insane::Str::Strings::ReplaceLastOf(const String &data, const String &toFind, const String &toReplace)
+{
+	String result = data;
+	size_t pos = result.rfind(toFind);
+	if(pos == std::string::npos)
+	{
+		return data;
+	}
+	return result.replace(pos, toFind.length(), toReplace);
+}
+
+String Insane::Str::Strings::ReplaceAll(const String &data, const String &toFind, const String &toReplace)
 {
 	String result = data;
 	size_t pos = 0;
-	while ((pos = result.find(toFind, pos)) != String::npos) {
+	while ((pos = result.find(toFind, pos)) != String::npos)
+	{
 		result.replace(pos, toFind.length(), toReplace);
 		pos += toReplace.length();
 		pos = result.find(toFind, pos);
@@ -25,13 +61,14 @@ String Insane::Str::Strings::ReplaceAll(const String & data, const String & toFi
 	return result;
 }
 
-String Insane::Str::Strings::ReplaceAll(const String & data, const std::initializer_list<std::pair<String, String>> & toFindAndReplace)
+String Insane::Str::Strings::ReplaceAll(const String &data, const std::initializer_list<std::pair<String, String>> &toFindAndReplace)
 {
 	String result = data;
 	for (std::pair<String, String> value : toFindAndReplace)
 	{
 		size_t pos = 0;
-		while ((pos = result.find(value.first, pos)) != String::npos) {
+		while ((pos = result.find(value.first, pos)) != String::npos)
+		{
 			result.replace(pos, value.first.length(), value.second);
 			pos += value.second.length();
 			pos = result.find(value.first, pos);
@@ -40,56 +77,63 @@ String Insane::Str::Strings::ReplaceAll(const String & data, const std::initiali
 	return result;
 }
 
-String Insane::Str::Strings::RemoveAll(const String & data, const String & toRemove)
+String Insane::Str::Strings::RemoveAll(const String &data, const String &toRemove)
 {
 	String result = data;
 	size_t pos = 0;
-	while ((pos = result.find(toRemove, pos)) != String::npos) {
+	while ((pos = result.find(toRemove, pos)) != String::npos)
+	{
 		result.erase(pos, toRemove.length());
 	}
 	return result;
 }
 
-String Insane::Str::Strings::RemoveAll(const String & data, const std::initializer_list<String> & toRemove)
+String Insane::Str::Strings::RemoveAll(const String &data, const std::initializer_list<String> &toRemove)
 {
 	String result = data;
 	for (String value : toRemove)
 	{
 		size_t pos = 0;
-		while ((pos = result.find(value, pos)) != String::npos) {
+		while ((pos = result.find(value, pos)) != String::npos)
+		{
 			result.erase(pos, value.length());
 		}
 	}
 	return result;
 }
 
-String Insane::Str::Strings::InsertRepeat(const String & data, size_t repeatEvery, const String & toRepeat, bool includeEnd)
+String Insane::Str::Strings::InsertRepeat(const String &data, size_t repeatEvery, const String &toRepeat, bool includeEnd)
 {
 	String result = data;
-	if (repeatEvery < 1 || toRepeat.empty() || result.empty() || toRepeat.length() < 1) {
+	if (repeatEvery < 1 || toRepeat.empty() || result.empty() || toRepeat.length() < 1)
+	{
 		return result;
 	}
 	size_t pos = repeatEvery;
-	while (pos < result.size()) {
+	while (pos < result.size())
+	{
 		result.insert(pos, toRepeat);
 		pos += repeatEvery + toRepeat.length();
 	}
-	if (pos == result.length() && includeEnd) {
+	if (pos == result.length() && includeEnd)
+	{
 		result += toRepeat;
 	}
 	return result;
 }
 
-std::vector<String> Insane::Str::Strings::Split(const String & data, const String & toFind)
+std::vector<String> Insane::Str::Strings::Split(const String &data, const String &toFind)
 {
 	std::vector<String> v;
-	if (data.empty() || toFind.empty()) {
+	if (data.empty() || toFind.empty())
+	{
 		v.push_back(data);
 		return v;
 	}
 	size_t ini = 0;
 	size_t pos;
-	while ((pos = data.find(toFind, ini)) != String::npos) {
+	while ((pos = data.find(toFind, ini)) != String::npos)
+	{
 		String s = data.substr(ini, pos - ini);
 		if (!s.empty())
 		{
@@ -105,7 +149,7 @@ std::vector<String> Insane::Str::Strings::Split(const String & data, const Strin
 	return v;
 }
 
-WString Insane::Str::Strings::ToUpper(const WString & data)
+WString Insane::Str::Strings::ToUpper(const WString &data)
 {
 	WString result = data;
 	auto &f = std::use_facet<std::ctype<wchar_t>>(std::locale());
@@ -114,7 +158,7 @@ WString Insane::Str::Strings::ToUpper(const WString & data)
 	return result;
 }
 
-WString Insane::Str::Strings::ToLower(const WString & data)
+WString Insane::Str::Strings::ToLower(const WString &data)
 {
 	WString result = data;
 	auto &f = std::use_facet<std::ctype<wchar_t>>(std::locale());
@@ -122,17 +166,17 @@ WString Insane::Str::Strings::ToLower(const WString & data)
 	return result;
 }
 
-String Insane::Str::Strings::ToUpper(const String & data)
+String Insane::Str::Strings::ToUpper(const String &data)
 {
 	return WideStringToString(ToUpper(StringToWideString(data)));
 }
 
-String Insane::Str::Strings::ToLower(const String & data)
+String Insane::Str::Strings::ToLower(const String &data)
 {
 	return WideStringToString(ToLower(StringToWideString(data)));
 }
 
-size_t Insane::Str::Strings::TotalChars(const String & data)
+size_t Insane::Str::Strings::TotalChars(const String &data)
 {
 	size_t ret = 0;
 	for (char value : data)
@@ -145,7 +189,7 @@ size_t Insane::Str::Strings::TotalChars(const String & data)
 	return ret;
 }
 
-String Insane::Str::Strings::Reverse(const String & data, bool asUTF8)
+String Insane::Str::Strings::Reverse(const String &data, bool asUTF8)
 {
 	size_t ret = 0;
 	String result;
@@ -178,12 +222,32 @@ String Insane::Str::Strings::Reverse(const String & data, bool asUTF8)
 	}
 }
 
+String Insane::Str::Strings::PadRight(const String &data, const size_t &totalWidth, const char &padding)
+{
+	if (data.length() >= totalWidth)
+	{
+		return data;
+	}
+	String ret = data;
+	ret.resize(totalWidth, padding);
+	return ret;
+}
+
+String Insane::Str::Strings::PadLeft(const String &data, const size_t &totalWidth, const char &padding)
+{
+	if (data.length() >= totalWidth)
+	{
+		return data;
+	}
+	return String(totalWidth - data.length(), padding) + data;
+}
+
 WString Insane::Str::Strings::EmptyW()
 {
 	return EMPTY_WSTRING;
 }
 
-WString Insane::Str::Strings::ReplaceAll(const WString & data, const WString & toFind, const WString & toReplace)
+WString Insane::Str::Strings::ReplaceAll(const WString &data, const WString &toFind, const WString &toReplace)
 {
 	WString result = data;
 	if (result.empty() || toFind.empty())
@@ -192,53 +256,61 @@ WString Insane::Str::Strings::ReplaceAll(const WString & data, const WString & t
 	}
 
 	size_t pos = 0;
-	while ((pos = result.find(toFind, pos)) != WString::npos) {
+	while ((pos = result.find(toFind, pos)) != WString::npos)
+	{
 		result.replace(pos, toFind.length(), toReplace);
 		pos += toReplace.length();
 	}
 	return result;
 }
 
-WString Insane::Str::Strings::RemoveAll(const WString & data, const WString & toRemove)
+WString Insane::Str::Strings::RemoveAll(const WString &data, const WString &toRemove)
 {
 	WString result = data;
-	if (toRemove.empty() || result.empty()) {
+	if (toRemove.empty() || result.empty())
+	{
 		return result;
 	}
 	size_t pos = 0;
-	while ((pos = result.find(toRemove, pos)) != WString::npos) {
+	while ((pos = result.find(toRemove, pos)) != WString::npos)
+	{
 		result.erase(pos, toRemove.length());
 	}
 	return result;
 }
 
-WString Insane::Str::Strings::InsertRepeat(const WString & data, size_t repeatEvery, const WString & toRepeat, bool includeEnd)
+WString Insane::Str::Strings::InsertRepeat(const WString &data, size_t repeatEvery, const WString &toRepeat, bool includeEnd)
 {
 	WString result = data;
-	if (repeatEvery < 1 || toRepeat.empty() || result.length() < 1 || toRepeat.length() < 1) {
+	if (repeatEvery < 1 || toRepeat.empty() || result.length() < 1 || toRepeat.length() < 1)
+	{
 		return result;
 	}
 	size_t pos = repeatEvery;
-	while (pos < result.size()) {
+	while (pos < result.size())
+	{
 		result.insert(pos, toRepeat);
 		pos += repeatEvery + toRepeat.length();
 	}
-	if (pos == result.length() && includeEnd) {
+	if (pos == result.length() && includeEnd)
+	{
 		result += toRepeat;
 	}
 	return result;
 }
 
-std::vector<WString> Insane::Str::Strings::Split(const WString & data, const WString & toFind)
+std::vector<WString> Insane::Str::Strings::Split(const WString &data, const WString &toFind)
 {
 	std::vector<WString> v;
-	if (data.empty() || toFind.empty()) {
+	if (data.empty() || toFind.empty())
+	{
 		v.push_back(data);
 		return v;
 	}
 	size_t ini = 0;
 	size_t pos;
-	while ((pos = data.find(toFind, ini)) != WString::npos) {
+	while ((pos = data.find(toFind, ini)) != WString::npos)
+	{
 		WString s = data.substr(ini, pos - ini);
 		if (!s.empty())
 		{
@@ -253,7 +325,7 @@ std::vector<WString> Insane::Str::Strings::Split(const WString & data, const WSt
 	return v;
 }
 
-String Insane::Str::Strings::WideStringToString(const WString & wstr)
+String Insane::Str::Strings::WideStringToString(const WString &wstr)
 {
 	if (wstr.empty())
 	{
@@ -309,7 +381,7 @@ String Insane::Str::Strings::WideStringToString(const WString & wstr)
 	return ret;
 }
 
-WString Insane::Str::Strings::StringToWideString(const String & str)
+WString Insane::Str::Strings::StringToWideString(const String &str)
 {
 	if (str.empty())
 	{
@@ -368,20 +440,20 @@ WString Insane::Str::Strings::StringToWideString(const String & str)
 	return ret;
 }
 
-bool Insane::Str::Strings::StartsWith(const String & data, const String & preffix, const bool & caseSensitive)
+bool Insane::Str::Strings::StartsWith(const String &data, const String &preffix, const bool &caseSensitive)
 {
-	if(!caseSensitive)
+	if (!caseSensitive)
 	{
 		String ndata = Strings::ToUpper(data);
 		String npreffix = Strings::ToUpper(preffix);
-		return ndata.find(npreffix) == 0;	
+		return ndata.find(npreffix) == 0;
 	}
 	return data.find(preffix) == 0;
 }
 
-bool Insane::Str::Strings::EndsWith(const String & data, const String & suffix , const bool & caseSensitive)
+bool Insane::Str::Strings::EndsWith(const String &data, const String &suffix, const bool &caseSensitive)
 {
-	if(!caseSensitive)
+	if (!caseSensitive)
 	{
 		String ndata = Strings::ToUpper(data);
 		String nsuffix = Strings::ToUpper(suffix);
@@ -390,9 +462,9 @@ bool Insane::Str::Strings::EndsWith(const String & data, const String & suffix ,
 	return data.find(suffix, data.size() - suffix.size()) != std::string::npos;
 }
 
-bool Insane::Str::Strings::Contains(const String & data, const String & content , const bool & caseSensitive)
+bool Insane::Str::Strings::Contains(const String &data, const String &content, const bool &caseSensitive)
 {
-	if(!caseSensitive)
+	if (!caseSensitive)
 	{
 		String ndata = Strings::ToUpper(data);
 		String ncontent = Strings::ToUpper(content);
@@ -400,4 +472,3 @@ bool Insane::Str::Strings::Contains(const String & data, const String & content 
 	}
 	return data.find(content) != std::string::npos;
 }
-
