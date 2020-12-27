@@ -21,6 +21,9 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 #include <botan/exceptn.h>
+#include <botan/scrypt.h>
+#include <botan/argon2.h>
+#include <Insane/InsanePreprocessor.h>
 
 #define AES_MAX_IV_LENGHT ((size_t)16)
 #define AES_MAX_KEY_LENGTH ((size_t)32)
@@ -59,18 +62,379 @@
 #define JSON_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING u8R"((\s*\{(?:\s*"Modulus"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"Exponent"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"P"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"Q"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"DP"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"DQ"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"InverseQ"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"D"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()){8}\s*\2\3\4\5\6\7\8\9\}\s*)|(\s*\{(?:\s*"Modulus"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"Exponent"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()){2}\s*\11\12\}\s*))"																																																 //https://regex101.com/r/v5lUWw/4 //Add final Comma.
 #define PEM_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING u8R"((-----BEGIN PUBLIC KEY-----(\n|\r|\r\n)([0-9a-zA-Z\+\/=]{64}(\n|\r|\r\n))*([0-9a-zA-Z\+\/=]{1,63}(\n|\r|\r\n))?-----END PUBLIC KEY-----)|(-----BEGIN PRIVATE KEY-----(\n|\r|\r\n)([0-9a-zA-Z\+\/=]{64}(\n|\r|\r\n))*([0-9a-zA-Z\+\/=]{1,63}(\n|\r|\r\n))?-----END PRIVATE KEY-----))"																																																																																																																								 //https://regex101.com/r/mGnr7I/1
 #define XML_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING u8R"((\s*<\s*RSAKeyValue\s*>\s*(?:\s*<\s*Modulus\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Modulus\s*>()|\s*<\s*Exponent\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Exponent\s*>()|\s*<\s*P\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*P\s*>()|\s*<\s*Q\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Q\s*>()|\s*<\s*DP\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*DP\s*>()|\s*<\s*DQ\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*DQ\s*>()|\s*<\s*InverseQ\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*InverseQ\s*>()|\s*<\s*D\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*D\s*>()){8}\s*<\/\s*RSAKeyValue\s*>\s*\2\3\4\5\6\7\8\9)|(\s*<\s*RSAKeyValue\s*>\s*(?:\s*<\s*Modulus\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Modulus\s*>()|\s*<\s*Exponent\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Exponent\s*>()){2}\s*<\/\s*RSAKeyValue\s*>\s*\11\12))" //https://regex101.com/r/fQV2VN/4
+
+// ███ HmacResult ███
+Insane::Crypto::HmacResult::HmacResult(const std::string &hash, const std::string &key, const HashAlgorithm algorithm)
+{
+	this->hash = hash;
+	this->key = key;
+	this->algorithm = algorithm;
+}
+
+String Insane::Crypto::HmacResult::Hash() const
+{
+	return this->hash;
+}
+
+String Insane::Crypto::HmacResult::Key() const
+{
+	return this->key;
+}
+
+Insane::Crypto::HashAlgorithm Insane::Crypto::HmacResult::Algorithm() const
+{
+	return this->algorithm;
+}
+
+String Insane::Crypto::HmacResult::RawHash() const
+{
+	return HashManager::FromBase64(this->hash);
+}
+
+String Insane::Crypto::HmacResult::RawKey() const
+{
+	return HashManager::FromBase64(this->key);
+}
+
+String Insane::Crypto::HmacResult::Serialize() const
+{
+	USING_INSANE_STR;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		writer.StartObject();
+		writer.String(cnameof(Hash));
+		writer.String(hash.c_str(), static_cast<rapidjson::SizeType>(hash.length()));
+		writer.String(cnameof(Key));
+		writer.String(key.c_str(), static_cast<rapidjson::SizeType>(key.length()));
+		writer.String(cnameof(Algorithm));
+		writer.Int(static_cast<int>(algorithm));
+		writer.EndObject();
+		return std::string(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to serialize "#".)", u8"#", nameof(HmacResult)));
+	}
+}
+
+Insane::Crypto::HmacResult Insane::Crypto::HmacResult::Deserialize(const String &json)
+{
+	USING_INSANE_STR;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError())
+		{
+			throw 1;
+		}
+		return HmacResult(document[cnameof(Hash)].GetString(),
+						  document[cnameof(Key)].GetString(),
+						  static_cast<HashAlgorithm>(document[cnameof(Algorithm)].GetInt()));
+	}
+	catch (...)
+	{
+		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(HmacResult)));
+	}
+}
+
+// ███ ScryptResult ███
+
+Insane::Crypto::ScryptResult::ScryptResult(const std::string &hash, const std::string &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
+{
+	this->hash = hash;
+	this->salt = salt;
+	this->iterations = iterations;
+	this->blockSize = blockSize;
+	this->parallelism = parallelism;
+	this->derivedKeyLength = derivedKeyLength;
+}
+
+String Insane::Crypto::ScryptResult::Hash() const
+{
+	return hash;
+}
+
+String Insane::Crypto::ScryptResult::Salt() const
+{
+	return salt;
+}
+
+size_t Insane::Crypto::ScryptResult::Iterations() const
+{
+	return iterations;
+}
+
+size_t Insane::Crypto::ScryptResult::BlockSize() const
+{
+	return blockSize;
+}
+
+size_t Insane::Crypto::ScryptResult::Parallelism() const
+{
+	return parallelism;
+}
+
+size_t Insane::Crypto::ScryptResult::DerivedKeyLength() const
+{
+	return derivedKeyLength;
+}
+
+String Insane::Crypto::ScryptResult::RawHash() const
+{
+	return HashManager::FromBase64(hash);
+}
+
+String Insane::Crypto::ScryptResult::RawSalt() const
+{
+	return HashManager::FromBase64(salt);
+}
+
+String Insane::Crypto::ScryptResult::Serialize() const
+{
+	USING_INSANE_STR;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		writer.StartObject();
+		writer.String(cnameof(Hash));
+		writer.String(hash.c_str(), static_cast<rapidjson::SizeType>(hash.length()));
+
+		writer.String(cnameof(Salt));
+		writer.String(salt.c_str(), static_cast<rapidjson::SizeType>(salt.length()));
+
+		writer.String(cnameof(Iterations));
+		String number = tostr(iterations);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+
+		writer.String(cnameof(BlockSize));
+		number = tostr(blockSize);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+
+		writer.String(cnameof(Parallelism));
+		number = tostr(parallelism);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+
+		writer.String(cnameof(DerivedKeyLength));
+		number = tostr(derivedKeyLength);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+		writer.EndObject();
+		return std::string(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to serialize "#".)", u8"#", nameof(ScryptResult)));
+	}
+}
+
+Insane::Crypto::ScryptResult Insane::Crypto::ScryptResult::Deserialize(const String &json)
+{
+	USING_INSANE_STR;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError())
+		{
+			throw 1;
+		}
+		return ScryptResult(document[cnameof(Hash)].GetString(),
+							document[cnameof(Salt)].GetString(),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Iterations)].GetUint64() : document[cnameof(Iterations)].GetUint()),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(BlockSize)].GetUint64() : document[cnameof(BlockSize)].GetUint()),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Parallelism)].GetUint64() : document[cnameof(Parallelism)].GetUint()),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(DerivedKeyLength)].GetUint64() : document[cnameof(DerivedKeyLength)].GetUint()));
+	}
+	catch (...)
+	{
+		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(ScryptResult)));
+	}
+}
+
+// ███ Argon2Result ███
+Insane::Crypto::Argon2Result::Argon2Result(const std::string &hash, const std::string &salt, const Argon2Variant &variant, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t &derivedKeyLength)
+{
+	this->hash = hash;
+	this->salt = salt;
+	this->variant = variant;
+	this->iterations = iterations;
+	this->memorySizeKiB = memorySizeKiB;
+	this->parallelism = parallelism;
+	this->derivedKeyLength = derivedKeyLength;
+}
+
+String Insane::Crypto::Argon2Result::Hash() const
+{
+	return hash;
+}
+
+String Insane::Crypto::Argon2Result::Salt() const
+{
+	return salt;
+}
+
+Insane::Crypto::Argon2Variant Insane::Crypto::Argon2Result::Variant() const
+{
+	return variant;
+}
+
+size_t Insane::Crypto::Argon2Result::Iterations() const
+{
+	return iterations;
+}
+
+size_t Insane::Crypto::Argon2Result::MemorySizeKiB() const
+{
+	return memorySizeKiB;
+}
+
+size_t Insane::Crypto::Argon2Result::Parallelism() const
+{
+	return parallelism;
+}
+
+size_t Insane::Crypto::Argon2Result::DerivedKeyLength() const
+{
+	return derivedKeyLength;
+}
+
+String Insane::Crypto::Argon2Result::RawHash() const
+{
+	return HashManager::FromBase64(hash);
+}
+
+String Insane::Crypto::Argon2Result::RawSalt() const
+{
+	return HashManager::FromBase64(salt);
+}
+
+String Insane::Crypto::Argon2Result::Serialize() const
+{
+	USING_INSANE_STR;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		writer.StartObject();
+		writer.String(cnameof(Hash));
+		writer.String(hash.c_str(), static_cast<rapidjson::SizeType>(hash.length()));
+
+		writer.String(cnameof(Salt));
+		writer.String(salt.c_str(), static_cast<rapidjson::SizeType>(salt.length()));
+
+		writer.String(cnameof(Variant));
+		writer.Int(static_cast<int>(variant));
+
+		writer.String(cnameof(Iterations));
+		String number = tostr(iterations);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+
+		writer.String(cnameof(MemorySizeKiB));
+		number = tostr(memorySizeKiB);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+
+		writer.String(cnameof(Parallelism));
+		number = tostr(parallelism);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+
+		writer.String(cnameof(DerivedKeyLength));
+		number = tostr(derivedKeyLength);
+		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
+		writer.EndObject();
+		return std::string(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to serialize "#".)", u8"#", nameof(Argon2Result)));
+	}
+}
+
+Insane::Crypto::Argon2Result Insane::Crypto::Argon2Result::Deserialize(const String &json)
+{
+	USING_INSANE_STR;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError())
+		{
+			throw 1;
+		}
+		return Argon2Result(document[cnameof(Hash)].GetString(),
+							document[cnameof(Salt)].GetString(),
+							static_cast<Argon2Variant>(document[cnameof(Variant)].GetInt()),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Iterations)].GetUint64() : document[cnameof(Iterations)].GetUint()),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(MemorySizeKiB)].GetUint64() : document[cnameof(MemorySizeKiB)].GetUint()),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Parallelism)].GetUint64() : document[cnameof(Parallelism)].GetUint()),
+							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(DerivedKeyLength)].GetUint64() : document[cnameof(DerivedKeyLength)].GetUint()));
+	}
+	catch (...)
+	{
+		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(Argon2Result)));
+	}
+}
+
+// ███ RandomManager ███
+
+String Insane::Crypto::RandomManager::Next(size_t sz)
+{
+	String result = String(sz, 0);
+	std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
+	Botan::secure_vector<uint8_t> bytes = (*rng).random_vec(sz);
+	return String(bytes.begin(), bytes.end());
+}
+
+int Insane::Crypto::RandomManager::Next(int min, int max)
+{
+	std::random_device device = std::random_device{};
+	std::mt19937 mersenneEngine(device());
+	std::uniform_int_distribution<int> distribution(min, max);
+	return distribution(mersenneEngine);
+}
+
+int Insane::Crypto::RandomManager::Next()
+{
+	return Next(INT_MIN, INT_MAX);
+}
+
 // ███ HashManager ███
 
-Insane::Crypto::HashManager::HashManager() = default;
+String Insane::Crypto::HashManager::InsertLineBreaks(const String &data, size_t lineBreaksLength)
+{
+	if (lineBreaksLength == 0)
+	{
+		return data;
+	}
+	return Str::Strings::InsertRepeat(data, lineBreaksLength, NEW_LINE_STR);
+}
 
-Insane::Crypto::HashManager::~HashManager() = default;
+String Insane::Crypto::HashManager::RemoveLineBreaks(const String &data)
 
-String Insane::Crypto::HashManager::ToBase64(const String &data, size_t lineBreaks, const bool &removePadding)
+{
+	USING_INSANE_STR;
+	return Strings::RemoveAll(data, {CARRIAGE_RETURN_STRING, LINE_FEED_STRING, VERTICAL_TAB_STRING, FORM_FEED_STRING, TAB_STRING, SPACE_STRING});
+}
+
+String Insane::Crypto::HashManager::ToBase64(const String &data, size_t lineBreaksLength, const bool &removePadding)
 {
 	USING_INSANE_STR;
 	String ret = Botan::base64_encode(std::vector<uint8_t>(data.begin(), data.end()));
-	ret = InsertLineBreaks(ret, lineBreaks);
+	ret = InsertLineBreaks(ret, lineBreaksLength);
 	return removePadding ? Strings::RemoveAll(ret, u8"=") : ret;
+}
+
+String Insane::Crypto::HashManager::FromBase64(const String &data)
+{
+	USING_INSANE_STR;
+	USING_INSANE_CORE;
+	String base64 = data;
+	base64 = RemoveLineBreaks(Strings::ReplaceAll(base64, {{u8"%2B", u8"+"}, {u8"%2F", u8"/"}, {u8"%3D", u8"="}, {u8"-", u8"+"}, {u8"_", u8"/"}}));
+	base64 = Strings::PadRight(base64, base64.length() + (base64.length() % 4), u8'=');
+	auto result = Botan::base64_decode(base64);
+	return String(result.begin(), result.end());
 }
 
 String Insane::Crypto::HashManager::ToUrlSafeBase64(const String &data)
@@ -94,37 +458,10 @@ String Insane::Crypto::HashManager::ToUrlEncodedBase64(const String &data)
 String Insane::Crypto::HashManager::ToAlphanumericBase64(const String &data, size_t lineBreaks)
 {
 	USING_INSANE_STR;
-	return Strings::RemoveAll(ToBase64(data, lineBreaks), {u8"+"s, u8"-"s, u8"/"s, u8"_"s, u8"="s, u8","s});
+	return Strings::RemoveAll(ToBase64(data, lineBreaks), {u8"+"s, u8"/"s, u8"="s});
 }
 
-String Insane::Crypto::HashManager::FromBase64(const String &base64)
-{
-	USING_INSANE_STR;
-	USING_INSANE_CORE;
-	String data = base64;
-	data = RemoveLineBreaks(Strings::ReplaceAll(data, {{u8"%2B", u8"+"}, {u8"%2F", u8"/"}, {u8"%3D", u8"="}, {u8"-", u8"+"}, {u8"_", u8"/"}}));
-	int modulo = data.length() % 4;
-	data = modulo == 0 ? data : Strings::PadRight(data, data.length() + modulo, u8'=');
-	auto result = Botan::base64_decode(data);
-	return String(result.begin(), result.end());
-}
-
-String Insane::Crypto::HashManager::InsertLineBreaks(const String &base64, size_t lineBreakAppear)
-{
-	if (lineBreakAppear == 0)
-	{
-		return base64;
-	}
-	return Str::Strings::InsertRepeat(base64, lineBreakAppear, NEW_LINE_STR);
-}
-
-String Insane::Crypto::HashManager::RemoveLineBreaks(const String &base64)
-{
-	USING_INSANE_STR;
-	return Strings::RemoveAll(base64, {CARRIAGE_RETURN_STRING, LINE_FEED_STRING, VERTICAL_TAB_STRING, FORM_FEED_STRING, TAB_STRING, SPACE_STRING});
-}
-
-String Insane::Crypto::HashManager::ToRawHash(const String &data, HashAlgorithm algorithm)
+String Insane::Crypto::HashManager::ToRawHash(const String &data, const HashAlgorithm &algorithm)
 {
 	USING_INSANE_EXCEPTION;
 	switch (algorithm)
@@ -169,12 +506,12 @@ String Insane::Crypto::HashManager::ToRawHash(const String &data, HashAlgorithm 
 	}
 }
 
-String Insane::Crypto::HashManager::ToBase64Hash(const String &data, HashAlgorithm algorithm, size_t lineBreaks)
+String Insane::Crypto::HashManager::ToBase64Hash(const String &data, const HashAlgorithm &algorithm)
 {
-	return HashManager::ToBase64(ToRawHash(data, algorithm), lineBreaks);
+	return ToBase64(ToRawHash(data, algorithm));
 }
 
-String Insane::Crypto::HashManager::ToRawHmac(const String &data, const String &key, HashAlgorithm algorithm)
+String Insane::Crypto::HashManager::ToRawHmac(const String &data, const String &key, const HashAlgorithm &algorithm)
 {
 	int blockSize = 0;
 	String secret = key;
@@ -217,16 +554,84 @@ String Insane::Crypto::HashManager::ToRawHmac(const String &data, const String &
 	return ret;
 }
 
-String Insane::Crypto::HashManager::ToBase64Hmac(const String &data, const String &key, HashAlgorithm algorithm, size_t lineBreaks)
+Insane::Crypto::HmacResult Insane::Crypto::HashManager::ToBase64Hmac(const String &data, const String &key, const HashAlgorithm &algorithm)
 {
-	return HashManager::ToBase64(ToRawHmac(data, key, algorithm), lineBreaks);
+	return HmacResult(ToBase64(ToRawHmac(data, key, algorithm)), ToBase64(key), algorithm);
+}
+
+Insane::Crypto::HmacResult Insane::Crypto::HashManager::ToBase64Hmac(const String &data, const size_t &keySize, const HashAlgorithm &algorithm)
+{
+	return ToBase64Hmac(data, RandomManager::Next(keySize), algorithm);
+}
+
+String Insane::Crypto::HashManager::ToRawScrypt(const String &data, const String &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
+{
+	USING_INSANE_EXCEPTION;
+	try
+	{
+		Botan::Scrypt engine = Botan::Scrypt(iterations, blockSize, parallelism);
+		std::vector<uint8_t> out(derivedKeyLength);
+		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t *>(salt.data()), salt.size());
+		return String(out.begin(), out.end());
+	}
+	catch (std::exception &ex)
+	{
+		throw CryptoException(u8"Error when generating the derived key. "s + String(ex.what()));
+	}
+}
+
+Insane::Crypto::ScryptResult Insane::Crypto::HashManager::ToBase64Scrypt(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
+{
+	return ScryptResult(ToBase64(ToRawScrypt(data, isBase64Salt? FromBase64(salt): salt, iterations, blockSize, parallelism, derivedKeyLength)),
+						isBase64Salt? salt: ToBase64(salt),
+						iterations,
+						blockSize,
+						parallelism,
+						derivedKeyLength);
+}
+
+Insane::Crypto::ScryptResult Insane::Crypto::HashManager::ToBase64Scrypt(const String &data, const size_t &saltSize, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
+{
+	String salt = RandomManager::Next(saltSize);
+	return ToBase64Scrypt(data, salt, false, iterations, blockSize, parallelism, derivedKeyLength);
+}
+
+
+String Insane::Crypto::HashManager::ToRawArgon2(const String &data, const String &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+	USING_INSANE_EXCEPTION;
+	try
+	{
+		Botan::Argon2 engine(static_cast<int>(variant), memorySizeKiB, iterations, parallelism);
+		std::vector<uint8_t> out(derivedKeyLength);
+		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t *>(salt.data()), salt.size());
+		return String(out.begin(), out.end());
+	}
+	catch (std::exception &ex)
+	{
+		throw CryptoException(u8"Error when generating the derived key. "s + String(ex.what()));
+	}
+}
+
+Insane::Crypto::Argon2Result Insane::Crypto::HashManager::ToBase64Argon2(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+	return Argon2Result(
+		ToBase64(ToRawArgon2(data, isBase64Salt ? FromBase64(salt) : salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength)),
+		isBase64Salt ? salt : ToBase64(salt),
+		variant,
+		iterations,
+		memorySizeKiB,
+		parallelism,
+		derivedKeyLength);
+}
+
+Insane::Crypto::Argon2Result Insane::Crypto::HashManager::ToBase64Argon2(const String &data, size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t saltSize, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+	String salt = RandomManager::Next(saltSize);
+	return ToBase64Argon2(data, salt, false, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength);
 }
 
 // ███ AesManager ███
-
-Insane::Crypto::AesManager::AesManager() = default;
-
-Insane::Crypto::AesManager::~AesManager() = default;
 
 String Insane::Crypto::AesManager::EncryptRaw(const String &data, const String &key) noexcept(false)
 {
@@ -294,38 +699,7 @@ String Insane::Crypto::AesManager::GenerateValidKey(const String &key)
 	return hash;
 }
 
-// ███ RandomManager ███
-
-Insane::Crypto::RandomManager::RandomManager() = default;
-
-Insane::Crypto::RandomManager::~RandomManager() = default;
-
-String Insane::Crypto::RandomManager::Generate(int sz)
-{
-	std::mt19937 mersenneEngine(std::random_device{}());
-	std::uniform_int_distribution<> dist(CHAR_MIN, CHAR_MAX);
-	const auto generator = std::bind(dist, mersenneEngine);
-	std::vector<char> v(sz);
-	std::generate(v.begin(), v.end(), generator);
-	return String(v.data(), v.size());
-}
-
-int Insane::Crypto::RandomManager::Generate(int min, int max)
-{
-	std::random_device device = std::random_device{};
-	std::mt19937 mersenneEngine(device());
-	std::uniform_int_distribution<int> distribution(min, max);
-	return distribution(mersenneEngine);
-}
-
-int Insane::Crypto::RandomManager::Generate()
-{
-	return Generate(INT_MIN, INT_MAX);
-}
-
 // ███ RsaKeyPair ███
-
-Insane::Crypto::RsaKeyPair::RsaKeyPair() = default;
 
 Insane::Crypto::RsaKeyPair::RsaKeyPair(const std::string &publicKey, const std::string &privateKey)
 {
@@ -333,14 +707,12 @@ Insane::Crypto::RsaKeyPair::RsaKeyPair(const std::string &publicKey, const std::
 	this->publicKey = publicKey;
 }
 
-Insane::Crypto::RsaKeyPair::~RsaKeyPair() = default;
-
-std::string Insane::Crypto::RsaKeyPair::GetPublicKey() const
+std::string Insane::Crypto::RsaKeyPair::PublicKey() const
 {
 	return publicKey;
 }
 
-std::string Insane::Crypto::RsaKeyPair::GetPrivateKey() const
+std::string Insane::Crypto::RsaKeyPair::PrivateKey() const
 {
 	return privateKey;
 }
@@ -362,9 +734,9 @@ String Insane::Crypto::RsaKeyPair::Serialize() const noexcept(false)
 		rapidjson::StringBuffer sb;
 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
 		writer.StartObject();
-		writer.String(u8"PublicKey");
+		writer.String(cnameof(PublicKey));
 		writer.String(publicKey.c_str(), static_cast<rapidjson::SizeType>(publicKey.length()));
-		writer.String(u8"PrivateKey");
+		writer.String(cnameof(PrivateKey));
 		writer.String(privateKey.c_str(), static_cast<rapidjson::SizeType>(privateKey.length()));
 		writer.EndObject();
 		return std::string(sb.GetString(), sb.GetSize());
@@ -377,21 +749,24 @@ String Insane::Crypto::RsaKeyPair::Serialize() const noexcept(false)
 
 Insane::Crypto::RsaKeyPair Insane::Crypto::RsaKeyPair::Deserialize(String json) noexcept(false)
 {
-	rapidjson::Document document;
-	document.Parse(json.c_str(), json.length());
-	if (document.HasParseError())
+	USING_INSANE_STR;
+	try
 	{
-		throw Insane::Exception::CryptoException(u8"Unable to parse keypair."s);
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError())
+		{
+			throw 1;
+		}
+		return RsaKeyPair(document[u8"PublicKey"].GetString(), document[u8"PrivateKey"].GetString());
 	}
-	RsaKeyPair keypair(document[u8"PublicKey"].GetString(), document[u8"PrivateKey"].GetString());
-	return keypair;
+	catch (...)
+	{
+		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(RsaKeyPair)));
+	}
 }
 
 // ███ RsaManager ███
-
-Insane::Crypto::RsaManager::RsaManager() = default;
-
-Insane::Crypto::RsaManager::~RsaManager() = default;
 
 Insane::Crypto::RsaKeyPair Insane::Crypto::RsaManager::CreateKeyPair(const Size &keySize, const RsaKeyEncoding &encoding, const bool &indent)
 {
@@ -506,11 +881,11 @@ Insane::Crypto::RsaKeyPair Insane::Crypto::RsaManager::CreateKeyPair(const Size 
 			rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
 			if (indent)
 			{
-				writer.SetIndent(u8'\t', 1);
+				writer.SetIndent(SPACE_CHAR, 2);
 			}
 			else
 			{
-				writer.SetIndent(u8' ', 0);
+				writer.SetIndent(SPACE_CHAR, 0);
 			}
 
 			writer.StartObject();
@@ -571,7 +946,7 @@ namespace Insane::Crypto
 		USING_INSANE_STR;
 		USING_INSANE_CORE;
 		String rsaKey = Strings::Trim(key);
-#ifdef EMSCRIPTEN_PLATFORM
+#ifdef __clang__
 		if (Strings::StartsWith(rsaKey, JSON_RSA_PUBLIC_AND_PRIVATE_KEY_INITIAL_STRING) && Strings::EndsWith(rsaKey, JSON_RSA_PUBLIC_AND_PRIVATE_KEY_FINAL_STRING))
 #else
 		if (Strings::IsMatch(Strings::ReplaceLastOf(rsaKey, u8"\"", u8"\","), JSON_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
@@ -580,7 +955,7 @@ namespace Insane::Crypto
 			return RsaKeyEncoding::Json;
 		}
 
-#ifdef EMSCRIPTEN_PLATFORM
+#ifdef __clang__
 		if (Strings::StartsWith(rsaKey, XML_RSA_PUBLIC_AND_PRIVATE_KEY_INITIAL_STRING) && Strings::EndsWith(rsaKey, XML_RSA_PUBLIC_AND_PRIVATE_KEY_FINAL_STRING))
 #else
 		if (Strings::IsMatch(Strings::ReplaceLastOf(rsaKey, u8"\"", u8"\","), XML_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
@@ -589,7 +964,7 @@ namespace Insane::Crypto
 			return RsaKeyEncoding::Xml;
 		}
 
-#ifdef EMSCRIPTEN_PLATFORM
+#ifdef __clang__
 		if ((Strings::StartsWith(rsaKey, PEM_RSA_PUBLIC_KEY_INITIAL_STRING) && Strings::EndsWith(rsaKey, PEM_RSA_PUBLIC_KEY_FINAL_STRING)) || (Strings::StartsWith(rsaKey, PEM_RSA_PRIVATE_KEY_INITIAL_STRING) && Strings::EndsWith(rsaKey, PEM_RSA_PRIVATE_KEY_FINAL_STRING)))
 #else
 		if (Strings::IsMatch(Strings::ReplaceLastOf(rsaKey, u8"\"", u8"\","), PEM_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
@@ -597,7 +972,6 @@ namespace Insane::Crypto
 		{
 			return RsaKeyEncoding::Pem;
 		}
-
 		return RsaKeyEncoding::Ber;
 	}
 

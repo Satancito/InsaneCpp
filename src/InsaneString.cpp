@@ -36,7 +36,6 @@ String Insane::Str::Strings::Trim(const std::string &data) {
 	return TrimEnd(TrimStart(data)); 
 }
 
-
 String Insane::Str::Strings::ReplaceLastOf(const String &data, const String &toFind, const String &toReplace)
 {
 	String result = data;

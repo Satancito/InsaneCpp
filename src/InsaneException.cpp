@@ -22,3 +22,7 @@ Insane::Exception::CryptoException::CryptoException(const String& _message, cons
 {
 }
 
+Insane::Exception::ArgumentException::ArgumentException(const String& _message, const int& _code) : ExceptionBase(_message, _code)
+{
+}
+
