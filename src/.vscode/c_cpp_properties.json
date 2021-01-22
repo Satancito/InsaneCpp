@@ -7,7 +7,12 @@
                 "${workspaceFolder}/../include",
                 "${workspaceFolder}/../../CommonCppIncludes",
                 "${workspaceFolder}/../../CommonCppLibs/Botan-2.13.0-Emscripten-llvm-Release/include/botan-2/**",
-                "${EMSCRIPTEN_DIR}/upstream/emscripten/system/include/**"
+                
+                "${EMSCRIPTEN_DIR}/upstream/emscripten/cache/sysroot/include/SDL",
+                "${EMSCRIPTEN_DIR}/upstream/emscripten/cache/sysroot/include/compat",
+                "${EMSCRIPTEN_DIR}/upstream/emscripten/cache/sysroot/include/compat/c++/v1",
+                "${EMSCRIPTEN_DIR}/upstream/lib/clang/13.0.0/include",
+                "${EMSCRIPTEN_DIR}/upstream/emscripten/cache/sysroot/include"
             ],
             "defines": [
                 "_DEBUG",

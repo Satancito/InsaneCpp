@@ -115,7 +115,7 @@ String Insane::Crypto::HmacResult::Serialize() const
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to serialize "#".)", u8"#", nameof(HmacResult)));
+		throw Insane::Exception::CryptoException(Strings::Replace(u8R"(Unable to serialize "#".)", u8"#", nameof(HmacResult)));
 	}
 }
 
@@ -136,7 +136,7 @@ Insane::Crypto::HmacResult Insane::Crypto::HmacResult::Deserialize(const String 
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(HmacResult)));
+		throw Insane::Exception::CryptoException(Strings::Replace(u8R"(Unable to deserialize "#".)", u8"#", nameof(HmacResult)));
 	}
 }
 
@@ -226,7 +226,7 @@ String Insane::Crypto::ScryptResult::Serialize() const
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to serialize "#".)", u8"#", nameof(ScryptResult)));
+		throw Insane::Exception::CryptoException(Strings::Replace(u8R"(Unable to serialize "#".)", u8"#", nameof(ScryptResult)));
 	}
 }
 
@@ -250,7 +250,7 @@ Insane::Crypto::ScryptResult Insane::Crypto::ScryptResult::Deserialize(const Str
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(ScryptResult)));
+		throw Insane::Exception::CryptoException(Strings::Replace(u8R"(Unable to deserialize "#".)", u8"#", nameof(ScryptResult)));
 	}
 }
 
@@ -348,7 +348,7 @@ String Insane::Crypto::Argon2Result::Serialize() const
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to serialize "#".)", u8"#", nameof(Argon2Result)));
+		throw Insane::Exception::CryptoException(Strings::Replace(u8R"(Unable to serialize "#".)", u8"#", nameof(Argon2Result)));
 	}
 }
 
@@ -373,7 +373,7 @@ Insane::Crypto::Argon2Result Insane::Crypto::Argon2Result::Deserialize(const Str
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(Argon2Result)));
+		throw Insane::Exception::CryptoException(Strings::Replace(u8R"(Unable to deserialize "#".)", u8"#", nameof(Argon2Result)));
 	}
 }
 
@@ -415,7 +415,7 @@ String Insane::Crypto::HashManager::RemoveLineBreaks(const String &data)
 
 {
 	USING_INSANE_STR;
-	return Strings::RemoveAll(data, {CARRIAGE_RETURN_STRING, LINE_FEED_STRING, VERTICAL_TAB_STRING, FORM_FEED_STRING, TAB_STRING, SPACE_STRING});
+	return Strings::Remove(data, {CARRIAGE_RETURN_STRING, LINE_FEED_STRING, VERTICAL_TAB_STRING, FORM_FEED_STRING, TAB_STRING, SPACE_STRING});
 }
 
 String Insane::Crypto::HashManager::ToBase64(const String &data, size_t lineBreaksLength, const bool &removePadding)
@@ -423,7 +423,7 @@ String Insane::Crypto::HashManager::ToBase64(const String &data, size_t lineBrea
 	USING_INSANE_STR;
 	String ret = Botan::base64_encode(std::vector<uint8_t>(data.begin(), data.end()));
 	ret = InsertLineBreaks(ret, lineBreaksLength);
-	return removePadding ? Strings::RemoveAll(ret, u8"=") : ret;
+	return removePadding ? Strings::Remove(ret, u8"=") : ret;
 }
 
 String Insane::Crypto::HashManager::FromBase64(const String &data)
@@ -431,8 +431,9 @@ String Insane::Crypto::HashManager::FromBase64(const String &data)
 	USING_INSANE_STR;
 	USING_INSANE_CORE;
 	String base64 = data;
-	base64 = RemoveLineBreaks(Strings::ReplaceAll(base64, {{u8"%2B", u8"+"}, {u8"%2F", u8"/"}, {u8"%3D", u8"="}, {u8"-", u8"+"}, {u8"_", u8"/"}}));
-	base64 = Strings::PadRight(base64, base64.length() + (base64.length() % 4), u8'=');
+	base64 = RemoveLineBreaks(Strings::Replace(base64, {{u8"%2B", u8"+"}, {u8"%2F", u8"/"}, {u8"%3D", u8"="}, {u8"-", u8"+"}, {u8"_", u8"/"}}));
+	int modulo = base64.length() % 4;
+	base64 = Strings::PadRight(base64, base64.length() + (modulo > 0 ? 4 - modulo : 0), u8'=');
 	auto result = Botan::base64_decode(base64);
 	return String(result.begin(), result.end());
 }
@@ -440,7 +441,7 @@ String Insane::Crypto::HashManager::FromBase64(const String &data)
 String Insane::Crypto::HashManager::ToUrlSafeBase64(const String &data)
 {
 	USING_INSANE_STR;
-	return Strings::ReplaceAll(ToBase64(data), {{u8"+", u8"-"}, {u8"/", u8"_"}, {u8"=", EMPTY_STRING}});
+	return Strings::Replace(ToBase64(data), {{u8"+", u8"-"}, {u8"/", u8"_"}, {u8"=", EMPTY_STRING}});
 }
 
 String Insane::Crypto::HashManager::ToFilenameSafeBase64(const String &data)
@@ -452,13 +453,13 @@ String Insane::Crypto::HashManager::ToFilenameSafeBase64(const String &data)
 String Insane::Crypto::HashManager::ToUrlEncodedBase64(const String &data)
 {
 	USING_INSANE_STR;
-	return Strings::ReplaceAll(ToBase64(data), {{u8"+", u8"%2B"}, {u8"/", u8"%2F"}, {u8"=", u8"%3D"}});
+	return Strings::Replace(ToBase64(data), {{u8"+", u8"%2B"}, {u8"/", u8"%2F"}, {u8"=", u8"%3D"}});
 }
 
 String Insane::Crypto::HashManager::ToAlphanumericBase64(const String &data, size_t lineBreaks)
 {
 	USING_INSANE_STR;
-	return Strings::RemoveAll(ToBase64(data, lineBreaks), {u8"+"s, u8"/"s, u8"="s});
+	return Strings::Remove(ToBase64(data, lineBreaks), {u8"+"s, u8"/"s, u8"="s});
 }
 
 String Insane::Crypto::HashManager::ToRawHash(const String &data, const HashAlgorithm &algorithm)
@@ -582,8 +583,8 @@ String Insane::Crypto::HashManager::ToRawScrypt(const String &data, const String
 
 Insane::Crypto::ScryptResult Insane::Crypto::HashManager::ToBase64Scrypt(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-	return ScryptResult(ToBase64(ToRawScrypt(data, isBase64Salt? FromBase64(salt): salt, iterations, blockSize, parallelism, derivedKeyLength)),
-						isBase64Salt? salt: ToBase64(salt),
+	return ScryptResult(ToBase64(ToRawScrypt(data, isBase64Salt ? FromBase64(salt) : salt, iterations, blockSize, parallelism, derivedKeyLength)),
+						isBase64Salt ? salt : ToBase64(salt),
 						iterations,
 						blockSize,
 						parallelism,
@@ -596,13 +597,12 @@ Insane::Crypto::ScryptResult Insane::Crypto::HashManager::ToBase64Scrypt(const S
 	return ToBase64Scrypt(data, salt, false, iterations, blockSize, parallelism, derivedKeyLength);
 }
 
-
 String Insane::Crypto::HashManager::ToRawArgon2(const String &data, const String &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
 {
 	USING_INSANE_EXCEPTION;
 	try
 	{
-		Botan::Argon2 engine(static_cast<int>(variant), memorySizeKiB, iterations, parallelism);
+		Botan::Argon2 engine(static_cast<uint8_t>(variant), memorySizeKiB, iterations, parallelism);
 		std::vector<uint8_t> out(derivedKeyLength);
 		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t *>(salt.data()), salt.size());
 		return String(out.begin(), out.end());
@@ -762,7 +762,7 @@ Insane::Crypto::RsaKeyPair Insane::Crypto::RsaKeyPair::Deserialize(String json) 
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(Strings::ReplaceAll(u8R"(Unable to deserialize "#".)", u8"#", nameof(RsaKeyPair)));
+		throw Insane::Exception::CryptoException(Strings::Replace(u8R"(Unable to deserialize "#".)", u8"#", nameof(RsaKeyPair)));
 	}
 }
 

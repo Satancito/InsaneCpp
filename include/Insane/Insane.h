@@ -32,7 +32,7 @@
 #if (_WIN32)
 #include <Windows.h>
 #include <conio.h>
-#define WINDOW_PLATFORM 1
+#define WINDOWS_PLATFORM 1
 #define DLLCALL STDCALL
 #define DLLIMPORT _declspec(dllimport)
 #define DLLEXPORT _declspec(dllexport)
@@ -125,6 +125,9 @@ typedef time_t Time;
 typedef size_t Size;
 typedef std::string String;
 typedef std::wstring WString;
+
+#define thisvalue (*this)
+
 
 using namespace std::string_literals;
 
