@@ -1,4 +1,5 @@
 ﻿#include <Insane/InsaneString.h>
+
 // ███ Strings ███
 
 Insane::Str::Strings::Strings() = default;
@@ -16,38 +17,42 @@ bool Insane::Str::Strings::IsMatch(const String &input, const String &pattern)
 	return std::regex_match(input, regex);
 }
 
-String Insane::Str::Strings::TrimStart(const std::string &data) {
-	String s = data; 
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }));
+String Insane::Str::Strings::TrimStart(const std::string &data)
+{
+	String s = data;
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+				return !std::isspace(ch);
+			}));
 	return s;
 }
 
-String Insane::Str::Strings::TrimEnd(const std::string &data) {
-	String s = data; 
-     s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
+String Insane::Str::Strings::TrimEnd(const std::string &data)
+{
+	String s = data;
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+				return !std::isspace(ch);
+			}).base(),
+			s.end());
 	return s;
 }
 
-String Insane::Str::Strings::Trim(const std::string &data) {
-	return TrimEnd(TrimStart(data)); 
+String Insane::Str::Strings::Trim(const std::string &data)
+{
+	return TrimEnd(TrimStart(data));
 }
 
 String Insane::Str::Strings::ReplaceLastOf(const String &data, const String &toFind, const String &toReplace)
 {
 	String result = data;
 	size_t pos = result.rfind(toFind);
-	if(pos == std::string::npos)
+	if (pos == std::string::npos)
 	{
 		return data;
 	}
 	return result.replace(pos, toFind.length(), toReplace);
 }
 
-String Insane::Str::Strings::ReplaceAll(const String &data, const String &toFind, const String &toReplace)
+String Insane::Str::Strings::Replace(const String &data, const String &toFind, const String &toReplace)
 {
 	String result = data;
 	size_t pos = 0;
@@ -60,23 +65,17 @@ String Insane::Str::Strings::ReplaceAll(const String &data, const String &toFind
 	return result;
 }
 
-String Insane::Str::Strings::ReplaceAll(const String &data, const std::initializer_list<std::pair<String, String>> &toFindAndReplace)
+String Insane::Str::Strings::Replace(const String &data, const std::initializer_list<std::pair<ToFind, ToReplace>> &pairs)
 {
 	String result = data;
-	for (std::pair<String, String> value : toFindAndReplace)
+	for (std::pair<String, String> value : pairs)
 	{
-		size_t pos = 0;
-		while ((pos = result.find(value.first, pos)) != String::npos)
-		{
-			result.replace(pos, value.first.length(), value.second);
-			pos += value.second.length();
-			pos = result.find(value.first, pos);
-		}
+		result = Strings::Replace(result, value.first, value.second);
 	}
 	return result;
 }
 
-String Insane::Str::Strings::RemoveAll(const String &data, const String &toRemove)
+String Insane::Str::Strings::Remove(const String &data, const String &toRemove)
 {
 	String result = data;
 	size_t pos = 0;
@@ -87,32 +86,28 @@ String Insane::Str::Strings::RemoveAll(const String &data, const String &toRemov
 	return result;
 }
 
-String Insane::Str::Strings::RemoveAll(const String &data, const std::initializer_list<String> &toRemove)
+String Insane::Str::Strings::Remove(const String &data, const std::initializer_list<String> &toRemove)
 {
 	String result = data;
 	for (String value : toRemove)
 	{
-		size_t pos = 0;
-		while ((pos = result.find(value, pos)) != String::npos)
-		{
-			result.erase(pos, value.length());
-		}
+		result = Strings::Remove(result, value);
 	}
 	return result;
 }
 
-String Insane::Str::Strings::InsertRepeat(const String &data, size_t repeatEvery, const String &toRepeat, bool includeEnd)
+String Insane::Str::Strings::InsertRepeat(const String &data, size_t distance, const String &toRepeat, bool includeEnd)
 {
 	String result = data;
-	if (repeatEvery < 1 || toRepeat.empty() || result.empty() || toRepeat.length() < 1)
+	if (toRepeat.empty() || result.empty())
 	{
 		return result;
 	}
-	size_t pos = repeatEvery;
+	size_t pos = distance;
 	while (pos < result.size())
 	{
 		result.insert(pos, toRepeat);
-		pos += repeatEvery + toRepeat.length();
+		pos += distance + toRepeat.length();
 	}
 	if (pos == result.length() && includeEnd)
 	{
@@ -138,7 +133,7 @@ std::vector<String> Insane::Str::Strings::Split(const String &data, const String
 		{
 			v.push_back(s);
 		}
-		ini = pos + 1;
+		ini = pos + toFind.length();
 	}
 	if (ini < data.length())
 	{
@@ -175,7 +170,7 @@ String Insane::Str::Strings::ToLower(const String &data)
 	return WideStringToString(ToLower(StringToWideString(data)));
 }
 
-size_t Insane::Str::Strings::TotalChars(const String &data)
+size_t Insane::Str::Strings::LengthUTF8(const String &data)
 {
 	size_t ret = 0;
 	for (char value : data)
@@ -188,37 +183,77 @@ size_t Insane::Str::Strings::TotalChars(const String &data)
 	return ret;
 }
 
-String Insane::Str::Strings::Reverse(const String &data, bool asUTF8)
+String Insane::Str::Strings::Reverse(const String &data)
 {
-	size_t ret = 0;
+
+	String result = data;
+	std::reverse(result.begin(), result.end());
+	return result;
+}
+
+String Insane::Str::Strings::ReverseUTF8(const String &data)
+{
 	String result;
-	if (asUTF8)
+	String::const_iterator it = data.begin();
+	String::const_iterator beginIterator(it);
+	if ((data[0] & 0xc0) != 0x80)
 	{
-		String::const_iterator it = data.begin();
-		String::const_iterator beginIterator(it);
-		if ((data[0] & 0xc0) != 0x80)
+		it++;
+	}
+	while (it != data.end())
+	{
+		char value = *it;
+		if ((value & 0xc0) != 0x80)
 		{
-			it++;
+			result.insert(0, String(beginIterator, it));
+			beginIterator = it;
 		}
-		while (it != data.end())
+		it++;
+	}
+	result.insert(0, String(beginIterator, it));
+	return result;
+}
+
+String Insane::Str::Strings::SubstringUTF8(const String &data, size_t startIndex, size_t length)
+{
+	size_t units = LengthUTF8(data);
+	if (startIndex >= units)
+	{
+		throw std::invalid_argument(u8"Invalid UTF8 character position.");
+	}
+	String result;
+	String::const_iterator it = data.begin();
+	String::const_iterator beginIterator = data.begin();
+	size_t endIndex = length == SIZE_MAX ? units : startIndex + length;
+	size_t utf8pos = 0;
+	while (it != data.end())
+	{
+		char value = *it;
+		if ((value & 0xc0) != 0x80) // Es inicio de caracter //utf8pos = 0 / beginIterator = 0 / endIndex = 1+12
 		{
-			char value = *it;
-			if ((value & 0xc0) != 0x80)
+			if (utf8pos == startIndex)
 			{
-				result.insert(0, String(beginIterator, it));
 				beginIterator = it;
+				if (length >= units)
+				{
+					return String(beginIterator, data.end());
+				}
 			}
-			it++;
+
+			if (utf8pos == endIndex)
+			{
+				break;
+			}
+			utf8pos += 1;
 		}
-		result.insert(0, String(beginIterator, it));
-		return result;
+		it++;
 	}
-	else
-	{
-		result = data;
-		std::reverse(result.begin(), result.end());
-		return result;
-	}
+	return String(beginIterator, it);
+}
+
+String Insane::Str::Strings::GetCharUTF8(const String &data, size_t pos)
+{
+	return SubstringUTF8(data, pos, 1);
 }
 
 String Insane::Str::Strings::PadRight(const String &data, const size_t &totalWidth, const char &padding)
@@ -238,7 +273,106 @@ String Insane::Str::Strings::PadLeft(const String &data, const size_t &totalWidt
 	{
 		return data;
 	}
-	return String(totalWidth - data.length(), padding) + data;
+	String ret = data;
+	ret.insert(0, totalWidth - ret.length(), padding);
+	return ret;
+}
+
+String Insane::Str::Strings::PadRight(const String &data, const size_t &totalWidth, const String &padding)
+{
+
+	if (data.length() >= totalWidth)
+	{
+		return data;
+	}
+	size_t modulo = (totalWidth - data.length()) % padding.length();
+	size_t paddingUnits = (totalWidth - data.length()) / padding.length();
+	String ret = data;
+	for (size_t i = 0; i < paddingUnits; i++)
+	{
+		ret.append(padding);
+	}
+	ret.append(padding.substr(0, modulo));
+	return ret;
+}
+
+String Insane::Str::Strings::PadLeft(const String &data, const size_t &totalWidth, const String &padding)
+{
+	if (data.length() >= totalWidth)
+	{
+		return data;
+	}
+	size_t modulo = (totalWidth - data.length()) % padding.length();
+	size_t paddingUnits = (totalWidth - data.length()) / padding.length();
+	String ret = data;
+	for (size_t i = 0; i < paddingUnits; i++)
+	{
+		ret.insert(0, padding);
+	}
+	ret.insert(0, padding.substr(0, modulo));
+	return ret;
+}
+
+String Insane::Str::Strings::PadRightUTF8(const String &data, const size_t &totalWidth, const char &padding)
+{
+	size_t totalUtf8 = LengthUTF8(data);
+	if (totalUtf8 >= totalWidth)
+	{
+		return data;
+	}
+	String ret = data;
+	ret.resize(ret.length() + (totalWidth - totalUtf8), padding);
+	return ret;
+}
+
+String Insane::Str::Strings::PadLeftUTF8(const String &data, const size_t &totalWidth, const char &padding)
+{
+	size_t totalUtf8 = LengthUTF8(data);
+	if (totalUtf8 >= totalWidth)
+	{
+		return data;
+	}
+	String ret = data;
+	ret.insert(0, totalWidth - totalUtf8, padding);
+	return ret;
+}
+
+String Insane::Str::Strings::PadRightUTF8(const String &data, const size_t &totalWidth, const String &padding)
+{
+	size_t units = LengthUTF8(data);
+	size_t paddingUnits = LengthUTF8(padding);
+	if (units >= totalWidth)
+	{
+		return data;
+	}
+	size_t modulo = (totalWidth - units) % paddingUnits;
+	size_t n = (totalWidth - units) / paddingUnits;
+	String ret = data;
+	for (size_t i = 0; i < n; i++)
+	{
+		ret.append(padding);
+	}
+	ret.append(SubstringUTF8(padding, 0, modulo));
+	return ret;
+}
+
+String Insane::Str::Strings::PadLeftUTF8(const String &data, const size_t &totalWidth, const String &padding)
+{
+	size_t units = LengthUTF8(data);
+	size_t paddingUnits = LengthUTF8(padding);
+	if (units >= totalWidth)
+	{
+		return data;
+	}
+	size_t modulo = (totalWidth - units) % paddingUnits;
+	size_t n = (totalWidth - units) / paddingUnits;
+	String ret = data;
+	for (size_t i = 0; i < n; i++)
+	{
+		ret.insert(0, padding);
+	}
+	ret.insert(0, SubstringUTF8(padding, 0, modulo));
+	return ret;
 }
 
 WString Insane::Str::Strings::EmptyW()
@@ -246,7 +380,7 @@ WString Insane::Str::Strings::EmptyW()
 	return EMPTY_WSTRING;
 }
 
-WString Insane::Str::Strings::ReplaceAll(const WString &data, const WString &toFind, const WString &toReplace)
+WString Insane::Str::Strings::Replace(const WString &data, const WString &toFind, const WString &toReplace)
 {
 	WString result = data;
 	if (result.empty() || toFind.empty())
@@ -263,7 +397,7 @@ WString Insane::Str::Strings::ReplaceAll(const WString &data, const WString &toF
 	return result;
 }
 
-WString Insane::Str::Strings::RemoveAll(const WString &data, const WString &toRemove)
+WString Insane::Str::Strings::Remove(const WString &data, const WString &toRemove)
 {
 	WString result = data;
 	if (toRemove.empty() || result.empty())
@@ -315,7 +449,7 @@ std::vector<WString> Insane::Str::Strings::Split(const WString &data, const WStr
 		{
 			v.push_back(s);
 		}
-		ini = pos + 1;
+		ini = pos + toFind.length();
 	}
 	if (ini < data.length())
 	{
@@ -470,4 +604,390 @@ bool Insane::Str::Strings::Contains(const String &data, const String &content, c
 		return ndata.find(ncontent) != std::string::npos;
 	}
 	return data.find(content) != std::string::npos;
+}
+
+// ███ Xtring ███
+Insane::Str::Xtring::Xtring(const String &str)
+{
+	assign(str);
+}
+
+Xtring Insane::Str::Xtring::TrimStart()
+{
+	erase(begin(), std::find_if(begin(), end(), [](unsigned char ch) {
+			  return !std::isspace(ch);
+		  }));
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::TrimEnd()
+{
+	erase(std::find_if(rbegin(), rend(), [](unsigned char ch) {
+			  return !std::isspace(ch);
+		  }).base(),
+		  end());
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::Trim()
+{
+	return TrimStart().TrimEnd();
+}
+
+Xtring Insane::Str::Xtring::ReplaceLastOf(const String &toFind, const String &toReplace)
+{
+	size_t pos = rfind(toFind);
+	if (pos == std::string::npos)
+	{
+		return thisvalue;
+	}
+	replace(pos, toFind.length(), toReplace);
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::Replace(const String &toFind, const String &toReplace)
+{
+	size_t pos = 0;
+	while ((pos = find(toFind, pos)) != String::npos)
+	{
+		replace(pos, toFind.length(), toReplace);
+		pos += toReplace.length();
+		pos = find(toFind, pos);
+	}
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::Replace(const std::initializer_list<std::pair<ToFind, ToReplace>> &pairs)
+{
+	for (std::pair<String, String> value : pairs)
+	{
+		Replace(value.first, value.second);
+	}
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::Remove(const String &toRemove)
+{
+	size_t pos = 0;
+	while ((pos = find(toRemove, pos)) != String::npos)
+	{
+		erase(pos, toRemove.length());
+	}
+	return thisvalue;
+}
+Xtring Insane::Str::Xtring::Remove(const std::initializer_list<String> &toRemove)
+{
+	for (String value : toRemove)
+	{
+		Remove(value);
+	}
+	return thisvalue;
+}
+Xtring Insane::Str::Xtring::InsertRepeat(size_t distance, const String &toRepeat, bool includeEnd)
+{
+	if (toRepeat.empty() || thisvalue.empty() || distance == 0)
+	{
+		return thisvalue;
+	}
+	size_t pos = distance;
+	while (pos < size())
+	{
+		thisvalue.insert(pos, toRepeat);
+		pos += distance + toRepeat.length();
+	}
+	if (pos == length() && includeEnd)
+	{
+		append(toRepeat);
+	}
+	return thisvalue;
+}
+
+size_t Insane::Str::Xtring::LengthUTF8() const
+{
+	size_t ret = 0;
+	for (char value : thisvalue)
+	{
+		if ((value & 0xc0) != 0x80)
+		{
+			++ret;
+		}
+	}
+	return ret;
+}
+
+Xtring Insane::Str::Xtring::ReverseUTF8()
+{
+
+	Xtring result;
+	String::const_iterator it = begin();
+	String::const_iterator beginIterator(it);
+	if ((thisvalue[0] & 0xc0) != 0x80)
+	{
+		it++;
+	}
+	while (it != end())
+	{
+		char value = *it;
+		if ((value & 0xc0) != 0x80)
+		{
+			result.insert(0, String(beginIterator, it));
+			beginIterator = it;
+		}
+		it++;
+	}
+	result.insert(0, String(beginIterator, it));
+	assign(result);
+	result.clear();
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::Reverse()
+{
+	std::reverse(thisvalue.begin(), thisvalue.end());
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::SubstringUTF8(size_t startIndex, size_t length) const
+{
+	size_t units = LengthUTF8();
+	if (startIndex >= units)
+	{
+		throw std::invalid_argument(u8"Invalid UTF8 character position.");
+	}
+	Xtring result;
+	String::const_iterator it = thisvalue.begin();
+	String::const_iterator beginIterator = thisvalue.begin();
+	size_t endIndex = length == SIZE_MAX ? units : startIndex + length;
+	size_t utf8pos = 0;
+	while (it != thisvalue.end())
+	{
+		char value = *it;
+		if ((value & 0xc0) != 0x80)
+		{
+			if (utf8pos == startIndex)
+			{
+				beginIterator = it;
+				if (length >= units)
+				{
+					return Xtring(beginIterator, static_cast<String::const_iterator>(thisvalue.end()));
+				}
+			}
+
+			if (utf8pos == endIndex)
+			{
+				break;
+			}
+			utf8pos += 1;
+		}
+		it++;
+	}
+	auto v7 = 64.0L;
+	return Xtring(beginIterator, it);
+}
+
+Xtring Insane::Str::Xtring::GetCharUTF8(size_t utf8pos) const
+{
+	return SubstringUTF8(utf8pos, 1);
+}
+
+Xtring Insane::Str::Xtring::PadRight(const size_t &totalWidth, const char &padding)
+{
+	if (thisvalue.length() >= totalWidth)
+	{
+		return thisvalue;
+	}
+	thisvalue.resize(totalWidth, padding);
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::PadLeft(const size_t &totalWidth, const char &padding)
+{
+	if (thisvalue.length() >= totalWidth)
+	{
+		return thisvalue;
+	}
+	thisvalue.insert(0, totalWidth - thisvalue.length(), padding);
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::PadRight(const size_t &totalWidth, const Xtring &padding)
+{
+
+	if (thisvalue.length() >= totalWidth)
+	{
+		return thisvalue;
+	}
+	size_t modulo = (totalWidth - thisvalue.length()) % padding.length();
+	size_t paddingUnits = (totalWidth - thisvalue.length()) / padding.length();
+	for (size_t i = 0; i < paddingUnits; i++)
+	{
+		thisvalue.append(padding);
+	}
+	thisvalue.append(padding.substr(0, modulo));
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::PadLeft(const size_t &totalWidth, const Xtring &padding)
+{
+	if (thisvalue.length() >= totalWidth)
+	{
+		return thisvalue;
+	}
+	size_t modulo = (totalWidth - thisvalue.length()) % padding.length();
+	size_t paddingUnits = (totalWidth - thisvalue.length()) / padding.length();
+	for (size_t i = 0; i < paddingUnits; i++)
+	{
+		thisvalue.insert(0, padding);
+	}
+	thisvalue.insert(0, padding.substr(0, modulo));
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::PadRightUTF8(const size_t &totalWidth, const char &padding)
+{
+	size_t totalUtf8 = LengthUTF8();
+	if (totalUtf8 >= totalWidth)
+	{
+		return thisvalue;
+	}
+	thisvalue.resize(thisvalue.length() + (totalWidth - totalUtf8), padding);
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::PadLeftUTF8(const size_t &totalWidth, const char &padding)
+{
+	size_t totalUtf8 = LengthUTF8();
+	if (totalUtf8 >= totalWidth)
+	{
+		return thisvalue;
+	}
+	thisvalue.insert(0, totalWidth - totalUtf8, padding);
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::PadRightUTF8(const size_t &totalWidth, const Xtring &padding)
+{
+	size_t units = LengthUTF8();
+	size_t paddingUnits = Strings::LengthUTF8(padding);
+	if (units >= totalWidth)
+	{
+		return thisvalue;
+	}
+	size_t modulo = (totalWidth - units) % paddingUnits;
+	size_t n = (totalWidth - units) / paddingUnits;
+	for (size_t i = 0; i < n; i++)
+	{
+		thisvalue.append(padding);
+	}
+	thisvalue.append(Strings::SubstringUTF8(padding, 0, modulo));
+	return thisvalue;
+}
+
+Xtring Insane::Str::Xtring::PadLeftUTF8(const size_t &totalWidth, const Xtring &padding)
+{
+	size_t units = LengthUTF8();
+	size_t paddingUnits = Strings::LengthUTF8(padding);
+	if (units >= totalWidth)
+	{
+		return thisvalue;
+	}
+	size_t modulo = (totalWidth - units) % paddingUnits;
+	size_t n = (totalWidth - units) / paddingUnits;
+	for (size_t i = 0; i < n; i++)
+	{
+		thisvalue.insert(0, padding);
+	}
+	thisvalue.insert(0, Strings::SubstringUTF8(padding, 0, modulo));
+	return thisvalue;
+}
+
+WString Insane::Str::Xtring::ToWideString()
+{
+	return Strings::StringToWideString(thisvalue);
+}
+
+Xtring Insane::Str::Xtring::operator=(const WString &wstr)
+{
+	return Xtring(Strings::WideStringToString(wstr));
+}
+
+Xtring Insane::Str::Xtring::ToUpper()
+{
+	return operator=(Strings::ToUpper(ToWideString()));
+}
+
+Xtring Insane::Str::Xtring::ToLower()
+{
+
+	return operator=(Strings::ToLower(ToWideString()));
+}
+
+std::vector<String> Insane::Str::Xtring::Split(const String &toFind) const
+{
+	std::vector<String> v;
+	if (empty() || toFind.empty())
+	{
+		v.push_back(thisvalue);
+		return v;
+	}
+	size_t ini = 0;
+	size_t pos;
+	while ((pos = find(toFind, ini)) != String::npos)
+	{
+		String s = substr(ini, pos - ini);
+		if (!s.empty())
+		{
+			v.push_back(s);
+		}
+		ini = pos + toFind.length();
+	}
+	if (ini < length())
+	{
+		v.push_back(substr(ini));
+	}
+	return v;
+}
+
+bool Insane::Str::Xtring::IsMatch(const String &pattern) const
+{
+	std::regex regex(pattern, std::regex_constants::ECMAScript);
+	return std::regex_match(thisvalue, regex);
+}
+
+bool Insane::Str::Xtring::StartsWith(const String &preffix, const bool &caseSensitive) const
+{
+	if (!caseSensitive)
+	{
+		String ndata = Strings::ToUpper(thisvalue);
+		String npreffix = Strings::ToUpper(preffix);
+		return ndata.find(npreffix) == 0;
+	}
+	return find(preffix) == 0;
+}
+
+bool Insane::Str::Xtring::EndsWith(const String &suffix, const bool &caseSensitive) const
+{
+	if (!caseSensitive)
+	{
+		String ndata = Strings::ToUpper(thisvalue);
+		String nsuffix = Strings::ToUpper(suffix);
+		return ndata.find(nsuffix, ndata.size() - nsuffix.size()) != std::string::npos;
+	}
+	return find(suffix, size() - suffix.size()) != std::string::npos;
+}
+
+bool Insane::Str::Xtring::Contains(const String &content, const bool &caseSensitive) const
+{
+	if (!caseSensitive)
+	{
+		String ndata = Strings::ToUpper(thisvalue);
+		String ncontent = Strings::ToUpper(content);
+		return ndata.find(ncontent) != std::string::npos;
+	}
+	return find(content) != std::string::npos;
+	// 	auto a = u8"\u0123"; // UTF-8:  const char[]:     0xC4 0xA3 0x00
+	//  const char16_t * b = u"\u0123"; // UTF-16: const char16_t[]: 0x0123 0x0000
+	//  auto c = U"\u0123"; // UTF-32: const char32_t[]: 0x00000123 0x00000000
+	//   auto d = "\u0123"; // ???:    const char[]:     ???
+	//  auto e = L"\u0123"; // ???:    const wchar_t[]:  ???
 }

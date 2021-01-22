@@ -45,7 +45,7 @@ namespace Insane::Preprocessor
                 return groups[3];
             }
         }
-        throw Insane::Exception::ArgumentException(Strings::ReplaceAll(u8R"(nameof(#). Invalid identifier "#".)", u8"#", name));
+        throw Insane::Exception::ArgumentException(Strings::Replace(u8R"(nameof(#). Invalid identifier "#".)", u8"#", name));
     }
 } // namespace Insane::Preprocessor
 
