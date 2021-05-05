@@ -197,11 +197,19 @@ String Insane::Str::Strings::ReverseUTF8(const String &data)
 	String::const_iterator it = data.begin();
 	String::const_iterator beginIterator(it);
 	if ((data[0] & 0xc0) != 0x80)
+<<<<<<< HEAD
 	{
 		it++;
 	}
 	while (it != data.end())
 	{
+=======
+	{
+		it++;
+	}
+	while (it != data.end())
+	{
+>>>>>>> b7ddb51f389fbb9b3d2cba569a26eaad873f8835
 		char value = *it;
 		if ((value & 0xc0) != 0x80)
 		{
