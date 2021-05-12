@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "InsaneEmscripten",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/../CommonCppIncludes",
+                "${workspaceFolder}/../CommonCppLibs/Botan-2.13.0-Emscripten-llvm-Release/include/botan-2",
+                "${workspaceFolder}/Include",
+                "${EMSCRIPTEN_SDK}/upstream/emscripten/system/include",
+                "${EMSCRIPTEN_SDK}/upstream/emscripten/cache/sysroot/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "__EMSCRIPTEN__"
+            ],
+            "compilerPath": "${EMSCRIPTEN_COMPILER}",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
