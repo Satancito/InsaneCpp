@@ -1,11 +1,13 @@
 
 $ErrorActionPreference = "Stop"
-Import-Module -Name "$(Get-Item "./Z-CoreFxs*.ps1")" -Force -NoClobber
+Import-Module -Name "$(Get-Item "./Z-PsCoreFxs.ps1")" -Force -NoClobber
 
 Clear-Host
     
+Clear-Host
 Write-Host
-Write-InfoMagenta "███ Commit and push "
+Write-InfoCyan "████ Commit and Push - Git"
+Write-Host
 
 Write-Host
 Write-InfoBlue "█ Commit"
@@ -15,7 +17,7 @@ $message = [System.Console]::ReadLine();
 git add -A
 Test-LastExitCode
 git status 
-git commit -m "$message"
+git commit -m "$message" 
 
 Write-Host
 Write-InfoBlue "█ Push to remote"
@@ -23,4 +25,4 @@ git push
 
 Write-Host
 Write-Host
-Write-InfoMagenta "███ Finished all actions"
+Write-InfoCyan "█ End Commit and push - Finished"
