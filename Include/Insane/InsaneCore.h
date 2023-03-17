@@ -3,7 +3,7 @@
 #define INSANE_CORE_H
 #include <Insane/Insane.h>
 
-#define USING_INSANE_CORE using namespace Insane::Core
+#define USING_NS_INSANE_CORE using namespace Insane::Core
 namespace Insane::Core
 {
 

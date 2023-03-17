@@ -35,22 +35,22 @@ namespace Insane::Preprocessor
 {
     static String Nameof(const String &name)
     {
-        USING_INSANE_STR;
+        USING_NS_INSANE_STR;
         std::smatch groups;
-        String str = Strings::Trim(name);
-        if (std::regex_match(str, groups, std::regex(u8R"(^&?([_a-zA-Z]\w*(->|\.|::))*([_a-zA-Z]\w*)$)")))
+        String str = StringExtensions::Trim(name);
+        if (std::regex_match(str, groups, std::regex(R"(^&?([_a-zA-Z]\w*(->|\.|::))*([_a-zA-Z]\w*)$)")))
         {
             if (groups.size() == 4)
             {
                 return groups[3];
             }
         }
-        throw Insane::Exception::ArgumentException(Strings::Replace(u8R"(nameof(#). Invalid identifier "#".)", u8"#", name));
+        throw Insane::Exception::ArgumentException(StringExtensions::Replace(R"(nameof(#). Invalid identifier "#".)", "#", name));
     }
 } // namespace Insane::Preprocessor
 
-#define nameof(name) Insane::Preprocessor::Nameof(u8## #name ## s)
-#define cnameof(name) Insane::Preprocessor::Nameof(u8## #name ## s).c_str()
+#define nameof(name) Insane::Preprocessor::Nameof(#name ## s)
+#define cnameof(name) Insane::Preprocessor::Nameof(#name ## s).c_str()
 
 #define INSANE_REPEAT_S_0(x)
 #define INSANE_REPEAT_S_1(x) x

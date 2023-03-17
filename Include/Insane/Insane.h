@@ -2,8 +2,8 @@
 #ifndef INSANE_BASE_H
 #define INSANE_BASE_H
 
-#define INSANE_STRING u8"Insane"s 
-#define INSANE_STR u8"Insane"
+#define INSANE_STRING "Insane"s 
+#define INSANE_STR "Insane"
 
 #define STDCALL _stdcall
 #define CDECL _cdecl

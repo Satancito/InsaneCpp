@@ -4,7 +4,7 @@
 
 #include <Insane/InsaneString.h>
 
-#define USING_INSANE_CRYPTO using namespace Insane::Crypto
+#define USING_NS_INSANE_CRYPTO using namespace Insane::Cryptography;
 
 #define MIME_LINE_BREAKS_LENGTH ((size_t)76)
 #define PEM_LINE_BREAKS_LENGTH ((size_t)64)
@@ -17,7 +17,7 @@
 #define SCRYPT_DERIVED_KEY_LENGTH ((size_t)(64))
 #define ARGON2_DERIVED_KEY_LENGTH ((size_t)(64))
 #define ARGON2_SALT_SIZE ((size_t)16)
-namespace Insane::Crypto
+namespace Insane::Cryptography
 {
 	enum class HashAlgorithm
 	{
@@ -113,7 +113,7 @@ namespace Insane::Crypto
 	class RandomManager
 	{
 	public:
-		~RandomManager();
+		~RandomManager() = default;
 		[[nodiscard]] static String Next(size_t sz);
 		[[nodiscard]] static int Next(int min, int max);
 		[[nodiscard]] static int Next();
@@ -152,7 +152,7 @@ namespace Insane::Crypto
 	class AesManager
 	{
 	public:
-		~AesManager();
+		~AesManager() = default;
 		[[nodiscard]] static String EncryptRaw(const String &data, const String &key) noexcept(false);
 		[[nodiscard]] static String DecryptRaw(const String &data, const String &key) noexcept(false);
 		[[nodiscard]] static String EncryptToBase64(const String &data, const String &key) noexcept(false);
@@ -193,7 +193,7 @@ namespace Insane::Crypto
 	{
 	public:
 		~RsaManager() = default;
-		[[nodiscard]] static Insane::Crypto::RsaKeyPair CreateKeyPair(const Size &keySize = 4096, const RsaKeyEncoding &encoding = RsaKeyEncoding::Ber, const bool &indent = true);
+		[[nodiscard]] static Insane::Cryptography::RsaKeyPair CreateKeyPair(const Size &keySize = 4096, const RsaKeyEncoding &encoding = RsaKeyEncoding::Ber, const bool &indent = true);
 		[[nodiscard]] static String EncryptRaw(const String &data, const String &publicKey) noexcept(false);
 		[[nodiscard]] static String DecryptRaw(const String &data, const String &privateKey) noexcept(false);
 		[[nodiscard]] static String EncryptToBase64(const String &data, const String &publicKey) noexcept(false);

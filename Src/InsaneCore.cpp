@@ -6,7 +6,7 @@ String Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
 	system_clock::time_point now = system_clock::now();
 	time_t timet = system_clock::to_time_t(now);
 	std::tm tm{};
-	String format = String(u8"%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<Int64>(1000)));
+	String format = String("%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<Int64>(1000)));
 	if (toUTC)
 	{
 #ifdef WINDOWS_PLATFORM
@@ -16,7 +16,7 @@ String Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
 #else
 		static_assert(false, "Unknown Platform");
 #endif
-		format = format.append(u8"Z");
+		format = format.append("Z");
 	}
 	else
 	{
@@ -27,7 +27,7 @@ String Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
 #else
 		static_assert(false, "Unknown Platform");
 #endif
-		format.append(u8"%z");
+		format.append("%z");
 	}
 	String result = String(255, 0);
 	const size_t length = std::strftime(&result[0], result.size(), format.c_str(), &tm);
@@ -39,11 +39,11 @@ void Insane::Core::Console::Clear()
 {
 
 #ifdef WINDOWS_PLATFORM
-	std::system(u8"cls");
+	std::system("cls");
 #elif LINUX_PLATFORM || defined MACOS_PLATFORM
-	std::system(u8"clear");
+	std::system("clear");
 #elif EMSCRIPTEN_PLATFORM
-	emscripten::val::global()["console"].call<void>(u8"clear");
+	emscripten::val::global()["console"].call<void>("clear");
 #else
 	static_assert(false, "Unknown Platform");
 #endif
@@ -65,24 +65,24 @@ void Insane::Core::Console::EnableVirtualTermimalProcessing()
 
 void Insane::Core::Console::ResetTerminalFormat()
 {
-	std::cout << u8"\033[0m";
+	std::cout << "\033[0m";
 }
 
 void Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
-	String format = u8"\033[";
+	String format = "\033[";
 	format.append(std::to_string(static_cast<int>(foreground)));
-	format.append(u8";");
+	format.append(";");
 	format.append(std::to_string(static_cast<int>(background)));
 	if (styles.size() > 0)
 	{
 		for (auto it = styles.begin(); it != styles.end(); ++it)
 		{
-			format.append(u8";");
+			format.append(";");
 			format.append(std::to_string(static_cast<int>(*it)));
 		}
 	}
-	format.append(u8"m");
+	format.append("m");
 	std::cout << format;
 }
 
@@ -115,7 +115,7 @@ void Insane::Core::Console::WriteLine(const String &s, ConsoleForeground foregro
 
 void Insane::Core::Console::Write(const WString &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
-	USING_INSANE_STR;
+	USING_NS_INSANE_STR;
 #ifndef EMSCRIPTEN_PLATFORM
 	EnableVirtualTermimalProcessing();
 	SetVirtualTerminalFormat(foreground, background, styles);
@@ -125,7 +125,7 @@ void Insane::Core::Console::Write(const WString &s, ConsoleForeground foreground
 #ifdef WINDOWS_PLATFORM
 	WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), str.c_str(), static_cast<DWORD>(str.length()), nullptr, nullptr);
 #elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
-	std::cout << Strings::WideStringToString(str);
+	std::cout << StringExtensions::WideStringToString(str);
 #else
 	static_assert(false, "Unknown Platform");
 #endif
