@@ -113,14 +113,13 @@ typedef std::string DefaultString;
 #define DLLSPEC DLLIMPORT
 #endif
 
-typedef __UINT32_TYPE__ UInt32;
-typedef __INT32_TYPE__ Int32;
-typedef __UINT64_TYPE__ UInt64;
-typedef __INT64_TYPE__ Int64;
+typedef __UINT32_TYPE__ UnsignedInt32;
+typedef __INT32_TYPE__ SignedInt32;
+typedef __UINT64_TYPE__ UnsignedInt64;
+typedef __INT64_TYPE__ SignedInt64;
 
-typedef unsigned char UChar;
-typedef char Char;
-typedef wchar_t WChar;
+typedef unsigned char UnsignedChar;
+typedef char SignedChar;
 typedef time_t Time;
 typedef size_t Size;
 typedef std::string String;

@@ -65,10 +65,10 @@ String Insane::Strings::StringExtensions::Replace(const String &data, const Stri
 	return result;
 }
 
-String Insane::Strings::StringExtensions::Replace(const String &data, const std::initializer_list<std::pair<ToFind, ToReplace>> &pairs)
+String Insane::Strings::StringExtensions::Replace(const String &data, const std::initializer_list<std::pair<String, String>> &toFindToReplacePairs)
 {
 	String result = data;
-	for (std::pair<String, String> value : pairs)
+	for (std::pair<String, String> value : toFindToReplacePairs)
 	{
 		result = StringExtensions::Replace(result, value.first, value.second);
 	}
@@ -523,9 +523,8 @@ bool Insane::Strings::StringExtensions::Contains(const String &data, const Strin
 }
 
 // ███ Xtring ███
-Insane::Strings::Xtring::Xtring(const String &str)
-{
-	assign(str);
+Insane::Strings::Xtring::Xtring(const String &str) : String(str) {
+
 }
 
 Xtring Insane::Strings::Xtring::TrimStart()
@@ -573,9 +572,9 @@ Xtring Insane::Strings::Xtring::Replace(const String &toFind, const String &toRe
 	return thisvalue;
 }
 
-Xtring Insane::Strings::Xtring::Replace(const std::initializer_list<std::pair<ToFind, ToReplace>> &pairs)
+Xtring Insane::Strings::Xtring::Replace(const std::initializer_list<std::pair<String, String>> &toFindToReplacePairs)
 {
-	for (std::pair<String, String> value : pairs)
+	for (std::pair<String, String> value : toFindToReplacePairs)
 	{
 		Replace(value.first, value.second);
 	}
@@ -870,7 +869,7 @@ bool Insane::Strings::Xtring::IsMatch(const String &pattern) const
 	return std::regex_match(thisvalue, regex);
 }
 
-bool Insane::Strings::Xtring::StartsWith(const String &preffix, const bool &caseSensitive, const String &locale = DEFAULT_LOCALE_STRING) const
+bool Insane::Strings::Xtring::StartsWith(const String &preffix, const bool &caseSensitive, const String &locale ) const
 {
 	if (!caseSensitive)
 	{
@@ -881,7 +880,7 @@ bool Insane::Strings::Xtring::StartsWith(const String &preffix, const bool &case
 	return find(preffix) == 0;
 }
 
-bool Insane::Strings::Xtring::EndsWith(const String &suffix, const bool &caseSensitive, const String &locale = DEFAULT_LOCALE_STRING) const
+bool Insane::Strings::Xtring::EndsWith(const String &suffix, const bool &caseSensitive, const String &locale) const
 {
 	if (!caseSensitive)
 	{
@@ -892,7 +891,7 @@ bool Insane::Strings::Xtring::EndsWith(const String &suffix, const bool &caseSen
 	return find(suffix, size() - suffix.size()) != String::npos;
 }
 
-bool Insane::Strings::Xtring::Contains(const String &content, const bool &caseSensitive, const String &locale = DEFAULT_LOCALE_STRING) const
+bool Insane::Strings::Xtring::Contains(const String &content, const bool &caseSensitive, const String &locale) const
 {
 	if (!caseSensitive)
 	{
