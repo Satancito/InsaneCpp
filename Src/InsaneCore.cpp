@@ -6,7 +6,7 @@ String Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
 	system_clock::time_point now = system_clock::now();
 	time_t timet = system_clock::to_time_t(now);
 	std::tm tm{};
-	String format = String("%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<Int64>(1000)));
+	String format = String("%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<SignedInt64>(1000)));
 	if (toUTC)
 	{
 #ifdef WINDOWS_PLATFORM

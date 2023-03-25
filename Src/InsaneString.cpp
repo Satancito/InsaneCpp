@@ -5,6 +5,10 @@
 #include <unicode/locid.h>
 
 // ███ Strings ███
+String Insane::Strings::StringExtensions::RemoveBlankSpaces(const String &data)
+{
+	return StringExtensions::Remove(data, {CARRIAGE_RETURN_STRING, LINE_FEED_STRING, VERTICAL_TAB_STRING, FORM_FEED_STRING, TAB_STRING, SPACE_STRING});
+}
 
 String Insane::Strings::StringExtensions::Empty()
 {
@@ -20,18 +24,19 @@ bool Insane::Strings::StringExtensions::IsMatch(const String &input, const Strin
 String Insane::Strings::StringExtensions::TrimStart(const String &data)
 {
 	String s = data;
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-				return !std::isspace(ch);
-			}));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
+									{ return !std::isspace(ch); }));
 	return s;
 }
+
+
 
 String Insane::Strings::StringExtensions::TrimEnd(const String &data)
 {
 	String s = data;
-	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-				return !std::isspace(ch);
-			}).base(),
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch)
+						 { return !std::isspace(ch); })
+				.base(),
 			s.end());
 	return s;
 }
@@ -99,7 +104,7 @@ String Insane::Strings::StringExtensions::Remove(const String &data, const std::
 String Insane::Strings::StringExtensions::InsertRepeat(const String &data, size_t distance, const String &toRepeat, bool includeEnd)
 {
 	String result = data;
-	if (toRepeat.empty() || result.empty())
+	if (toRepeat.empty() || result.empty() || distance > data.length())
 	{
 		return result;
 	}
@@ -147,9 +152,9 @@ String Insane::Strings::StringExtensions::ToUpper(const String &data, const Stri
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
 	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data));
-    uniStr.toUpper(loc);
-    std::string str;
-    uniStr.toUTF8String(str);
+	uniStr.toUpper(loc);
+	std::string str;
+	uniStr.toUTF8String(str);
 	return str;
 }
 
@@ -157,9 +162,9 @@ String Insane::Strings::StringExtensions::ToLower(const String &data, const Stri
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
 	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data));
-    uniStr.toLower(loc);
-    std::string str;
-    uniStr.toUTF8String(str);
+	uniStr.toLower(loc);
+	std::string str;
+	uniStr.toUTF8String(str);
 	return str;
 }
 
@@ -493,53 +498,52 @@ bool Insane::Strings::StringExtensions::StartsWith(const String &data, const Str
 {
 	if (!caseSensitive)
 	{
-		String ndata = StringExtensions::ToUpper(data,locale);
+		String ndata = StringExtensions::ToUpper(data, locale);
 		String npreffix = StringExtensions::ToUpper(preffix, locale);
 		return ndata.find(npreffix) == 0;
 	}
 	return data.find(preffix) == 0;
 }
 
-bool Insane::Strings::StringExtensions::EndsWith(const String &data, const String &suffix, const bool &caseSensitive,const String &locale)
+bool Insane::Strings::StringExtensions::EndsWith(const String &data, const String &suffix, const bool &caseSensitive, const String &locale)
 {
 	if (!caseSensitive)
 	{
 		String ndata = StringExtensions::ToUpper(data, locale);
-		String nsuffix = StringExtensions::ToUpper(suffix,locale);
+		String nsuffix = StringExtensions::ToUpper(suffix, locale);
 		return ndata.find(nsuffix, ndata.size() - nsuffix.size()) != String::npos;
 	}
 	return data.find(suffix, data.size() - suffix.size()) != String::npos;
 }
 
-bool Insane::Strings::StringExtensions::Contains(const String &data, const String &content, const bool &caseSensitive,const String &locale)
+bool Insane::Strings::StringExtensions::Contains(const String &data, const String &content, const bool &caseSensitive, const String &locale)
 {
 	if (!caseSensitive)
 	{
 		String ndata = StringExtensions::ToUpper(data, locale);
-		String ncontent = StringExtensions::ToUpper(content,locale);
+		String ncontent = StringExtensions::ToUpper(content, locale);
 		return ndata.find(ncontent) != String::npos;
 	}
 	return data.find(content) != String::npos;
 }
 
 // ███ Xtring ███
-Insane::Strings::Xtring::Xtring(const String &str) : String(str) {
-
+Insane::Strings::Xtring::Xtring(const String &str) : String(str)
+{
 }
 
 Xtring Insane::Strings::Xtring::TrimStart()
 {
-	erase(begin(), std::find_if(begin(), end(), [](unsigned char ch) {
-			  return !std::isspace(ch);
-		  }));
+	erase(begin(), std::find_if(begin(), end(), [](unsigned char ch)
+								{ return !std::isspace(ch); }));
 	return thisvalue;
 }
 
 Xtring Insane::Strings::Xtring::TrimEnd()
 {
-	erase(std::find_if(rbegin(), rend(), [](unsigned char ch) {
-			  return !std::isspace(ch);
-		  }).base(),
+	erase(std::find_if(rbegin(), rend(), [](unsigned char ch)
+					   { return !std::isspace(ch); })
+			  .base(),
 		  end());
 	return thisvalue;
 }
@@ -821,9 +825,9 @@ Xtring Insane::Strings::Xtring::ToUpper(const String &locale)
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
 	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(thisvalue));
-    uniStr.toUpper(loc);
-    clear();
-    uniStr.toUTF8String(thisvalue);
+	uniStr.toUpper(loc);
+	clear();
+	uniStr.toUTF8String(thisvalue);
 	return thisvalue;
 }
 
@@ -831,9 +835,9 @@ Xtring Insane::Strings::Xtring::ToLower(const String &locale)
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
 	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(thisvalue));
-    uniStr.toLower(loc);
-    clear();
-    uniStr.toUTF8String(thisvalue);
+	uniStr.toLower(loc);
+	clear();
+	uniStr.toUTF8String(thisvalue);
 	return thisvalue;
 }
 
@@ -869,7 +873,7 @@ bool Insane::Strings::Xtring::IsMatch(const String &pattern) const
 	return std::regex_match(thisvalue, regex);
 }
 
-bool Insane::Strings::Xtring::StartsWith(const String &preffix, const bool &caseSensitive, const String &locale ) const
+bool Insane::Strings::Xtring::StartsWith(const String &preffix, const bool &caseSensitive, const String &locale) const
 {
 	if (!caseSensitive)
 	{

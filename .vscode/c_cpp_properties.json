@@ -5,7 +5,7 @@
             "includePath": [
                 "${workspaceFolder}",
                 "${workspaceFolder}/../CommonCppIncludes",
-                "${workspaceFolder}/../CommonCppLibs/Botan-2.13.0-Emscripten-llvm-Release/include/botan-2",
+                "${workspaceFolder}/../CommonCppLibs/Botan-2.19.3-Emscripten-Llvm-Release/include/botan-2",
                 "${workspaceFolder}/Include",
                 "${EMSCRIPTEN_SDK}/upstream/emscripten/system/include",
                 "${EMSCRIPTEN_SDK}/upstream/emscripten/cache/sysroot/include"

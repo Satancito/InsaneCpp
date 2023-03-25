@@ -4,7 +4,7 @@
 
 #include <Insane/InsaneString.h>
 
-#define USING_NS_INSANE_CRYPTO using namespace Insane::Cryptography;
+#define USING_NS_INSANE_CRYPTO using namespace Insane::Cryptography
 
 #define MIME_LINE_BREAKS_LENGTH ((size_t)76)
 #define PEM_LINE_BREAKS_LENGTH ((size_t)64)
@@ -17,15 +17,15 @@
 #define SCRYPT_DERIVED_KEY_LENGTH ((size_t)(64))
 #define ARGON2_DERIVED_KEY_LENGTH ((size_t)(64))
 #define ARGON2_SALT_SIZE ((size_t)16)
+
 namespace Insane::Cryptography
 {
-	enum class HashAlgorithm
+
+	enum class AesCbcPadding
 	{
-		Md5,
-		Sha1,
-		Sha256,
-		Sha384,
-		Sha512
+		None,
+		Pkcs7,
+		AnsiX923
 	};
 
 	enum class Argon2Variant
@@ -35,80 +35,163 @@ namespace Insane::Cryptography
 		Argon2id
 	};
 
-	class HmacResult
+	enum class Base64Encoding
 	{
-	public:
-		[[nodiscard]] HmacResult(const std::string &hash, const std::string &key, const HashAlgorithm algorithm);
-		~HmacResult() = default;
-		String Hash() const;
-		String Key() const;
-		HashAlgorithm Algorithm() const;
-		String RawHash() const;
-		String RawKey() const;
-		String Serialize() const;
-		static HmacResult Deserialize(const String &json);
-
-	private:
-		[[nodiscard]] HmacResult();
-		String hash;
-		String key;
-		HashAlgorithm algorithm;
+		Base64,
+		UrlSafeBase64,
+		FileNameSafeBase64,
+		UrlEncodedBase64
 	};
 
-	class ScryptResult
+	enum class HashAlgorithm
 	{
-	public:
-		[[nodiscard]] ScryptResult(const std::string &hash, const std::string &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength);
-		~ScryptResult() = default;
-		String Hash() const;
-		String Salt() const;
-		size_t Iterations() const;
-		size_t BlockSize() const;
-		size_t Parallelism() const;
-		size_t DerivedKeyLength() const;
-		String RawHash() const;
-		String RawSalt() const;
-		String Serialize() const;
-		static ScryptResult Deserialize(const String &json);
-
-	private:
-		[[nodiscard]] ScryptResult();
-		String hash;
-		String salt;
-		size_t iterations;
-		size_t blockSize;
-		size_t parallelism;
-		size_t derivedKeyLength;
+		Md5,
+		Sha1,
+		Sha256,
+		Sha384,
+		Sha512
 	};
 
-	class Argon2Result
+	enum class RsaKeyEncoding
+	{
+		Ber,
+		Pem,
+		Xml,
+		Json
+	};
+
+	enum class RsaPadding
+	{
+		Pkcs1,
+		Oaep256
+	};
+
+	class HexEncodingExtensions
 	{
 	public:
-		[[nodiscard]] Argon2Result(const std::string &hash, const std::string &salt, const Argon2Variant &variant, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t &derivedKeyLength);
-		String Hash() const;
-		String Salt() const;
-		Argon2Variant Variant() const;
-		size_t Iterations() const;
-		size_t MemorySizeKiB() const;
-		size_t Parallelism() const;
-		size_t DerivedKeyLength() const;
-		String RawHash() const;
-		String RawSalt() const;
-
-		~Argon2Result() = default;
-		String Serialize() const;
-		static Argon2Result Deserialize(const String &json);
+		[[nodiscard]] static String FromHex(const String &data);
+		[[nodiscard]] static String ToHex(const String &data, const bool &toUpper = false);
 
 	private:
-		[[nodiscard]] Argon2Result();
-		String hash;
-		String salt;
-		Argon2Variant variant;
-		size_t iterations;
-		size_t memorySizeKiB;
-		size_t parallelism;
-		size_t derivedKeyLength;
 	};
+
+	class Base32EncodingExtensions
+	{
+	public:
+		[[nodiscard]] static String FromBase32(const String &data);
+		[[nodiscard]] static String ToBase32(const String &data, const bool &removePadding = false, const bool &toLower = false);
+
+	private:
+	};
+
+	class Base64EncodingExtensions
+	{
+	public:
+		[[nodiscard]] static String FromBase64(const String &data);
+		[[nodiscard]] static String ToBase64(const String &data, const size_t &lineBreaksLength = NO_LINE_BREAKS, const bool &removePadding = false);
+		[[nodiscard]] static String ToUrlSafeBase64(const String &data);
+		[[nodiscard]] static String ToFilenameSafeBase64(const String &data);
+		[[nodiscard]] static String ToUrlEncodedBase64(const String &data);
+
+		[[nodiscard]] static String Base64ToUrlSafeBase64(const String &base64);
+		[[nodiscard]] static String Base64ToFilenameSafeBase64(const String &base64);
+		[[nodiscard]] static String Base64ToUrlEncodedBase64(const String &base64);
+
+	private:
+	};
+
+	class HashExtensions
+	{
+	public:
+	private:
+	};
+
+	class AesExtensions
+	{
+	public:
+	private:
+	};
+
+	class RsaExtensions
+	{
+	public:
+	private:
+	};
+
+	// class HmacResult
+	// {
+	// public:
+	// 	[[nodiscard]] HmacResult(const std::string &hash, const std::string &key, const HashAlgorithm algorithm);
+	// 	~HmacResult() = default;
+	// 	String Hash() const;
+	// 	String Key() const;
+	// 	HashAlgorithm Algorithm() const;
+	// 	String RawHash() const;
+	// 	String RawKey() const;
+	// 	String Serialize() const;
+	// 	static HmacResult Deserialize(const String &json);
+
+	// private:
+	// 	[[nodiscard]] HmacResult();
+	// 	String hash;
+	// 	String key;
+	// 	HashAlgorithm algorithm;
+	// };
+
+	// class ScryptResult
+	// {
+	// public:
+	// 	[[nodiscard]] ScryptResult(const std::string &hash, const std::string &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength);
+	// 	~ScryptResult() = default;
+	// 	String Hash() const;
+	// 	String Salt() const;
+	// 	size_t Iterations() const;
+	// 	size_t BlockSize() const;
+	// 	size_t Parallelism() const;
+	// 	size_t DerivedKeyLength() const;
+	// 	String RawHash() const;
+	// 	String RawSalt() const;
+	// 	String Serialize() const;
+	// 	static ScryptResult Deserialize(const String &json);
+
+	// private:
+	// 	[[nodiscard]] ScryptResult();
+	// 	String hash;
+	// 	String salt;
+	// 	size_t iterations;
+	// 	size_t blockSize;
+	// 	size_t parallelism;
+	// 	size_t derivedKeyLength;
+	// };
+
+	// class Argon2Result
+	// {
+	// public:
+	// 	[[nodiscard]] Argon2Result(const std::string &hash, const std::string &salt, const Argon2Variant &variant, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t &derivedKeyLength);
+	// 	String Hash() const;
+	// 	String Salt() const;
+	// 	Argon2Variant Variant() const;
+	// 	size_t Iterations() const;
+	// 	size_t MemorySizeKiB() const;
+	// 	size_t Parallelism() const;
+	// 	size_t DerivedKeyLength() const;
+	// 	String RawHash() const;
+	// 	String RawSalt() const;
+
+	// 	~Argon2Result() = default;
+	// 	String Serialize() const;
+	// 	static Argon2Result Deserialize(const String &json);
+
+	// private:
+	// 	[[nodiscard]] Argon2Result();
+	// 	String hash;
+	// 	String salt;
+	// 	Argon2Variant variant;
+	// 	size_t iterations;
+	// 	size_t memorySizeKiB;
+	// 	size_t parallelism;
+	// 	size_t derivedKeyLength;
+	// };
 
 	class RandomManager
 	{
@@ -126,25 +209,18 @@ namespace Insane::Cryptography
 	{
 	public:
 		~HashManager() = default;
-		[[nodiscard]] static String InsertLineBreaks(const String &data, size_t lineBreakAppear = MIME_LINE_BREAKS_LENGTH);
-		[[nodiscard]] static String RemoveLineBreaks(const String &data);
-		[[nodiscard]] static String ToBase64(const String &data, size_t lineBreaksLength = NO_LINE_BREAKS, const bool &removePadding = false);
-		[[nodiscard]] static String FromBase64(const String &data);
-		[[nodiscard]] static String ToUrlSafeBase64(const String &data);
-		[[nodiscard]] static String ToFilenameSafeBase64(const String &data);
-		[[nodiscard]] static String ToUrlEncodedBase64(const String &data);
-		[[nodiscard]] static String ToAlphanumericBase64(const String &data, size_t lineBreaksLength = NO_LINE_BREAKS);
-		[[nodiscard]] static String ToRawHash(const String &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ToBase64Hash(const String &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ToRawHmac(const String &data, const String &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static HmacResult ToBase64Hmac(const String &data, const String &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static HmacResult ToBase64Hmac(const String &data, const size_t &keySize = HMAC_KEY_SIZE, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ToRawScrypt(const String &data, const String &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static ScryptResult ToBase64Scrypt(const String &data, const size_t &saltSize = SCRYPT_SALT_SIZE, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static ScryptResult ToBase64Scrypt(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static String ToRawArgon2(const String &data, const String &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static Argon2Result ToBase64Argon2(const String &data, size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t saltSize = ARGON2_SALT_SIZE, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-        [[nodiscard]] static Argon2Result ToBase64Argon2(const String &data, const String &salt, const bool& isBase64Salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		// [[nodiscard]] static String ToRawHash(const String &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		// [[nodiscard]] static String ToBase64Hash(const String &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		// [[nodiscard]] static String ToRawHmac(const String &data, const String &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		// [[nodiscard]] static HmacResult ToBase64Hmac(const String &data, const String &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		// [[nodiscard]] static HmacResult ToBase64Hmac(const String &data, const size_t &keySize = HMAC_KEY_SIZE, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		// [[nodiscard]] static String ToRawScrypt(const String &data, const String &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		// [[nodiscard]] static ScryptResult ToBase64Scrypt(const String &data, const size_t &saltSize = SCRYPT_SALT_SIZE, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		// [[nodiscard]] static ScryptResult ToBase64Scrypt(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		// [[nodiscard]] static String ToRawArgon2(const String &data, const String &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		// [[nodiscard]] static Argon2Result ToBase64Argon2(const String &data, size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t saltSize = ARGON2_SALT_SIZE, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		// [[nodiscard]] static Argon2Result ToBase64Argon2(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+
 	private:
 		[[nodiscard]] HashManager() = default;
 	};
@@ -181,19 +257,11 @@ namespace Insane::Cryptography
 		std::string privateKey;
 	};
 
-	enum class RsaKeyEncoding
-	{
-		Ber,
-		Pem,
-		Xml,
-		Json
-	};
-
 	class RsaManager
 	{
 	public:
 		~RsaManager() = default;
-		[[nodiscard]] static Insane::Cryptography::RsaKeyPair CreateKeyPair(const Size &keySize = 4096, const RsaKeyEncoding &encoding = RsaKeyEncoding::Ber, const bool &indent = true);
+		[[nodiscard]] static RsaKeyPair CreateKeyPair(const Size &keySize = 4096, const RsaKeyEncoding &encoding = RsaKeyEncoding::Ber, const bool &indent = true);
 		[[nodiscard]] static String EncryptRaw(const String &data, const String &publicKey) noexcept(false);
 		[[nodiscard]] static String DecryptRaw(const String &data, const String &privateKey) noexcept(false);
 		[[nodiscard]] static String EncryptToBase64(const String &data, const String &publicKey) noexcept(false);
@@ -203,6 +271,16 @@ namespace Insane::Cryptography
 		// [[nodiscard]] static bool IsValidPrivateKey(const String& privateKey);
 	private:
 		[[nodiscard]] RsaManager() = default;
+	};
+
+	class CryptoTests
+	{
+	public:
+		static void HexEncodingExtensionsTests();
+		static void Base32EncodingExtensionsTests();
+		static void Base64EncodingExtensionsTests();
+
+	private:
 	};
 } // namespace Insane::Crypto
 

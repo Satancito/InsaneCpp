@@ -37,7 +37,7 @@ namespace Insane::Exception {
 
 	class NotImplementedException : public ExceptionBase {
 	public:
-		NotImplementedException(const String& _message = "Argument exception.", const int& code = 0);
+		NotImplementedException(const String& _message = "NotImplementedException.", const int& code = 0);
 	private:
 	};
 }
