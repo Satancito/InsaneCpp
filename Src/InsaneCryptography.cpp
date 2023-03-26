@@ -1,7 +1,7 @@
 ﻿#include <stdexcept>
 
-#include <Insane/InsaneException.h>
 #include <Insane/InsaneCryptography.h>
+#include <Insane/InsaneException.h>
 #include <Insane/InsaneString.h>
 #include <Insane/InsanePreprocessor.h>
 #include <Insane/InsaneCore.h>
@@ -30,7 +30,6 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
-#include "InsaneCryptography.h"
 
 #define AES_MAX_IV_LENGHT ((size_t)16)
 #define AES_MAX_KEY_LENGTH ((size_t)32)
@@ -1206,22 +1205,82 @@ void Insane::Cryptography::CryptoTests::HexEncodingExtensionsTests()
 
 void Insane::Cryptography::CryptoTests::Base32EncodingExtensionsTests()
 {
-	/*
-	Console::Log(Base32EncodingExtensions::ToBase32("A"));
-    Console::Log(Base32EncodingExtensions::ToBase32("helloworld", false, false));
-    Console::Log(Base32EncodingExtensions::ToBase32("helloworld", false, true));
-    Console::Log(Base32EncodingExtensions::ToBase32("A", false, false));
-    Console::Log(Base32EncodingExtensions::ToBase32("A", false, true));
-    Console::Log(Base32EncodingExtensions::ToBase32("A", true, false));
-    Console::Log(Base32EncodingExtensions::ToBase32("A", true, true));
-    Console::Log("Decoded: " + Base32EncodingExtensions::FromBase32("IE======"));
-    Console::Log("Decoded: " + Base32EncodingExtensions::FromBase32("IE"));
-    Console::Log("Decoded: " + Base32EncodingExtensions::FromBase32("ie======"));
-    Console::Log("Decoded: "+ Base32EncodingExtensions::FromBase32("ie"));
-	*/
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_TEST;
 
+	String TestString = "helloworld";
+	String TestString2 = "A";
+	String UpperBase32Result = "NBSWY3DPO5XXE3DE";
+	String LowerBase32Result = "nbswy3dpo5xxe3de";
+	String UpperBase32Result2 = "IE======";
+	String LowerBase32Result2 = "ie======";
+	String UpperBase32Result2NoPadding = "IE";
+	String LowerBase32Result2NoPadding = "ie";
+
+	String data = TestString2;
+	String result = Base32EncodingExtensions::ToBase32(data);
+	String expected = UpperBase32Result2;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + "- Encode - 1", expected, result);
+
+	data = TestString;
+	result = Base32EncodingExtensions::ToBase32(data);
+	expected = UpperBase32Result;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 2", expected, result);
+
+	data = TestString;
+	result = Base32EncodingExtensions::ToBase32(data, false, true);
+	expected = LowerBase32Result;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 3", expected, result);
+
+	data = TestString2;
+	result = Base32EncodingExtensions::ToBase32(data, false);
+	expected = UpperBase32Result2;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 4", expected, result);
+
+	data = TestString2;
+	result = Base32EncodingExtensions::ToBase32(data, false, true);
+	expected = LowerBase32Result2;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 5", expected, result);
+
+	data = TestString2;
+	result = Base32EncodingExtensions::ToBase32(data, true, false);
+	expected = UpperBase32Result2NoPadding;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 6", expected, result);
+
+	data = TestString2;
+	result = Base32EncodingExtensions::ToBase32(data, true, true);
+	expected = LowerBase32Result2NoPadding;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 7", expected, result);
+
+	data = UpperBase32Result;
+	result = Base32EncodingExtensions::FromBase32(data);
+	expected = TestString;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 1", expected, result);
+
+	data = LowerBase32Result;
+	result = Base32EncodingExtensions::FromBase32(data);
+	expected = TestString;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 2", expected, result);
+
+	data = UpperBase32Result2;
+	result = Base32EncodingExtensions::FromBase32(data);
+	expected = TestString2;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 3", expected, result);
+
+	data = LowerBase32Result2;
+	result = Base32EncodingExtensions::FromBase32(data);
+	expected = TestString2;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 4", expected, result);
+
+	data = UpperBase32Result2NoPadding;
+	result = Base32EncodingExtensions::FromBase32(data);
+	expected = TestString2;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 5", expected, result);
+
+	data = LowerBase32Result2NoPadding;
+	result = Base32EncodingExtensions::FromBase32(data);
+	expected = TestString2;
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 6", expected, result);
 }
 
 void Insane::Cryptography::CryptoTests::Base64EncodingExtensionsTests()
@@ -1230,35 +1289,18 @@ void Insane::Cryptography::CryptoTests::Base64EncodingExtensionsTests()
 	USING_NS_INSANE_TEST;
 	auto testBytes = {(char)0x30, (char)0x82, (char)0x02, (char)0x22, (char)0x30, (char)0x0d, (char)0x06, (char)0x09, (char)0x2a, (char)0x86, (char)0x48, (char)0x86, (char)0xf7, (char)0x0d, (char)0x01, (char)0x01, (char)0x01, (char)0x05, (char)0x00, (char)0x03, (char)0x82, (char)0x02, (char)0x0f, (char)0x00, (char)0x30, (char)0x82, (char)0x02, (char)0x0a, (char)0x02, (char)0x82, (char)0x02, (char)0x01, (char)0x00, (char)0xf2, (char)0xe8, (char)0xe5, (char)0x81, (char)0x32, (char)0x36, (char)0xb8, (char)0xb6, (char)0x3f, (char)0xb5, (char)0xbe, (char)0x76, (char)0x65, (char)0x65, (char)0xd1, (char)0x8f, (char)0x2d, (char)0xc4, (char)0xc5, (char)0xa1, (char)0x91, (char)0x3b, (char)0x8b, (char)0xdc, (char)0x8b, (char)0xf6, (char)0x4f, (char)0x42, (char)0x64, (char)0xd1, (char)0xea, (char)0xdc, (char)0x75, (char)0x6c, (char)0x83, (char)0x0b, (char)0x81, (char)0x1f, (char)0x57, (char)0xeb, (char)0xac, (char)0xe5, (char)0xd0, (char)0x5c, (char)0x6b, (char)0x5f, (char)0x37, (char)0xa8, (char)0x53, (char)0x1c, (char)0x65, (char)0x6b, (char)0x75, (char)0x5e, (char)0xbc, (char)0xd3, (char)0x59, (char)0xd2, (char)0x54, (char)0x17, (char)0xf7, (char)0x69, (char)0x4d, (char)0x23, (char)0x92, (char)0x7e, (char)0x78, (char)0x47, (char)0xf1, (char)0x06, (char)0x04, (char)0x5b, (char)0x55, (char)0x00, (char)0xb1, (char)0xaa, (char)0x82, (char)0x70, (char)0x70, (char)0xc0, (char)0xff, (char)0x3c, (char)0x29, (char)0x4a, (char)0x2f, (char)0xc3, (char)0xff, (char)0x56, (char)0x60, (char)0x4a, (char)0x22, (char)0x12, (char)0xfe, (char)0x10, (char)0xa4, (char)0xe1, (char)0xeb, (char)0x9d, (char)0x82, (char)0xb3, (char)0x76, (char)0x1c, (char)0xa0, (char)0x18, (char)0x4c, (char)0xca, (char)0xcd, (char)0x68, (char)0x40, (char)0x2e, (char)0x6a, (char)0x21, (char)0x2a, (char)0x7b, (char)0x7b, (char)0xc6, (char)0x0b, (char)0x85, (char)0x14, (char)0x19, (char)0x03, (char)0x40, (char)0xe9, (char)0x78, (char)0x54, (char)0xfe, (char)0x97, (char)0xf4, (char)0xe8, (char)0x39, (char)0x45, (char)0x06, (char)0x76, (char)0x8e, (char)0x5e, (char)0x0e, (char)0xdb, (char)0x62, (char)0x41, (char)0x60, (char)0x2b, (char)0xfb, (char)0x1e, (char)0x1a, (char)0x65, (char)0x3a, (char)0x25, (char)0x48, (char)0xba, (char)0xe6, (char)0x73, (char)0x8f, (char)0x35, (char)0xf0, (char)0xfd, (char)0x99, (char)0xe4, (char)0x1d, (char)0xe9, (char)0xbf, (char)0x67, (char)0x8b, (char)0xf4, (char)0x1d, (char)0xfa, (char)0xfa, (char)0x58, (char)0x8e, (char)0xe7, (char)0x1b, (char)0x7b, (char)0xb5, (char)0x7d, (char)0x74, (char)0x90, (char)0x26, (char)0x41, (char)0x88, (char)0xbd, (char)0x4d, (char)0x20, (char)0x69, (char)0x4b, (char)0x4c, (char)0x8a, (char)0xef, (char)0x47, (char)0x87, (char)0xc1, (char)0xf3, (char)0x5b, (char)0x42, (char)0x79, (char)0x04, (char)0xd7, (char)0x9d, (char)0x42, (char)0xa7, (char)0xdf, (char)0xca, (char)0x0d, (char)0xf4, (char)0x19, (char)0x4a, (char)0x8d, (char)0x7c, (char)0x93, (char)0x3f, (char)0x1a, (char)0xa5, (char)0x39, (char)0xef, (char)0xcd, (char)0x6d, (char)0xe5, (char)0x0a, (char)0xe5, (char)0xf0, (char)0x41, (char)0x16, (char)0x96, (char)0x58, (char)0x14, (char)0x99, (char)0x77, (char)0xdc, (char)0x69, (char)0x27, (char)0xc7, (char)0xa6, (char)0x11, (char)0xb4, (char)0xd3, (char)0xa2, (char)0x17, (char)0x23, (char)0x50, (char)0xa0, (char)0xbd, (char)0x06, (char)0x7d, (char)0x5a, (char)0x72, (char)0xa0, (char)0xb1, (char)0xed, (char)0x48, (char)0xd1, (char)0x42, (char)0xfc, (char)0x66, (char)0x3e, (char)0x4a, (char)0x22, (char)0x69, (char)0xac, (char)0xe4, (char)0xee, (char)0x82, (char)0xbc, (char)0x48, (char)0x83, (char)0x81, (char)0x34, (char)0x6e, (char)0x29, (char)0x4b, (char)0x64, (char)0x71, (char)0x37, (char)0x25, (char)0x13, (char)0x28, (char)0x52, (char)0x71, (char)0x5b, (char)0xd5, (char)0x95, (char)0x20, (char)0xa5, (char)0xb4, (char)0x66, (char)0xa7, (char)0x9e, (char)0x06, (char)0x5f, (char)0x2d, (char)0x8e, (char)0x78, (char)0xf5, (char)0x37, (char)0xcf, (char)0xed, (char)0x65, (char)0x84, (char)0xdf, (char)0xda, (char)0x78, (char)0x27, (char)0xa9, (char)0x09, (char)0xaa, (char)0x70, (char)0x73, (char)0x5a, (char)0xc6, (char)0xa9, (char)0xba, (char)0xb7, (char)0xce, (char)0x38, (char)0x2c, (char)0x28, (char)0x4b, (char)0x3e, (char)0xae, (char)0x11, (char)0x3c, (char)0xed, (char)0x94, (char)0xd9, (char)0x2a, (char)0x26, (char)0xd2, (char)0xbc, (char)0xa5, (char)0x19, (char)0x7c, (char)0x3a, (char)0x98, (char)0x0a, (char)0x51, (char)0xdb, (char)0x14, (char)0x99, (char)0xd8, (char)0x4e, (char)0xc3, (char)0x5d, (char)0x0a, (char)0xc9, (char)0x93, (char)0xa9, (char)0xce, (char)0xb0, (char)0x12, (char)0x62, (char)0x6b, (char)0x6b, (char)0x48, (char)0x42, (char)0x42, (char)0x04, (char)0x95, (char)0x29, (char)0x77, (char)0x49, (char)0xaa, (char)0x88, (char)0x2a, (char)0x94, (char)0xcd, (char)0x55, (char)0x7d, (char)0xb6, (char)0xcb, (char)0xb1, (char)0x1e, (char)0x93, (char)0xa9, (char)0xa2, (char)0xba, (char)0x73, (char)0xff, (char)0x2e, (char)0xa6, (char)0xff, (char)0xd6, (char)0x14, (char)0x65, (char)0x3b, (char)0x8c, (char)0x7d, (char)0x0b, (char)0xa7, (char)0xda, (char)0xbd, (char)0x50, (char)0x2c, (char)0x1d, (char)0x2e, (char)0xf1, (char)0xd9, (char)0xf5, (char)0x8a, (char)0x08, (char)0xe9, (char)0x54, (char)0x7d, (char)0x4a, (char)0x25, (char)0xf5, (char)0xb7, (char)0x53, (char)0xd8, (char)0x3f, (char)0xad, (char)0x98, (char)0x5f, (char)0xea, (char)0xa9, (char)0xd5, (char)0x3d, (char)0x13, (char)0x7d, (char)0x26, (char)0x5d, (char)0xab, (char)0x0e, (char)0xa6, (char)0xcd, (char)0xe7, (char)0xc1, (char)0x81, (char)0x0f, (char)0x12, (char)0x8c, (char)0x59, (char)0x77, (char)0xa9, (char)0x67, (char)0xa4, (char)0x37, (char)0xf3, (char)0x8e, (char)0xdf, (char)0xe5, (char)0x5c, (char)0x0c, (char)0x65, (char)0x07, (char)0x93, (char)0xcd, (char)0xb0, (char)0xeb, (char)0x19, (char)0x89, (char)0x6f, (char)0x81, (char)0x90, (char)0x9a, (char)0xf4, (char)0x99, (char)0xb8, (char)0x33, (char)0x35, (char)0xdb, (char)0x40, (char)0x8e, (char)0x85, (char)0x53, (char)0x26, (char)0x4a, (char)0xe9, (char)0x8c, (char)0x5a, (char)0x5d, (char)0x68, (char)0xd5, (char)0x4e, (char)0xff, (char)0x21, (char)0x77, (char)0xb9, (char)0xcb, (char)0xc1, (char)0xaf, (char)0x69, (char)0x69, (char)0x10, (char)0x56, (char)0x6d, (char)0x9e, (char)0xbd, (char)0xe4, (char)0xa4, (char)0x2b, (char)0xd9, (char)0xf9, (char)0x65, (char)0x63, (char)0xb5, (char)0x00, (char)0x48, (char)0xb0, (char)0x04, (char)0xca, (char)0x98, (char)0x10, (char)0x8e, (char)0x2a, (char)0x4f, (char)0x18, (char)0x47, (char)0xef, (char)0x5e, (char)0x26, (char)0x07, (char)0x72, (char)0xf9, (char)0xbe, (char)0x25, (char)0x02, (char)0x03, (char)0x01, (char)0x00, (char)0x01};
 	String str = String(testBytes.begin(), testBytes.end());
-	String data = "A";
-	String expected = "QQ==";
-	String result = Base64EncodingExtensions::ToBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 1", expected, result);
 
-	data = "AA";
-	expected = "QUE=";
-	result = Base64EncodingExtensions::ToBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 2", expected, result);
+	String resultWith0Pad = "QUFB";
+	String resultWith1Pad = "QUE=";
+	String resultWith2Pad = "QQ==";
 
-	data = "AAA";
-	expected = "QUFB";
-	result = Base64EncodingExtensions::ToBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 3", expected, result);
+	String resultWith0PadRemoved = "QUFB";
+	String resultWith1PadRemoved = "QUE";
+	String resultWith2PadRemoved = "QQ";
 
-	data = "A";
-	expected = "QQ";
-	result = Base64EncodingExtensions::ToBase64(data, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 4", expected, result);
-
-	data = "AA";
-	expected = "QUE";
-	result = Base64EncodingExtensions::ToBase64(data, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 5", expected, result);
-
-	data = "AAA";
-	expected = "QUFB";
-	result = Base64EncodingExtensions::ToBase64(data, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 6", expected, result);
+	String inputFor0Pad = "AAA";
+	String inputFor1Pad = "AA";
+	String inputFor2Pad = "A";
 
 	String TestMimeBase64String = R"(MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8ujlgTI2uLY/tb52ZWXRjy3ExaGRO4vc
 i/ZPQmTR6tx1bIMLgR9X66zl0FxrXzeoUxxla3VevNNZ0lQX92lNI5J+eEfxBgRbVQCxqoJwcMD/
@@ -1270,8 +1312,6 @@ zjgsKEs+rhE87ZTZKibSvKUZfDqYClHbFJnYTsNdCsmTqc6wEmJra0hCQgSVKXdJqogqlM1VfbbL
 sR6TqaK6c/8upv/WFGU7jH0Lp9q9UCwdLvHZ9YoI6VR9SiX1t1PYP62YX+qp1T0TfSZdqw6mzefB
 gQ8SjFl3qWekN/OO3+VcDGUHk82w6xmJb4GQmvSZuDM120COhVMmSumMWl1o1U7/IXe5y8GvaWkQ
 Vm2eveSkK9n5ZWO1AEiwBMqYEI4qTxhH714mB3L5viUCAwEAAQ==)";
-	result = Base64EncodingExtensions::ToBase64(str, MIME_LINE_BREAKS_LENGTH);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 7", TestMimeBase64String, result);
 
 	String TestPemBase64String = R"(MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8ujlgTI2uLY/tb52ZWXR
 jy3ExaGRO4vci/ZPQmTR6tx1bIMLgR9X66zl0FxrXzeoUxxla3VevNNZ0lQX92lN
@@ -1285,35 +1325,155 @@ QgSVKXdJqogqlM1VfbbLsR6TqaK6c/8upv/WFGU7jH0Lp9q9UCwdLvHZ9YoI6VR9
 SiX1t1PYP62YX+qp1T0TfSZdqw6mzefBgQ8SjFl3qWekN/OO3+VcDGUHk82w6xmJ
 b4GQmvSZuDM120COhVMmSumMWl1o1U7/IXe5y8GvaWkQVm2eveSkK9n5ZWO1AEiw
 BMqYEI4qTxhH714mB3L5viUCAwEAAQ==)";
-	result = Base64EncodingExtensions::ToBase64(str, PEM_LINE_BREAKS_LENGTH);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 8", TestPemBase64String, result);
 
 	String TestBase64String = R"(MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8ujlgTI2uLY/tb52ZWXRjy3ExaGRO4vci/ZPQmTR6tx1bIMLgR9X66zl0FxrXzeoUxxla3VevNNZ0lQX92lNI5J+eEfxBgRbVQCxqoJwcMD/PClKL8P/VmBKIhL+EKTh652Cs3YcoBhMys1oQC5qISp7e8YLhRQZA0DpeFT+l/ToOUUGdo5eDttiQWAr+x4aZTolSLrmc4818P2Z5B3pv2eL9B36+liO5xt7tX10kCZBiL1NIGlLTIrvR4fB81tCeQTXnUKn38oN9BlKjXyTPxqlOe/NbeUK5fBBFpZYFJl33Gknx6YRtNOiFyNQoL0GfVpyoLHtSNFC/GY+SiJprOTugrxIg4E0bilLZHE3JRMoUnFb1ZUgpbRmp54GXy2OePU3z+1lhN/aeCepCapwc1rGqbq3zjgsKEs+rhE87ZTZKibSvKUZfDqYClHbFJnYTsNdCsmTqc6wEmJra0hCQgSVKXdJqogqlM1VfbbLsR6TqaK6c/8upv/WFGU7jH0Lp9q9UCwdLvHZ9YoI6VR9SiX1t1PYP62YX+qp1T0TfSZdqw6mzefBgQ8SjFl3qWekN/OO3+VcDGUHk82w6xmJb4GQmvSZuDM120COhVMmSumMWl1o1U7/IXe5y8GvaWkQVm2eveSkK9n5ZWO1AEiwBMqYEI4qTxhH714mB3L5viUCAwEAAQ==)";
-	result = Base64EncodingExtensions::ToBase64(str);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 9", TestBase64String, result);
-
 	String TestBase64StringNoPadding = R"(MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8ujlgTI2uLY/tb52ZWXRjy3ExaGRO4vci/ZPQmTR6tx1bIMLgR9X66zl0FxrXzeoUxxla3VevNNZ0lQX92lNI5J+eEfxBgRbVQCxqoJwcMD/PClKL8P/VmBKIhL+EKTh652Cs3YcoBhMys1oQC5qISp7e8YLhRQZA0DpeFT+l/ToOUUGdo5eDttiQWAr+x4aZTolSLrmc4818P2Z5B3pv2eL9B36+liO5xt7tX10kCZBiL1NIGlLTIrvR4fB81tCeQTXnUKn38oN9BlKjXyTPxqlOe/NbeUK5fBBFpZYFJl33Gknx6YRtNOiFyNQoL0GfVpyoLHtSNFC/GY+SiJprOTugrxIg4E0bilLZHE3JRMoUnFb1ZUgpbRmp54GXy2OePU3z+1lhN/aeCepCapwc1rGqbq3zjgsKEs+rhE87ZTZKibSvKUZfDqYClHbFJnYTsNdCsmTqc6wEmJra0hCQgSVKXdJqogqlM1VfbbLsR6TqaK6c/8upv/WFGU7jH0Lp9q9UCwdLvHZ9YoI6VR9SiX1t1PYP62YX+qp1T0TfSZdqw6mzefBgQ8SjFl3qWekN/OO3+VcDGUHk82w6xmJb4GQmvSZuDM120COhVMmSumMWl1o1U7/IXe5y8GvaWkQVm2eveSkK9n5ZWO1AEiwBMqYEI4qTxhH714mB3L5viUCAwEAAQ)";
-	result = Base64EncodingExtensions::ToBase64(str, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 10", TestBase64StringNoPadding, result);
-
 	String TestUrlSafeBase64String = R"(MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8ujlgTI2uLY_tb52ZWXRjy3ExaGRO4vci_ZPQmTR6tx1bIMLgR9X66zl0FxrXzeoUxxla3VevNNZ0lQX92lNI5J-eEfxBgRbVQCxqoJwcMD_PClKL8P_VmBKIhL-EKTh652Cs3YcoBhMys1oQC5qISp7e8YLhRQZA0DpeFT-l_ToOUUGdo5eDttiQWAr-x4aZTolSLrmc4818P2Z5B3pv2eL9B36-liO5xt7tX10kCZBiL1NIGlLTIrvR4fB81tCeQTXnUKn38oN9BlKjXyTPxqlOe_NbeUK5fBBFpZYFJl33Gknx6YRtNOiFyNQoL0GfVpyoLHtSNFC_GY-SiJprOTugrxIg4E0bilLZHE3JRMoUnFb1ZUgpbRmp54GXy2OePU3z-1lhN_aeCepCapwc1rGqbq3zjgsKEs-rhE87ZTZKibSvKUZfDqYClHbFJnYTsNdCsmTqc6wEmJra0hCQgSVKXdJqogqlM1VfbbLsR6TqaK6c_8upv_WFGU7jH0Lp9q9UCwdLvHZ9YoI6VR9SiX1t1PYP62YX-qp1T0TfSZdqw6mzefBgQ8SjFl3qWekN_OO3-VcDGUHk82w6xmJb4GQmvSZuDM120COhVMmSumMWl1o1U7_IXe5y8GvaWkQVm2eveSkK9n5ZWO1AEiwBMqYEI4qTxhH714mB3L5viUCAwEAAQ)";
-	result = Base64EncodingExtensions::ToUrlSafeBase64(str);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 11", TestUrlSafeBase64String, result);
-
 	String TestFileNameSafeBase64String = R"(MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8ujlgTI2uLY_tb52ZWXRjy3ExaGRO4vci_ZPQmTR6tx1bIMLgR9X66zl0FxrXzeoUxxla3VevNNZ0lQX92lNI5J-eEfxBgRbVQCxqoJwcMD_PClKL8P_VmBKIhL-EKTh652Cs3YcoBhMys1oQC5qISp7e8YLhRQZA0DpeFT-l_ToOUUGdo5eDttiQWAr-x4aZTolSLrmc4818P2Z5B3pv2eL9B36-liO5xt7tX10kCZBiL1NIGlLTIrvR4fB81tCeQTXnUKn38oN9BlKjXyTPxqlOe_NbeUK5fBBFpZYFJl33Gknx6YRtNOiFyNQoL0GfVpyoLHtSNFC_GY-SiJprOTugrxIg4E0bilLZHE3JRMoUnFb1ZUgpbRmp54GXy2OePU3z-1lhN_aeCepCapwc1rGqbq3zjgsKEs-rhE87ZTZKibSvKUZfDqYClHbFJnYTsNdCsmTqc6wEmJra0hCQgSVKXdJqogqlM1VfbbLsR6TqaK6c_8upv_WFGU7jH0Lp9q9UCwdLvHZ9YoI6VR9SiX1t1PYP62YX-qp1T0TfSZdqw6mzefBgQ8SjFl3qWekN_OO3-VcDGUHk82w6xmJb4GQmvSZuDM120COhVMmSumMWl1o1U7_IXe5y8GvaWkQVm2eveSkK9n5ZWO1AEiwBMqYEI4qTxhH714mB3L5viUCAwEAAQ)";
-	result = Base64EncodingExtensions::ToFilenameSafeBase64(str);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 12", TestFileNameSafeBase64String, result);
-
 	String TestUrlEncodedBase64String = R"(MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8ujlgTI2uLY%2Ftb52ZWXRjy3ExaGRO4vci%2FZPQmTR6tx1bIMLgR9X66zl0FxrXzeoUxxla3VevNNZ0lQX92lNI5J%2BeEfxBgRbVQCxqoJwcMD%2FPClKL8P%2FVmBKIhL%2BEKTh652Cs3YcoBhMys1oQC5qISp7e8YLhRQZA0DpeFT%2Bl%2FToOUUGdo5eDttiQWAr%2Bx4aZTolSLrmc4818P2Z5B3pv2eL9B36%2BliO5xt7tX10kCZBiL1NIGlLTIrvR4fB81tCeQTXnUKn38oN9BlKjXyTPxqlOe%2FNbeUK5fBBFpZYFJl33Gknx6YRtNOiFyNQoL0GfVpyoLHtSNFC%2FGY%2BSiJprOTugrxIg4E0bilLZHE3JRMoUnFb1ZUgpbRmp54GXy2OePU3z%2B1lhN%2FaeCepCapwc1rGqbq3zjgsKEs%2BrhE87ZTZKibSvKUZfDqYClHbFJnYTsNdCsmTqc6wEmJra0hCQgSVKXdJqogqlM1VfbbLsR6TqaK6c%2F8upv%2FWFGU7jH0Lp9q9UCwdLvHZ9YoI6VR9SiX1t1PYP62YX%2Bqp1T0TfSZdqw6mzefBgQ8SjFl3qWekN%2FOO3%2BVcDGUHk82w6xmJb4GQmvSZuDM120COhVMmSumMWl1o1U7%2FIXe5y8GvaWkQVm2eveSkK9n5ZWO1AEiwBMqYEI4qTxhH714mB3L5viUCAwEAAQ%3D%3D)";
-	result = Base64EncodingExtensions::ToUrlEncodedBase64(str);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 13", TestUrlEncodedBase64String, result);
 
-	result = Base64EncodingExtensions::Base64ToUrlSafeBase64(TestBase64String);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 14", TestUrlSafeBase64String, result);
+	String data = inputFor2Pad;
+	String expected = resultWith2Pad;
+	String result = Base64EncodingExtensions::ToBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 1", expected, result);
 
-	result = Base64EncodingExtensions::Base64ToFilenameSafeBase64(TestBase64String);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 15", TestFileNameSafeBase64String, result);
+	data = inputFor1Pad;
+	expected = resultWith1Pad;
+	result = Base64EncodingExtensions::ToBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 2", expected, result);
 
-	result = Base64EncodingExtensions::Base64ToUrlEncodedBase64(TestBase64String);
-	TestExtensions::Equals(NAMEOF(Base64ExtensionsTests) + " 16", TestUrlEncodedBase64String, result);
+	data = inputFor0Pad;
+	expected = resultWith0Pad;
+	result = Base64EncodingExtensions::ToBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 3", expected, result);
+
+	data = inputFor2Pad;
+	expected = resultWith2PadRemoved;
+	result = Base64EncodingExtensions::ToBase64(data, 0, true);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 4", expected, result);
+
+	data = inputFor1Pad;
+	expected = resultWith1PadRemoved;
+	result = Base64EncodingExtensions::ToBase64(data, 0, true);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 5", expected, result);
+
+	data = inputFor0Pad;
+	expected = resultWith0PadRemoved;
+	result = Base64EncodingExtensions::ToBase64(data, 0, true);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 6", expected, result);
+	
+	data = str;
+	expected = TestMimeBase64String;
+	result = Base64EncodingExtensions::ToBase64(data, MIME_LINE_BREAKS_LENGTH);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 7", expected, result);
+
+	data = str;
+	expected = TestPemBase64String;
+	result = Base64EncodingExtensions::ToBase64(data, PEM_LINE_BREAKS_LENGTH);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 8", expected, result);
+
+	data = str;
+	expected = TestBase64String;
+	result = Base64EncodingExtensions::ToBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 9", expected, result);
+
+	data = str;
+	expected = TestBase64StringNoPadding;
+	result = Base64EncodingExtensions::ToBase64(data, 0, true);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 10", expected, result);
+
+	data = str;
+	expected = TestUrlSafeBase64String;
+	result = Base64EncodingExtensions::ToUrlSafeBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 11", expected, result);
+
+	data = str;
+	expected = TestFileNameSafeBase64String;
+	result = Base64EncodingExtensions::ToFilenameSafeBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 12", expected, result);
+
+	data = str;
+	expected = TestUrlEncodedBase64String;
+	result = Base64EncodingExtensions::ToUrlEncodedBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 13", expected, result);
+
+	data = TestBase64String;
+	expected = TestUrlSafeBase64String;
+	result = Base64EncodingExtensions::Base64ToUrlSafeBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 14", expected, result);
+
+	data = TestBase64String;
+	expected = TestFileNameSafeBase64String;
+	result = Base64EncodingExtensions::Base64ToFilenameSafeBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 15", expected, result);
+
+	data = TestBase64String;
+	expected = TestUrlEncodedBase64String;
+	result = Base64EncodingExtensions::Base64ToUrlEncodedBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 16", expected, result);
+
+    data = resultWith2Pad;
+    expected = inputFor2Pad;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 1", expected, result);
+
+    data = resultWith1Pad;
+    expected = inputFor1Pad;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 2", expected, result);
+
+    data = resultWith0Pad;
+    expected = inputFor0Pad;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 3", expected, result);
+
+    data = resultWith2PadRemoved;
+    expected = inputFor2Pad;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 4", expected, result);
+
+    data = resultWith1PadRemoved;
+    expected = inputFor1Pad;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 5", expected, result);
+
+    data = resultWith0PadRemoved;
+    expected = inputFor0Pad;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 6", expected, result);
+    
+    data = TestMimeBase64String;
+    expected = str;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 7", expected, result, false);
+
+    data = TestPemBase64String;
+    expected = str;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 8", expected, result, false);
+
+    data = TestBase64String;
+    expected = str;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 9", expected, result, false);
+
+    data = TestBase64StringNoPadding;
+    expected = str;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 10", expected, result, false);
+
+    data = TestUrlSafeBase64String;
+    expected = str;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 11", expected, result, false);
+
+    data = TestFileNameSafeBase64String;
+    expected = str;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 12", expected, result, false);
+
+    data = TestUrlEncodedBase64String;
+    expected = str;
+    result = Base64EncodingExtensions::FromBase64(data);
+    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 13", expected, result, false);
 }

@@ -3,6 +3,7 @@
 #include <Insane/InsanePreprocessor.h>
 #include <unicode/unistr.h>
 #include <unicode/locid.h>
+#include <unicode/ucsdet.h>
 
 // ███ Strings ███
 String Insane::Strings::StringExtensions::RemoveBlankSpaces(const String &data)
@@ -28,8 +29,6 @@ String Insane::Strings::StringExtensions::TrimStart(const String &data)
 									{ return !std::isspace(ch); }));
 	return s;
 }
-
-
 
 String Insane::Strings::StringExtensions::TrimEnd(const String &data)
 {
@@ -525,6 +524,18 @@ bool Insane::Strings::StringExtensions::Contains(const String &data, const Strin
 		return ndata.find(ncontent) != String::npos;
 	}
 	return data.find(content) != String::npos;
+}
+
+bool Insane::Strings::StringExtensions::IsValidUTF8(const std::string &data)
+{
+	UErrorCode status = U_ZERO_ERROR;
+	UCharsetDetector *detector = ucsdet_open(&status);
+	ucsdet_setText(detector, data.c_str(), data.length(), &status);
+	const UCharsetMatch *match = ucsdet_detect(detector, &status);
+	const char *charset_name = ucsdet_getName(match, &status);
+	bool valid = UTF8_CHARSET_NAME_STRING == charset_name;
+	ucsdet_close(detector);
+	return valid;
 }
 
 // ███ Xtring ███

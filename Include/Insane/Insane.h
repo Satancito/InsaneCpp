@@ -2,7 +2,7 @@
 #ifndef INSANE_BASE_H
 #define INSANE_BASE_H
 
-#define INSANE_STRING "Insane"s 
+#define INSANE_STRING "Insane"s
 #define INSANE_STR "Insane"
 
 #define STDCALL _stdcall
@@ -45,7 +45,7 @@ typedef std::wstring DefaultString;
 #define IS32 1
 #endif
 
-//EMSCRIPTEN
+// EMSCRIPTEN
 #elif defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
 #include <emscripten/bind.h>
@@ -76,7 +76,7 @@ typedef std::string DefaultString;
 #define IS32 1
 #endif
 
-//ANDROID
+// ANDROID
 #elif (__ANDROID__ || ANDROID)
 #define ANDROID_PLATFORM 1
 #define DLLCALL
@@ -85,7 +85,7 @@ typedef std::string DefaultString;
 #define DLLPRIVATE __attribute__((visibility("hidden")))
 typedef std::string DefaultString;
 
-//MACOS
+// MACOS
 #elif defined(__APPLE__)
 #include <unistd.h>
 #include <termios.h>
@@ -126,10 +126,18 @@ typedef std::string String;
 typedef std::wstring WString;
 
 #define thisvalue (*this)
-
-
+#define USING_NS_INSANE using namespace Insane
 using namespace std::string_literals;
 
+namespace Insane
+{
+    template <typename T>
+    concept HasOstream = requires(std::ostream &os, T t) {
+                             os << t;
+                         };
+
+    template <typename T>
+    concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
+}
+
 #endif // !INSANE_BASE_H
-
-

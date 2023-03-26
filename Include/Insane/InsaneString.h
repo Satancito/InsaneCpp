@@ -2,80 +2,14 @@
 #ifndef INSANE_STRING_H
 #define INSANE_STRING_H
 
+#include <concepts>
 #include <Insane/Insane.h>
 #include <Insane/InsanePreprocessor.h>
 #include <Insane/InsaneException.h>
-#include <concepts>
 
 #define USING_NS_INSANE_STR using namespace Insane::Strings
 
-#define EMOJI_UPWARDS_BUTTON_STRING ("🔼"s)
-#define EMOJI_DOWNWARDS_BUTTON_STRING ("🔽"s)
-#define EMOJI_SQUARE_VS_STRING ("🆚"s)
-#define EMOJI_RED_TRIANGLE_POINTED_UP_STRING ("🔺"s)
-#define EMOJI_RED_TRIANGLE_POINTED_DOWN_STRING ("🔻"s)
 
-#define EMPTY_STRING (""s)
-#define NULL_STRING ("\000"s)
-#define CR_STRING ("\r"s)
-#define CARRIAGE_RETURN_STRING ("\r"s)
-#define LF_STRING ("\n"s)
-#define LINE_FEED_STRING ("\n"s)
-#define CRLF_STRING ("\r\n"s)
-#define TAB_STRING ("\t"s)
-#define VERTICAL_TAB_STRING ("\v"s)
-#define FORM_FEED_STRING ("\f"s)
-#define QUOTATION_MARK_STRING ("\"")
-#define UNDERSCORE_STRING ("_"s)
-#define SPACE_STRING (" "s)
-#define BACKSLASH_STRING ("\\"s)
-#define QUESTION_MARK_STRING ("\?"s)
-#define TRUE_LITERAL_STRING ("true"s)
-#define FALSE_LITERAL_STRING ("false"s)
-
-#define EMPTY_CHAR_ARRAY ("")
-#define NULL_CHAR ('\000')
-#define CR_CHAR ('\r')
-#define CARRIAGE_RETURN_CHAR ('\r')
-#define LF_CHAR ('\n')
-#define LINE_FEED_CHAR ('\n')
-#define CRLF_CHAR_ARRAY ("\r\n")
-#define TAB_CHAR ('\t')
-#define VERTICAL_TAB_CHAR ('\v')
-#define FORM_FEED_CHAR ('\f')
-#define QUOTATION_MARK_CHAR ('\"')
-#define UNDERSCORE_CHAR ('_')
-#define SPACE_CHAR (' ')
-#define BACKSLASH_CHAR ('\\')
-#define QUESTION_MARK_CHAR ('\?')
-
-#define URL_ENCODED_PLUS_SIGN_STRING ("%2B"s)
-#define URL_ENCODED_SLASH_STRING ("%2F"s)
-#define URL_ENCODED_EQUAL_SIGN_STRING ("%3D"s)
-#define PLUS_SIGN_STRING ("+"s)
-#define MINUS_SIGN_STRING ("-"s)
-#define SLASH_STRING ("/"s)
-#define UNDERSCORE_STRING ("_"s)
-#define EQUAL_SIGN_STRING ("="s)
-
-#define URL_ENCODED_PLUS_SIGN_CHAR_ARRAY ("%2B")
-#define URL_ENCODED_SLASH_CHAR_ARRAY ("%2F")
-#define URL_ENCODED_EQUAL_SIGN_CHAR_ARRAY ("%3D")
-#define PLUS_SIGN_CHAR ('+')
-#define MINUS_SIGN_CHAR ('-')
-#define SLASH_CHAR ('/')
-#define UNDERSCORE_CHAR ('_')
-#define EQUAL_SIGN_CHAR ('=')
-
-#define DEFAULT_LOCALE_STRING ("en_US"s)
-
-#ifdef WINDOWS_PLATFORM
-#define NEW_LINE_STR "\r\n"
-#elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
-#define NEW_LINE_STR "\n"
-#endif
-
-#define DEFAULT_LOCALE_STR "en_US.UTF-8"
 #define TOSTR(data) Insane::Strings::StringExtensions::ToString(data)
 #define TOCSTR(data) Insane::Strings::StringExtensions::ToString(data).c_str()
 
@@ -162,6 +96,7 @@ namespace Insane::Strings
 		[[nodiscard]] static String GetCharUTF8(const String &data, size_t pos);
 		[[nodiscard]] static String InsertRepeat(const String &data, size_t distance, const String &toRepeat, bool includeEnd = false);
 		[[nodiscard]] static bool IsMatch(const String &input, const String &pattern);
+		[[nodiscard]] static bool IsValidUTF8(const std::string &data);
 		[[nodiscard]] static size_t LengthUTF8(const String &data);
 		[[nodiscard]] static String PadLeft(const String &data, const size_t &totalWidth, const SignedChar &padding = SPACE_CHAR);
 		[[nodiscard]] static String PadLeft(const String &data, const size_t &totalWidth, const String &padding = SPACE_STRING);

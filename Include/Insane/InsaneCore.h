@@ -6,7 +6,7 @@
 #define USING_NS_INSANE_CORE using namespace Insane::Core
 namespace Insane::Core
 {
-
+	
 	enum class ConsoleTextStyle
 	{
 		DEFAULT = 0,
