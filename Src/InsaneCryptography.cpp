@@ -1197,13 +1197,36 @@ String Insane::Cryptography::Base64EncodingExtensions::Base64ToUrlEncodedBase64(
 }
 
 // ███ CryptoTests ███
-void Insane::Cryptography::CryptoTests::HexEncodingExtensionsTests()
+void Insane::Cryptography::CryptoTests::HexEncodingExtensionsTests(const bool & showValues)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_TEST;
+	String testTytes = {(char)0xff, 0xa, 1, 0x22};
+	String hexStringUppercase = "FF0A0122";
+	String hexStringLowercase = "ff0a0122";
+
+	String data = testTytes;
+	String result = HexEncodingExtensions::ToHex(data);
+	String expected = hexStringLowercase;
+	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Encode - 1", expected, result, showValues);
+
+	data = testTytes;
+	result = HexEncodingExtensions::ToHex(data, true);
+	expected = hexStringUppercase;
+	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Encode - 2", expected, result, showValues);
+
+	data = hexStringUppercase;
+	result = HexEncodingExtensions::FromHex(data);
+	expected = testTytes;
+	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 1", expected, result,  showValues);
+
+	data = hexStringLowercase;
+	result = HexEncodingExtensions::FromHex(data);
+	expected = testTytes;
+	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 2", expected, result,  showValues);
 }
 
-void Insane::Cryptography::CryptoTests::Base32EncodingExtensionsTests()
+void Insane::Cryptography::CryptoTests::Base32EncodingExtensionsTests(const bool & showValues)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_TEST;
@@ -1220,70 +1243,70 @@ void Insane::Cryptography::CryptoTests::Base32EncodingExtensionsTests()
 	String data = TestString2;
 	String result = Base32EncodingExtensions::ToBase32(data);
 	String expected = UpperBase32Result2;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + "- Encode - 1", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + "- Encode - 1", expected, result, showValues);
 
 	data = TestString;
 	result = Base32EncodingExtensions::ToBase32(data);
 	expected = UpperBase32Result;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 2", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 2", expected, result, showValues);
 
 	data = TestString;
 	result = Base32EncodingExtensions::ToBase32(data, false, true);
 	expected = LowerBase32Result;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 3", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 3", expected, result, showValues);
 
 	data = TestString2;
 	result = Base32EncodingExtensions::ToBase32(data, false);
 	expected = UpperBase32Result2;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 4", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 4", expected, result, showValues);
 
 	data = TestString2;
 	result = Base32EncodingExtensions::ToBase32(data, false, true);
 	expected = LowerBase32Result2;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 5", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 5", expected, result, showValues);
 
 	data = TestString2;
 	result = Base32EncodingExtensions::ToBase32(data, true, false);
 	expected = UpperBase32Result2NoPadding;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 6", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 6", expected, result, showValues);
 
 	data = TestString2;
 	result = Base32EncodingExtensions::ToBase32(data, true, true);
 	expected = LowerBase32Result2NoPadding;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Encode - 7", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 7", expected, result, showValues);
 
 	data = UpperBase32Result;
 	result = Base32EncodingExtensions::FromBase32(data);
 	expected = TestString;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 1", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 1", expected, result, showValues);
 
 	data = LowerBase32Result;
 	result = Base32EncodingExtensions::FromBase32(data);
 	expected = TestString;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 2", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 2", expected, result, showValues);
 
 	data = UpperBase32Result2;
 	result = Base32EncodingExtensions::FromBase32(data);
 	expected = TestString2;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 3", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 3", expected, result, showValues);
 
 	data = LowerBase32Result2;
 	result = Base32EncodingExtensions::FromBase32(data);
 	expected = TestString2;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 4", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 4", expected, result, showValues);
 
 	data = UpperBase32Result2NoPadding;
 	result = Base32EncodingExtensions::FromBase32(data);
 	expected = TestString2;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 5", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 5", expected, result, showValues);
 
 	data = LowerBase32Result2NoPadding;
 	result = Base32EncodingExtensions::FromBase32(data);
 	expected = TestString2;
-	TestExtensions::Equals(NAMEOF(Base32EncodingExtensionsTests) + " - Decode - 6", expected, result);
+	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 6", expected, result, showValues);
 }
 
-void Insane::Cryptography::CryptoTests::Base64EncodingExtensionsTests()
+void Insane::Cryptography::CryptoTests::Base64EncodingExtensionsTests(const bool & showValues)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_TEST;
@@ -1335,145 +1358,145 @@ BMqYEI4qTxhH714mB3L5viUCAwEAAQ==)";
 	String data = inputFor2Pad;
 	String expected = resultWith2Pad;
 	String result = Base64EncodingExtensions::ToBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 1", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 1", expected, result, showValues);
 
 	data = inputFor1Pad;
 	expected = resultWith1Pad;
 	result = Base64EncodingExtensions::ToBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 2", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 2", expected, result, showValues);
 
 	data = inputFor0Pad;
 	expected = resultWith0Pad;
 	result = Base64EncodingExtensions::ToBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 3", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 3", expected, result, showValues);
 
 	data = inputFor2Pad;
 	expected = resultWith2PadRemoved;
 	result = Base64EncodingExtensions::ToBase64(data, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 4", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 4", expected, result, showValues);
 
 	data = inputFor1Pad;
 	expected = resultWith1PadRemoved;
 	result = Base64EncodingExtensions::ToBase64(data, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 5", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 5", expected, result, showValues);
 
 	data = inputFor0Pad;
 	expected = resultWith0PadRemoved;
 	result = Base64EncodingExtensions::ToBase64(data, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 6", expected, result);
-	
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 6", expected, result, showValues);
+
 	data = str;
 	expected = TestMimeBase64String;
 	result = Base64EncodingExtensions::ToBase64(data, MIME_LINE_BREAKS_LENGTH);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 7", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 7", expected, result, showValues);
 
 	data = str;
 	expected = TestPemBase64String;
 	result = Base64EncodingExtensions::ToBase64(data, PEM_LINE_BREAKS_LENGTH);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 8", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 8", expected, result, showValues);
 
 	data = str;
 	expected = TestBase64String;
 	result = Base64EncodingExtensions::ToBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 9", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 9", expected, result, showValues);
 
 	data = str;
 	expected = TestBase64StringNoPadding;
 	result = Base64EncodingExtensions::ToBase64(data, 0, true);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 10", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 10", expected, result, showValues);
 
 	data = str;
 	expected = TestUrlSafeBase64String;
 	result = Base64EncodingExtensions::ToUrlSafeBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 11", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 11", expected, result, showValues);
 
 	data = str;
 	expected = TestFileNameSafeBase64String;
 	result = Base64EncodingExtensions::ToFilenameSafeBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 12", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 12", expected, result, showValues);
 
 	data = str;
 	expected = TestUrlEncodedBase64String;
 	result = Base64EncodingExtensions::ToUrlEncodedBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 13", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 13", expected, result, showValues);
 
 	data = TestBase64String;
 	expected = TestUrlSafeBase64String;
 	result = Base64EncodingExtensions::Base64ToUrlSafeBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 14", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 14", expected, result, showValues);
 
 	data = TestBase64String;
 	expected = TestFileNameSafeBase64String;
 	result = Base64EncodingExtensions::Base64ToFilenameSafeBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 15", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 15", expected, result, showValues);
 
 	data = TestBase64String;
 	expected = TestUrlEncodedBase64String;
 	result = Base64EncodingExtensions::Base64ToUrlEncodedBase64(data);
-	TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Encode - 16", expected, result);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Encode - 16", expected, result, showValues);
 
-    data = resultWith2Pad;
-    expected = inputFor2Pad;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 1", expected, result);
+	data = resultWith2Pad;
+	expected = inputFor2Pad;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 1", expected, result, showValues);
 
-    data = resultWith1Pad;
-    expected = inputFor1Pad;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 2", expected, result);
+	data = resultWith1Pad;
+	expected = inputFor1Pad;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 2", expected, result, showValues);
 
-    data = resultWith0Pad;
-    expected = inputFor0Pad;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 3", expected, result);
+	data = resultWith0Pad;
+	expected = inputFor0Pad;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 3", expected, result, showValues);
 
-    data = resultWith2PadRemoved;
-    expected = inputFor2Pad;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 4", expected, result);
+	data = resultWith2PadRemoved;
+	expected = inputFor2Pad;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 4", expected, result, showValues);
 
-    data = resultWith1PadRemoved;
-    expected = inputFor1Pad;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 5", expected, result);
+	data = resultWith1PadRemoved;
+	expected = inputFor1Pad;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 5", expected, result, showValues);
 
-    data = resultWith0PadRemoved;
-    expected = inputFor0Pad;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 6", expected, result);
-    
-    data = TestMimeBase64String;
-    expected = str;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 7", expected, result, false);
+	data = resultWith0PadRemoved;
+	expected = inputFor0Pad;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 6", expected, result, showValues);
 
-    data = TestPemBase64String;
-    expected = str;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 8", expected, result, false);
+	data = TestMimeBase64String;
+	expected = str;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 7", expected, result, showValues);
 
-    data = TestBase64String;
-    expected = str;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 9", expected, result, false);
+	data = TestPemBase64String;
+	expected = str;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 8", expected, result, showValues);
 
-    data = TestBase64StringNoPadding;
-    expected = str;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 10", expected, result, false);
+	data = TestBase64String;
+	expected = str;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 9", expected, result, showValues);
 
-    data = TestUrlSafeBase64String;
-    expected = str;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 11", expected, result, false);
+	data = TestBase64StringNoPadding;
+	expected = str;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 10", expected, result, showValues);
 
-    data = TestFileNameSafeBase64String;
-    expected = str;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 12", expected, result, false);
+	data = TestUrlSafeBase64String;
+	expected = str;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 11", expected, result, showValues);
 
-    data = TestUrlEncodedBase64String;
-    expected = str;
-    result = Base64EncodingExtensions::FromBase64(data);
-    TestExtensions::Equals(NAMEOF(Base64EncodingExtensionsTests) + " - Decode  - 13", expected, result, false);
+	data = TestFileNameSafeBase64String;
+	expected = str;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 12", expected, result, showValues);
+
+	data = TestUrlEncodedBase64String;
+	expected = str;
+	result = Base64EncodingExtensions::FromBase64(data);
+	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 13", expected, result, showValues);
 }

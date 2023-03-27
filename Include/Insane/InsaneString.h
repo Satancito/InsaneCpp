@@ -90,6 +90,11 @@ namespace Insane::Strings
 			return (T)number;
 		}
 
+		static String ToOctalEscapedCodeLiteral(const String &data);
+        static String ToUnicodeEscapedCodeLiteral(const String &data);
+        static String ToCodeLiteral(const String &data, const bool &escaped = false);
+       
+
 		[[nodiscard]] static bool Contains(const String &data, const String &content, const bool &caseSensitive = true, const String &locale = DEFAULT_LOCALE_STRING);
 		[[nodiscard]] static String Empty();
 		[[nodiscard]] static bool EndsWith(const String &data, const String &suffix, const bool &caseSensitive = true, const String &locale = DEFAULT_LOCALE_STRING);

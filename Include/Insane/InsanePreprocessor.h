@@ -3667,7 +3667,11 @@ namespace Insane::Preprocessor
 #define UNDERSCORE_STRING ("_"s)
 #define SPACE_STRING (" "s)
 #define BACKSLASH_STRING ("\\"s)
+#define FULL_STOP_STRING ("."s)
 #define QUESTION_MARK_STRING ("\?"s)
+#define LESS_THAN_SIGN_STRING ("<"s)
+#define GREATER_THAN_SIGN_STRING (">"s)
+
 #define TRUE_LITERAL_STRING ("true"s)
 #define FALSE_LITERAL_STRING ("false"s)
 
@@ -3707,6 +3711,7 @@ namespace Insane::Preprocessor
 
 #define DEFAULT_LOCALE_STRING ("en_US"s)
 #define UTF8_CHARSET_NAME_STRING ("UTF-8"s)
+#define ISO_8859_1_CHARSET_NAME ("ISO-8859-1"s)
 
 #ifdef WINDOWS_PLATFORM
 #define NEW_LINE_STR "\r\n"

@@ -4,6 +4,9 @@
 
 #include <Insane/Insane.h>
 #include <Insane/InsanePreprocessor.h>
+#include <Insane/InsaneString.h>
+#include <unicode/unistr.h>
+#include <unicode/ucnv.h>
 #include <type_traits>
 
 #define __TEST_OK_STRING ("Test OK. ✅"s)
@@ -43,6 +46,19 @@ namespace Insane::Test
             ShowValues(testLabel, TestType::NotEquals, expected, value, expected != value, __TEST_OK_STRING, __TEST_FAILED_STRING, showValues);
         }
 
+        static char32_t ToUtf32Unit(const String &utf8UnitSequence)
+        {
+            USING_NS_INSANE_STR;
+            USING_NS_INSANE_EXCEPTION;
+            if (utf8UnitSequence.length() > 4 || utf8UnitSequence.length() == 0 || !StringExtensions::IsValidUTF8(utf8UnitSequence))
+            {
+                throw ArgumentException(NAMEOF(ConvertUtf8UnitToUtf32Unit) + ". Invalid UTF-8 unit sequence.");
+            }
+
+            icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(utf8UnitSequence));
+            return uniStr.char32At(0);
+        }
+
     private:
         static String GetTestTypeHeader(const TestType &testType);
 
@@ -50,29 +66,32 @@ namespace Insane::Test
         static void ShowValues(const String &testLabel, const TestType &testType, const T &expected, const T &value, const bool &testResult, const String &positiveMessage, const String &negativeMessage, const bool &showValues)
             requires Insane::PrintableAndEqualityComparable<T>
         {
+            USING_NS_INSANE_STR;
             std::ostringstream oss;
             std::ostringstream auxOss;
-            oss << __TEST_HEADER_STRING + GetTestTypeHeader(testType) + ": " + testLabel << std::endl;
-            String openQuote = "<";
-            String closedQuote = ">";
-            if constexpr (std::is_same_v<T, String> || std::is_same_v<T, char[]> || std::is_same_v<T, char *>)
-            {
-                openQuote += QUOTATION_MARK_STRING;
-                closedQuote = QUOTATION_MARK_STRING + closedQuote;
-            }
+            oss << __TEST_HEADER_STRING + GetTestTypeHeader(testType) + ": " + testLabel << (showValues ? LINE_FEED_STRING : FULL_STOP_STRING + SPACE_STRING);
             if (showValues)
             {
+                String openQuote = LESS_THAN_SIGN_STRING;
+                String closedQuote = GREATER_THAN_SIGN_STRING;
+                if constexpr (std::is_same_v<T, String> || std::is_same_v<T, char[]> || std::is_same_v<T, char *>)
+                {
+                    openQuote += QUOTATION_MARK_STRING;
+                    closedQuote = QUOTATION_MARK_STRING + closedQuote;
+                }
                 auxOss << expected;
-                String space = (auxOss.str().find(LINE_FEED_STRING) != std::string::npos ? LINE_FEED_STRING : SPACE_STRING);
-                auxOss.clear();
-                oss << __TEST_LABEL_EXPECTED_STRING << space << openQuote << expected << closedQuote << std::endl;
+                bool validUtf8 = StringExtensions::IsValidUTF8(auxOss.str());
+                String space = (auxOss.str().find(LINE_FEED_STRING) != std::string::npos && validUtf8 ? LINE_FEED_STRING : SPACE_STRING);
+                oss << __TEST_LABEL_EXPECTED_STRING << space << openQuote << StringExtensions::ToCodeLiteral(auxOss.str()) << closedQuote << std::endl;
                 oss << EMOJI_SQUARE_VS_STRING << std::endl;
+                auxOss.str(EMPTY_STRING);
                 auxOss << value;
-                space = (auxOss.str().find(LINE_FEED_STRING) != std::string::npos ? LINE_FEED_STRING : SPACE_STRING);
+                validUtf8 = StringExtensions::IsValidUTF8(auxOss.str());
+                space = (auxOss.str().find(LINE_FEED_STRING) != std::string::npos && validUtf8 ? LINE_FEED_STRING : SPACE_STRING);
+                oss << __TEST_LABEL_COMPUTED_STRING << space << openQuote << StringExtensions::ToCodeLiteral(auxOss.str()) << closedQuote << std::endl;
                 auxOss.clear();
-                oss << __TEST_LABEL_COMPUTED_STRING << space << openQuote << value << closedQuote << std::endl;
             }
-            oss << __TEST_RESULT_LABEL_STRING << (testResult ? TRUE_LITERAL_STRING : FALSE_LITERAL_STRING) << std::endl;
+            oss << __TEST_RESULT_LABEL_STRING << (testResult ? TRUE_LITERAL_STRING : FALSE_LITERAL_STRING) << (showValues ? LINE_FEED_STRING : FULL_STOP_STRING + SPACE_STRING);
             if (testResult)
             {
                 oss << positiveMessage << std::endl;
@@ -81,6 +100,8 @@ namespace Insane::Test
             {
                 oss << negativeMessage << std::endl;
             }
+
+            oss << std::endl;
             std::cout << oss.str();
         }
     };

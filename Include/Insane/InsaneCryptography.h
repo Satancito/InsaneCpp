@@ -276,9 +276,9 @@ namespace Insane::Cryptography
 	class CryptoTests
 	{
 	public:
-		static void HexEncodingExtensionsTests();
-		static void Base32EncodingExtensionsTests();
-		static void Base64EncodingExtensionsTests();
+		static void HexEncodingExtensionsTests(const bool & showValues = true);
+		static void Base32EncodingExtensionsTests(const bool & showValues = true);
+		static void Base64EncodingExtensionsTests(const bool & showValues = true);
 
 	private:
 	};

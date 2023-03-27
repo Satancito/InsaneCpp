@@ -5,6 +5,7 @@
 #include <unicode/locid.h>
 #include <unicode/ucsdet.h>
 
+
 // ███ Strings ███
 String Insane::Strings::StringExtensions::RemoveBlankSpaces(const String &data)
 {
@@ -533,9 +534,103 @@ bool Insane::Strings::StringExtensions::IsValidUTF8(const std::string &data)
 	ucsdet_setText(detector, data.c_str(), data.length(), &status);
 	const UCharsetMatch *match = ucsdet_detect(detector, &status);
 	const char *charset_name = ucsdet_getName(match, &status);
-	bool valid = UTF8_CHARSET_NAME_STRING == charset_name;
+	bool valid = (UTF8_CHARSET_NAME_STRING == charset_name || ISO_8859_1_CHARSET_NAME == charset_name);
 	ucsdet_close(detector);
 	return valid;
+}
+
+String Insane::Strings::StringExtensions::ToOctalEscapedCodeLiteral(const String &data)
+{
+	USING_NS_INSANE_STR;
+	String result = EMPTY_STRING;
+	for (size_t i = 0; i < data.length(); i++)
+	{
+		result += "\\" + IntegralExtensions::ToOctal<char>(data[i]);
+	}
+	return result;
+}
+
+String Insane::Strings::StringExtensions::ToUnicodeEscapedCodeLiteral(const String &data)
+{
+	USING_NS_INSANE_STR;
+	USING_NS_INSANE_EXCEPTION;
+	if (StringExtensions::IsValidUTF8(data))
+	{
+		throw ArgumentException(NAMEOF(ToUnicodeEscapedCodeLiteral) + ". Invalid UTF-8 unit sequence.");
+	}
+	String result = EMPTY_STRING;
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data));
+	for (int32_t i = 0; i < uniStr.countChar32(); i++)
+	{
+		result += "\\U" + IntegralExtensions::ToHexadecimal<UChar32>(uniStr.char32At(i));
+	}
+	return result;
+}
+
+String Insane::Strings::StringExtensions::ToCodeLiteral(const String &data, const bool &escaped)
+{
+	USING_NS_INSANE_STR;
+	bool isvalidUtf8 = StringExtensions::IsValidUTF8(data);
+	if (!isvalidUtf8 || escaped)
+	{
+		return ToOctalEscapedCodeLiteral(data);
+	}
+
+	String result = EMPTY_STRING;
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data));
+	bool added;
+	for (size_t i = 0; i < data.length(); i++)
+	{
+		added = false;
+		if (data[i] >= 0x00 && data[i] <= 0x1f)
+		{
+			added = true;
+			switch ((char)data[i])
+			{
+			case (char)7:
+				result += "\\a";
+				break;
+			case (char)8:
+				result += "\\b";
+				break;
+			case (char)9:
+				result += "\\t";
+				break;
+			case (char)10:
+				result += data[i];
+				break;
+			case (char)11:
+				result += "\\v";
+				break;
+			case (char)12:
+				result += "\\f";
+				break;
+			case (char)13:
+				result += "\\r";
+				break;
+			case '\"':
+				result += "\\\"";
+			case '\\':
+				result += "\\\\";
+				break;
+			default:
+				result += "\\" + IntegralExtensions::ToOctal<char>(data[i]);
+				break;
+			}
+		}
+		if (data[i] >= 0x7f && data[i] <= 0x9f && !added)
+		{
+			result += "\\" + IntegralExtensions::ToOctal<char>(data[i]);
+		}
+		else
+		{
+			if (!added)
+			{
+				result += data[i];
+			}
+		}
+	}
+	return result;
 }
 
 // ███ Xtring ███
