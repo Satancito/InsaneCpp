@@ -1,6 +1,13 @@
-#include <Insane/InsaneCore.h>
+﻿#include <Insane/InsaneCore.h>
 #include <Insane/InsaneString.h>
-String Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
+
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/prettywriter.h>
+
+
+String InsaneIO::Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
 {
 	using namespace std::chrono;
 	system_clock::time_point now = system_clock::now();
@@ -35,7 +42,7 @@ String Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
 	return result;
 }
 
-void Insane::Core::Console::Clear()
+void InsaneIO::Insane::Core::Console::Clear()
 {
 
 #ifdef WINDOWS_PLATFORM
@@ -49,7 +56,7 @@ void Insane::Core::Console::Clear()
 #endif
 }
 
-void Insane::Core::Console::EnableVirtualTermimalProcessing()
+void InsaneIO::Insane::Core::Console::EnableVirtualTermimalProcessing()
 {
 #if defined WINDOWS_PLATFORM
 	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -63,12 +70,12 @@ void Insane::Core::Console::EnableVirtualTermimalProcessing()
 #endif
 }
 
-void Insane::Core::Console::ResetTerminalFormat()
+void InsaneIO::Insane::Core::Console::ResetTerminalFormat()
 {
 	std::cout << "\033[0m";
 }
 
-void Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	String format = "\033[";
 	format.append(std::to_string(static_cast<int>(foreground)));
@@ -86,15 +93,16 @@ void Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground foregroun
 	std::cout << format;
 }
 
-void Insane::Core::Console::Write(const String &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::Write(const String &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
+	USING_NS_INSANE_STR;
 #ifndef EMSCRIPTEN_PLATFORM
 	EnableVirtualTermimalProcessing();
 	SetVirtualTerminalFormat(foreground, background, styles);
 #endif
 	String str = s;
 #ifdef WINDOWS_PLATFORM
-	WString unicode = Strings::StringToWideString(str);
+	WString unicode = StringExtensions::StringToWideString(str);
 	WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), unicode.c_str(), static_cast<DWORD>(unicode.length()), nullptr, nullptr);
 #elif defined LINUX_PLATFORM || defined MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
 	std::cout << str;
@@ -107,13 +115,13 @@ void Insane::Core::Console::Write(const String &s, ConsoleForeground foreground,
 #endif
 }
 
-void Insane::Core::Console::WriteLine(const String &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::WriteLine(const String &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	Write(s, foreground, background, styles);
 	std::cout << std::endl;
 }
 
-void Insane::Core::Console::Write(const WString &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::Write(const WString &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	USING_NS_INSANE_STR;
 #ifndef EMSCRIPTEN_PLATFORM
@@ -135,18 +143,18 @@ void Insane::Core::Console::Write(const WString &s, ConsoleForeground foreground
 #endif
 }
 
-void Insane::Core::Console::WriteLine(const WString &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::WriteLine(const WString &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	Write(s, foreground, background, styles);
 	std::cout << std::endl;
 }
 
-void Insane::Core::Console::WriteLine()
+void InsaneIO::Insane::Core::Console::WriteLine()
 {
 	std::cout << std::endl;
 }
 
-void Insane::Core::Console::Pause()
+void InsaneIO::Insane::Core::Console::Pause()
 {
 	char c;
 	do
@@ -157,7 +165,7 @@ void Insane::Core::Console::Pause()
 	std::cout<<"KeyPressed"<<std::endl;
 }
 
-int Insane::Core::Console::PauseAny(bool printWhenPressed)
+int InsaneIO::Insane::Core::Console::PauseAny(bool printWhenPressed)
 {
 	int ch;
 #ifdef WINDOWS_PLATFORM
@@ -178,4 +186,24 @@ int Insane::Core::Console::PauseAny(bool printWhenPressed)
 		Console::Write(String(1, ch));
 	}
 	return ch;
+}
+
+// ███ RapidJsonExtensions ███
+
+String InsaneIO::Insane::Core::RapidJsonExtensions::ToJson(const rapidjson::Value& value)
+{
+	rapidjson::Document doc;
+	doc.CopyFrom(value, doc.GetAllocator());
+	rapidjson::StringBuffer buffer;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+	doc.Accept(writer);
+	return String(buffer.GetString(), buffer.GetSize());
+}
+
+String InsaneIO::Insane::Core::RapidJsonExtensions::GetStringValue(const rapidjson::Value& object, const String& propertyName)
+{
+	rapidjson::Document doc;
+	doc.CopyFrom(object, doc.GetAllocator());
+	auto len = doc[propertyName.data()].GetStringLength();
+	return String(doc[propertyName.data()].GetString(), doc[propertyName.data()].GetStringLength());
 }

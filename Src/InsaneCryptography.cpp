@@ -1,4 +1,6 @@
 ﻿#include <stdexcept>
+#include <memory>
+#include <stdint.h>
 
 #include <Insane/InsaneCryptography.h>
 #include <Insane/InsaneException.h>
@@ -7,7 +9,9 @@
 #include <Insane/InsaneCore.h>
 #include <Insane/InsaneTest.h>
 
+#include <botan/block_cipher.h>
 #include <botan/cipher_mode.h>
+#include <botan/filters.h>
 #include <botan/auto_rng.h>
 #include <botan/hex.h>
 #include <botan/base32.h>
@@ -22,6 +26,9 @@
 #include <botan/exceptn.h>
 #include <botan/scrypt.h>
 #include <botan/argon2.h>
+#include <botan/sym_algo.h>
+#include <botan/mode_pad.h>
+#include <botan/pipe.h>
 
 #include <rapidxml/rapidxml.hpp>
 #include <rapidxml/rapidxml_print.hpp>
@@ -31,362 +38,12 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 
-#define AES_MAX_IV_LENGHT ((size_t)16)
-#define AES_MAX_KEY_LENGTH ((size_t)32)
+#include <unicode/regex.h>
 
-#define MD5_DIGEST_LENGTH 16
-#define SHA1_DIGEST_LENGTH 20
-#define SHA256_DIGEST_LENGTH 32
-#define SHA384_DIGEST_LENGTH 48
-#define SHA512_DIGEST_LENGTH 64
 
-#define HMAC_INNER_PADDING ((SignedChar)0x36)
-#define HMAC_OUTER_PADDING ((SignedChar)0x5c)
-#define HMAC_64_BYTES_BLOCK_SIZE ((size_t)64)
-#define HMAC_128_BYTES_BLOCK_SIZE ((size_t)128)
+// ███ RandomExtensions ███
 
-#define RSA_KEY_MAIN_NODE_STRING "RSAKeyValue"s
-#define RSA_KEY_P_NODE_STRING "P"s
-#define RSA_KEY_Q_NODE_STRING "Q"s
-#define RSA_KEY_DP_NODE_STRING "DP"s
-#define RSA_KEY_DQ_NODE_STRING "DQ"s
-#define RSA_KEY_INVERSEQ_NODE_STRING "InverseQ"s
-#define RSA_KEY_D_NODE_STRING "D"s
-#define RSA_KEY_MODULUS_NODE_STRING "Modulus"s
-#define RSA_KEY_EXPONENT_NODE_STRING "Exponent"s
-#define RSA_PADDING_ALGORITHM_STRING "EME-PKCS1-v1_5"s
-
-#define XML_RSA_PUBLIC_AND_PRIVATE_KEY_INITIAL_STRING "<RSAKeyValue>"s
-#define XML_RSA_PUBLIC_AND_PRIVATE_KEY_FINAL_STRING "</RSAKeyValue>"s
-#define JSON_RSA_PUBLIC_AND_PRIVATE_KEY_INITIAL_STRING "{"
-#define JSON_RSA_PUBLIC_AND_PRIVATE_KEY_FINAL_STRING "}"
-#define PEM_RSA_PRIVATE_KEY_INITIAL_STRING "-----BEGIN PRIVATE KEY-----"
-#define PEM_RSA_PUBLIC_KEY_INITIAL_STRING "-----BEGIN PUBLIC KEY-----"
-#define PEM_RSA_PRIVATE_KEY_FINAL_STRING "-----END PRIVATE KEY-----"
-#define PEM_RSA_PUBLIC_KEY_FINAL_STRING "-----END PUBLIC KEY-----"
-
-#define JSON_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING u8R"((\s*\{(?:\s*"Modulus"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"Exponent"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"P"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"Q"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"DP"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"DQ"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"InverseQ"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"D"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()){8}\s*\2\3\4\5\6\7\8\9\}\s*)|(\s*\{(?:\s*"Modulus"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()|\s*"Exponent"\s*:\s*"[a-zA-Z\d\+\/\\]+={0,2}"\s*\,()){2}\s*\11\12\}\s*))"																																																 // https://regex101.com/r/v5lUWw/4 //Add final Comma.
-#define PEM_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING u8R"((-----BEGIN PUBLIC KEY-----(\n|\r|\r\n)([0-9a-zA-Z\+\/=]{64}(\n|\r|\r\n))*([0-9a-zA-Z\+\/=]{1,63}(\n|\r|\r\n))?-----END PUBLIC KEY-----)|(-----BEGIN PRIVATE KEY-----(\n|\r|\r\n)([0-9a-zA-Z\+\/=]{64}(\n|\r|\r\n))*([0-9a-zA-Z\+\/=]{1,63}(\n|\r|\r\n))?-----END PRIVATE KEY-----))"																																																																																																																								 // https://regex101.com/r/mGnr7I/1
-#define XML_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING u8R"((\s*<\s*RSAKeyValue\s*>\s*(?:\s*<\s*Modulus\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Modulus\s*>()|\s*<\s*Exponent\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Exponent\s*>()|\s*<\s*P\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*P\s*>()|\s*<\s*Q\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Q\s*>()|\s*<\s*DP\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*DP\s*>()|\s*<\s*DQ\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*DQ\s*>()|\s*<\s*InverseQ\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*InverseQ\s*>()|\s*<\s*D\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*D\s*>()){8}\s*<\/\s*RSAKeyValue\s*>\s*\2\3\4\5\6\7\8\9)|(\s*<\s*RSAKeyValue\s*>\s*(?:\s*<\s*Modulus\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Modulus\s*>()|\s*<\s*Exponent\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Exponent\s*>()){2}\s*<\/\s*RSAKeyValue\s*>\s*\11\12))" // https://regex101.com/r/fQV2VN/4
-
-// // ███ HmacResult ███
-// Insane::Cryptography::HmacResult::HmacResult(const String &hash, const String &key, const HashAlgorithm algorithm)
-// {
-// 	this->hash = hash;
-// 	this->key = key;
-// 	this->algorithm = algorithm;
-// }
-
-// String Insane::Cryptography::HmacResult::Hash() const
-// {
-// 	return this->hash;
-// }
-
-// String Insane::Cryptography::HmacResult::Key() const
-// {
-// 	return this->key;
-// }
-
-// Insane::Cryptography::HashAlgorithm Insane::Cryptography::HmacResult::Algorithm() const
-// {
-// 	return this->algorithm;
-// }
-
-// String Insane::Cryptography::HmacResult::RawHash() const
-// {
-// 	return HashManager::FromBase64(this->hash);
-// }
-
-// String Insane::Cryptography::HmacResult::RawKey() const
-// {
-// 	return HashManager::FromBase64(this->key);
-// }
-
-// String Insane::Cryptography::HmacResult::Serialize() const
-// {
-// 	USING_NS_INSANE_STR;
-// 	try
-// 	{
-// 		rapidjson::StringBuffer sb;
-// 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
-// 		writer.StartObject();
-// 		writer.String(cnameof(Hash));
-// 		writer.String(hash.c_str(), static_cast<rapidjson::SizeType>(hash.length()));
-// 		writer.String(cnameof(Key));
-// 		writer.String(key.c_str(), static_cast<rapidjson::SizeType>(key.length()));
-// 		writer.String(cnameof(Algorithm));
-// 		writer.Int(static_cast<int>(algorithm));
-// 		writer.EndObject();
-// 		return String(sb.GetString(), sb.GetSize());
-// 	}
-// 	catch (...)
-// 	{
-// 		throw Insane::Exception::CryptoException(StringExtensions::Replace(R"(Unable to serialize "#".)", "#", nameof(HmacResult)));
-// 	}
-// }
-
-// Insane::Cryptography::HmacResult Insane::Cryptography::HmacResult::Deserialize(const String &json)
-// {
-
-// 	USING_NS_INSANE_STR;
-// 	try
-// 	{
-// 		rapidjson::Document document;
-// 		document.Parse(json.c_str(), json.length());
-// 		if (document.HasParseError())
-// 		{
-// 			throw 1;
-// 		}
-// 		return HmacResult(document[cnameof(Hash)].GetString(),
-// 						  document[cnameof(Key)].GetString(),
-// 						  static_cast<HashAlgorithm>(document[cnameof(Algorithm)].GetInt()));
-// 	}
-// 	catch (...)
-// 	{
-// 		throw Insane::Exception::CryptoException(StringExtensions::Replace(R"(Unable to deserialize "#".)", "#", nameof(HmacResult)));
-// 	}
-// }
-
-// // ███ ScryptResult ███
-
-// Insane::Cryptography::ScryptResult::ScryptResult(const String &hash, const String &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
-// {
-// 	this->hash = hash;
-// 	this->salt = salt;
-// 	this->iterations = iterations;
-// 	this->blockSize = blockSize;
-// 	this->parallelism = parallelism;
-// 	this->derivedKeyLength = derivedKeyLength;
-// }
-
-// String Insane::Cryptography::ScryptResult::Hash() const
-// {
-// 	return hash;
-// }
-
-// String Insane::Cryptography::ScryptResult::Salt() const
-// {
-// 	return salt;
-// }
-
-// size_t Insane::Cryptography::ScryptResult::Iterations() const
-// {
-// 	return iterations;
-// }
-
-// size_t Insane::Cryptography::ScryptResult::BlockSize() const
-// {
-// 	return blockSize;
-// }
-
-// size_t Insane::Cryptography::ScryptResult::Parallelism() const
-// {
-// 	return parallelism;
-// }
-
-// size_t Insane::Cryptography::ScryptResult::DerivedKeyLength() const
-// {
-// 	return derivedKeyLength;
-// }
-
-// String Insane::Cryptography::ScryptResult::RawHash() const
-// {
-// 	return HashManager::FromBase64(hash);
-// }
-
-// String Insane::Cryptography::ScryptResult::RawSalt() const
-// {
-// 	return HashManager::FromBase64(salt);
-// }
-
-// String Insane::Cryptography::ScryptResult::Serialize() const
-// {
-// 	USING_NS_INSANE_STR;
-// 	try
-// 	{
-// 		rapidjson::StringBuffer sb;
-// 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
-// 		writer.StartObject();
-// 		writer.String(cnameof(Hash));
-// 		writer.String(hash.c_str(), static_cast<rapidjson::SizeType>(hash.length()));
-
-// 		writer.String(cnameof(Salt));
-// 		writer.String(salt.c_str(), static_cast<rapidjson::SizeType>(salt.length()));
-
-// 		writer.String(cnameof(Iterations));
-// 		String number = tostr(iterations);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-
-// 		writer.String(cnameof(BlockSize));
-// 		number = tostr(blockSize);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-
-// 		writer.String(cnameof(Parallelism));
-// 		number = tostr(parallelism);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-
-// 		writer.String(cnameof(DerivedKeyLength));
-// 		number = tostr(derivedKeyLength);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-// 		writer.EndObject();
-// 		return String(sb.GetString(), sb.GetSize());
-// 	}
-// 	catch (...)
-// 	{
-// 		throw Insane::Exception::CryptoException(StringExtensions::Replace(R"(Unable to serialize "#".)", "#", nameof(ScryptResult)));
-// 	}
-// }
-
-// Insane::Cryptography::ScryptResult Insane::Cryptography::ScryptResult::Deserialize(const String &json)
-// {
-// 	USING_NS_INSANE_STR;
-// 	try
-// 	{
-// 		rapidjson::Document document;
-// 		document.Parse(json.c_str(), json.length());
-// 		if (document.HasParseError())
-// 		{
-// 			throw 1;
-// 		}
-// 		return ScryptResult(document[cnameof(Hash)].GetString(),
-// 							document[cnameof(Salt)].GetString(),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Iterations)].GetUint64() : document[cnameof(Iterations)].GetUint()),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(BlockSize)].GetUint64() : document[cnameof(BlockSize)].GetUint()),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Parallelism)].GetUint64() : document[cnameof(Parallelism)].GetUint()),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(DerivedKeyLength)].GetUint64() : document[cnameof(DerivedKeyLength)].GetUint()));
-// 	}
-// 	catch (...)
-// 	{
-// 		throw Insane::Exception::CryptoException(StringExtensions::Replace(R"(Unable to deserialize "#".)", "#", nameof(ScryptResult)));
-// 	}
-// }
-
-// // ███ Argon2Result ███
-// Insane::Cryptography::Argon2Result::Argon2Result(const String &hash, const String &salt, const Argon2Variant &variant, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t &derivedKeyLength)
-// {
-// 	this->hash = hash;
-// 	this->salt = salt;
-// 	this->variant = variant;
-// 	this->iterations = iterations;
-// 	this->memorySizeKiB = memorySizeKiB;
-// 	this->parallelism = parallelism;
-// 	this->derivedKeyLength = derivedKeyLength;
-// }
-
-// String Insane::Cryptography::Argon2Result::Hash() const
-// {
-// 	return hash;
-// }
-
-// String Insane::Cryptography::Argon2Result::Salt() const
-// {
-// 	return salt;
-// }
-
-// Insane::Cryptography::Argon2Variant Insane::Cryptography::Argon2Result::Variant() const
-// {
-// 	return variant;
-// }
-
-// size_t Insane::Cryptography::Argon2Result::Iterations() const
-// {
-// 	return iterations;
-// }
-
-// size_t Insane::Cryptography::Argon2Result::MemorySizeKiB() const
-// {
-// 	return memorySizeKiB;
-// }
-
-// size_t Insane::Cryptography::Argon2Result::Parallelism() const
-// {
-// 	return parallelism;
-// }
-
-// size_t Insane::Cryptography::Argon2Result::DerivedKeyLength() const
-// {
-// 	return derivedKeyLength;
-// }
-
-// String Insane::Cryptography::Argon2Result::RawHash() const
-// {
-// 	return HashManager::FromBase64(hash);
-// }
-
-// String Insane::Cryptography::Argon2Result::RawSalt() const
-// {
-// 	return HashManager::FromBase64(salt);
-// }
-
-// String Insane::Cryptography::Argon2Result::Serialize() const
-// {
-// 	USING_NS_INSANE_STR;
-// 	try
-// 	{
-// 		rapidjson::StringBuffer sb;
-// 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
-// 		writer.StartObject();
-// 		writer.String(cnameof(Hash));
-// 		writer.String(hash.c_str(), static_cast<rapidjson::SizeType>(hash.length()));
-
-// 		writer.String(cnameof(Salt));
-// 		writer.String(salt.c_str(), static_cast<rapidjson::SizeType>(salt.length()));
-
-// 		writer.String(cnameof(Variant));
-// 		writer.Int(static_cast<int>(variant));
-
-// 		writer.String(cnameof(Iterations));
-// 		String number = tostr(iterations);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-
-// 		writer.String(cnameof(MemorySizeKiB));
-// 		number = tostr(memorySizeKiB);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-
-// 		writer.String(cnameof(Parallelism));
-// 		number = tostr(parallelism);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-
-// 		writer.String(cnameof(DerivedKeyLength));
-// 		number = tostr(derivedKeyLength);
-// 		writer.RawNumber(number.c_str(), static_cast<rapidjson::SizeType>(number.length()));
-// 		writer.EndObject();
-// 		return String(sb.GetString(), sb.GetSize());
-// 	}
-// 	catch (...)
-// 	{
-// 		throw Insane::Exception::CryptoException(StringExtensions::Replace(R"(Unable to serialize "#".)", "#", nameof(Argon2Result)));
-// 	}
-// }
-
-// Insane::Cryptography::Argon2Result Insane::Cryptography::Argon2Result::Deserialize(const String &json)
-// {
-// 	USING_NS_INSANE_STR;
-// 	try
-// 	{
-// 		rapidjson::Document document;
-// 		document.Parse(json.c_str(), json.length());
-// 		if (document.HasParseError())
-// 		{
-// 			throw 1;
-// 		}
-// 		return Argon2Result(document[cnameof(Hash)].GetString(),
-// 							document[cnameof(Salt)].GetString(),
-// 							static_cast<Argon2Variant>(document[cnameof(Variant)].GetInt()),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Iterations)].GetUint64() : document[cnameof(Iterations)].GetUint()),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(MemorySizeKiB)].GetUint64() : document[cnameof(MemorySizeKiB)].GetUint()),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(Parallelism)].GetUint64() : document[cnameof(Parallelism)].GetUint()),
-// 							static_cast<size_t>(sizeof(size_t) == sizeof(uint64_t) ? document[cnameof(DerivedKeyLength)].GetUint64() : document[cnameof(DerivedKeyLength)].GetUint()));
-// 	}
-// 	catch (...)
-// 	{
-// 		throw Insane::Exception::CryptoException(StringExtensions::Replace(R"(Unable to deserialize "#".)", "#", nameof(Argon2Result)));
-// 	}
-// }
-
-// ███ RandomManager ███
-
-String Insane::Cryptography::RandomManager::Next(size_t sz)
+String InsaneIO::Insane::Cryptography::RandomExtensions::Next(size_t sz)
 {
 	String result = String(sz, 0);
 	std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
@@ -394,309 +51,235 @@ String Insane::Cryptography::RandomManager::Next(size_t sz)
 	return String(bytes.begin(), bytes.end());
 }
 
-int Insane::Cryptography::RandomManager::Next(int min, int max)
+int InsaneIO::Insane::Cryptography::RandomExtensions::Next(int min, int max)
 {
+	Botan::AutoSeeded_RNG rng;
+	// if (min >= max)
+	//             {
+	//                 throw new ArgumentException("Min value is greater or equals than Max value.");
+	//             }
+	//             byte[] intBytes = new byte[4];
+	//             RandomNumberGenerator.Fill(intBytes);
+	//             return min + Math.Abs(BitConverter.ToInt32(intBytes, 0)) % (max - min + 1);
+	// Genera el número aleatorio de tipo uint32_t
 	std::random_device device = std::random_device{};
 	std::mt19937 mersenneEngine(device());
 	std::uniform_int_distribution<int> distribution(min, max);
 	return distribution(mersenneEngine);
 }
 
-int Insane::Cryptography::RandomManager::Next()
+int InsaneIO::Insane::Cryptography::RandomExtensions::Next()
 {
 	return Next(INT_MIN, INT_MAX);
 }
 
-// ███ HashManager ███
+// ███ AesExtensions ███
 
-// String Insane::Cryptography::HashManager::ToRawHash(const String &data, const HashAlgorithm &algorithm)
-// {
-// 	USING_NS_INSANE_EXCEPTION;
-// 	switch (algorithm)
-// 	{
-// 	case HashAlgorithm::Md5:
-// 	{
-// 		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create("MD5"s));
-// 		hash->update(data);
-// 		Botan::SecureVector<uint8_t> result = hash->final();
-// 		return String(result.begin(), result.end());
-// 	}
-// 	case HashAlgorithm::Sha1:
-// 	{
-// 		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create("SHA-1"s));
-// 		hash->update(data);
-// 		Botan::SecureVector<uint8_t> result = hash->final();
-// 		return String(result.begin(), result.end());
-// 	}
-// 	case HashAlgorithm::Sha256:
-// 	{
-// 		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create("SHA-256"s));
-// 		hash->update(data);
-// 		Botan::SecureVector<uint8_t> result = hash->final();
-// 		return String(result.begin(), result.end());
-// 	}
-// 	case HashAlgorithm::Sha384:
-// 	{
-// 		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create("SHA-384"s));
-// 		hash->update(data);
-// 		Botan::SecureVector<uint8_t> result = hash->final();
-// 		return String(result.begin(), result.end());
-// 	}
-// 	case HashAlgorithm::Sha512:
-// 	{
-// 		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create("SHA-512"s));
-// 		hash->update(data);
-// 		Botan::SecureVector<uint8_t> result = hash->final();
-// 		return String(result.begin(), result.end());
-// 	}
-// 	default:
-// 		throw CryptoException("Not implemented algorithm."s);
-// 	}
-// }
+class ZeroPadding : public Botan::BlockCipherModePaddingMethod
+{
+public:
+	void add_padding(Botan::secure_vector<uint8_t>& buffer, size_t final_block_bytes, size_t block_size) const override
+	{
+		const size_t pad_bytes = block_size - final_block_bytes;
+		buffer.resize(buffer.size() + pad_bytes, 0x00);
+	}
 
-// String Insane::Cryptography::HashManager::ToBase64Hash(const String &data, const HashAlgorithm &algorithm)
-// {
-// 	return Base64EncodingExtensions::ToBase64(ToRawHash(data, algorithm));
-// }
+	size_t unpad(const uint8_t block[], size_t len) const override
+	{
+		size_t i = len;
+		while (i > 0 && block[i - 1] == 0x00) {
+			i--;
+		}
+		return i;
+	}
 
-// String Insane::Cryptography::HashManager::ToRawHmac(const String &data, const String &key, const HashAlgorithm &algorithm)
-// {
-// 	size_t blockSize = 0;
-// 	String secret = key;
-// 	switch (algorithm)
-// 	{
-// 	case HashAlgorithm::Md5:
-// 		[[fallthrough]];
-// 	case HashAlgorithm::Sha1:
-// 		[[fallthrough]];
-// 	case HashAlgorithm::Sha256:
-// 		blockSize = HMAC_64_BYTES_BLOCK_SIZE;
-// 		break;
-// 	case HashAlgorithm::Sha384:
-// 		[[fallthrough]];
-// 	case HashAlgorithm::Sha512:
-// 		blockSize = HMAC_128_BYTES_BLOCK_SIZE;
-// 		break;
-// 	}
+	bool valid_blocksize(size_t block_size) const override
+	{
+		return true;
+	}
 
-// 	if (secret.length() > blockSize)
-// 	{
-// 		secret = HashManager::ToRawHash(secret, algorithm);
-// 	}
+	std::string name() const override
+	{
+		return "ZeroPadding";
+	}
+};
 
-// 	if (secret.length() < blockSize)
-// 	{
-// 		secret.append(String((size_t)(blockSize - secret.length()), static_cast<char>(0)));
-// 	}
-// 	String outerKeyPadding = String(blockSize, HMAC_OUTER_PADDING);
-// 	String innerKeyPadding = String(blockSize, HMAC_INNER_PADDING);
-// 	for (size_t i = 0; i < blockSize; i++)
-// 	{
-// 		innerKeyPadding[i] = (SignedChar)(secret[i] ^ innerKeyPadding[i]);
-// 		outerKeyPadding[i] = (SignedChar)(secret[i] ^ outerKeyPadding[i]);
-// 	}
-// 	innerKeyPadding.append(data);
-// 	String ret = HashManager::ToRawHash(innerKeyPadding, algorithm);
-// 	outerKeyPadding.append(ret);
-// 	ret = HashManager::ToRawHash(outerKeyPadding, algorithm);
-// 	return ret;
-// }
-
-// Insane::Cryptography::HmacResult Insane::Cryptography::HashManager::ToBase64Hmac(const String &data, const String &key, const HashAlgorithm &algorithm)
-// {
-// 	return HmacResult(Base64EncodingExtensions::ToBase64(ToRawHmac(data, key, algorithm)), Base64EncodingExtensions::ToBase64(key), algorithm);
-// }
-
-// Insane::Cryptography::HmacResult Insane::Cryptography::HashManager::ToBase64Hmac(const String &data, const size_t &keySize, const HashAlgorithm &algorithm)
-// {
-// 	return ToBase64Hmac(data, RandomManager::Next(keySize), algorithm);
-// }
-
-// String Insane::Cryptography::HashManager::ToRawScrypt(const String &data, const String &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
-// {
-// 	USING_NS_INSANE_EXCEPTION;
-// 	try
-// 	{
-// 		Botan::Scrypt engine = Botan::Scrypt(iterations, blockSize, parallelism);
-// 		std::vector<uint8_t> out(derivedKeyLength);
-// 		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t *>(salt.data()), salt.size());
-// 		return String(out.begin(), out.end());
-// 	}
-// 	catch (std::exception &ex)
-// 	{
-// 		throw CryptoException("Error when generating the derived key. "s + String(ex.what()));
-// 	}
-// }
-
-// Insane::Cryptography::ScryptResult Insane::Cryptography::HashManager::ToBase64Scrypt(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
-// {
-// 	return ScryptResult(Base64EncodingExtensions::ToBase64(ToRawScrypt(data, isBase64Salt ? Base64EncodingExtensions::FromBase64(salt) : salt, iterations, blockSize, parallelism, derivedKeyLength)),
-// 						isBase64Salt ? salt : Base64EncodingExtensions::ToBase64(salt),
-// 						iterations,
-// 						blockSize,
-// 						parallelism,
-// 						derivedKeyLength);
-// }
-
-// Insane::Cryptography::ScryptResult Insane::Cryptography::HashManager::ToBase64Scrypt(const String &data, const size_t &saltSize, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
-// {
-// 	String salt = RandomManager::Next(saltSize);
-// 	return ToBase64Scrypt(data, salt, false, iterations, blockSize, parallelism, derivedKeyLength);
-// }
-
-// String Insane::Cryptography::HashManager::ToRawArgon2(const String &data, const String &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
-// {
-// 	USING_NS_INSANE_EXCEPTION;
-// 	try
-// 	{
-// 		Botan::Argon2 engine(static_cast<uint8_t>(variant), memorySizeKiB, iterations, parallelism);
-// 		std::vector<uint8_t> out(derivedKeyLength);
-// 		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t *>(salt.data()), salt.size());
-// 		return String(out.begin(), out.end());
-// 	}
-// 	catch (std::exception &ex)
-// 	{
-// 		throw CryptoException("Error when generating the derived key. "s + String(ex.what()));
-// 	}
-// }
-
-// Insane::Cryptography::Argon2Result Insane::Cryptography::HashManager::ToBase64Argon2(const String &data, const String &salt, const bool &isBase64Salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
-// {
-// 	return Argon2Result(
-// 		Base64EncodingExtensions::ToBase64(ToRawArgon2(data, isBase64Salt ? Base64EncodingExtensions::FromBase64(salt) : salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength)),
-// 		isBase64Salt ? salt : Base64EncodingExtensions::ToBase64(salt),
-// 		variant,
-// 		iterations,
-// 		memorySizeKiB,
-// 		parallelism,
-// 		derivedKeyLength);
-// }
-
-// Insane::Cryptography::Argon2Result Insane::Cryptography::HashManager::ToBase64Argon2(const String &data, size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const size_t saltSize, const Argon2Variant &variant, const size_t &derivedKeyLength)
-// {
-// 	String salt = RandomManager::Next(saltSize);
-// 	return ToBase64Argon2(data, salt, false, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength);
-// }
-
-// ███ AesManager ███
-
-String Insane::Cryptography::AesManager::EncryptRaw(const String &data, const String &key) noexcept(false)
+String InsaneIO::Insane::Cryptography::AesExtensions::EncryptAesCbc(const String& data, const String& key, const AesCbcPadding& padding) noexcept(false)
 {
 	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_STR;
 	try
 	{
-		String secretKey = GenerateValidKey(key);
+		ValidateKey(key);
+		String secretKey = GenerateNormalizedKey(key);
 		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
-		std::unique_ptr<Botan::Cipher_Mode> enc = Botan::Cipher_Mode::create("AES-256/CBC/PKCS7"s, Botan::ENCRYPTION);
-		enc->set_key(Botan::secure_vector<uint8_t>(secretKey.begin(), secretKey.end()));
-		Botan::secure_vector<uint8_t> ivBytes = rng->random_vec(AES_MAX_IV_LENGHT);
+		Botan::secure_vector<uint8_t> ivBytes = rng->random_vec(AES_MAX_IV_LENGTH);
 		Botan::secure_vector<uint8_t> dataBytes(data.begin(), data.end());
+		Botan::secure_vector<uint8_t> keyBytes(secretKey.begin(), secretKey.end());
+		size_t finalBlockSize = dataBytes.size() - ((dataBytes.size() / AES_BLOCK_SIZE_LENGTH) * AES_BLOCK_SIZE_LENGTH);
+		switch (padding)
+		{
+		case AesCbcPadding::None:
+		{
+			break;
+		}
+		case AesCbcPadding::Zeros:
+		{
+			ZeroPadding paddingMethod = ZeroPadding();
+			paddingMethod.add_padding(dataBytes, finalBlockSize, AES_BLOCK_SIZE_LENGTH);
+			break;
+		}
+		case AesCbcPadding::Pkcs7:
+		{
+			Botan::PKCS7_Padding paddingMethod = Botan::PKCS7_Padding();
+			paddingMethod.add_padding(dataBytes, finalBlockSize, AES_BLOCK_SIZE_LENGTH);
+			break;
+		}
+		case AesCbcPadding::AnsiX923:
+		{
+			Botan::ANSI_X923_Padding paddingMethod = Botan::ANSI_X923_Padding();
+			paddingMethod.add_padding(dataBytes, finalBlockSize, AES_BLOCK_SIZE_LENGTH);
+			break;
+		}
+		default:
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, AesCbcPaddingEnumExtensions::ToString(padding));
+		}
+
+		std::unique_ptr<Botan::Cipher_Mode> enc = Botan::Cipher_Mode::create(StringExtensions::Join({ __AES_256_ALGORITHM_STRING, __AES_MODE_CBC_STRING, __AES_PADDING_MODE_NONE_STRING }, SLASH_STRING), Botan::ENCRYPTION);
+		enc->set_key(keyBytes);
 		enc->start(ivBytes);
 		enc->finish(dataBytes);
 		String result = String(dataBytes.begin(), dataBytes.end());
 		result += String(ivBytes.begin(), ivBytes.end());
 		return result;
 	}
-	catch (const Botan::Exception &e)
+	catch (const NotImplementedException& e)
 	{
-		throw CryptoException(e.what(), e.error_code());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.GetErrorCode());
 	}
 	catch (...)
 	{
-		throw CryptoException();
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 }
 
-String Insane::Cryptography::AesManager::DecryptRaw(const String &data, const String &key)
+String InsaneIO::Insane::Cryptography::AesExtensions::DecryptAesCbc(const String& data, const String& key, const AesCbcPadding& padding)
 {
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_STR;
 	try
 	{
-		String secretKey = GenerateValidKey(key);
-		std::unique_ptr<Botan::Cipher_Mode> dec = Botan::Cipher_Mode::create("AES-256/CBC/PKCS7"s, Botan::DECRYPTION);
-		dec->set_key(Botan::SecureVector<uint8_t>(secretKey.begin(), secretKey.end()));
-		Botan::secure_vector<uint8_t> dataBytes(data.begin(), data.end() - AES_MAX_IV_LENGHT);
-		dec->start(Botan::secure_vector<uint8_t>(data.end() - AES_MAX_IV_LENGHT, data.end()));
+		ValidateKey(key);
+		String secretKey = GenerateNormalizedKey(key);
+		Botan::secure_vector<uint8_t> dataBytes(data.begin(), data.end() - AES_MAX_IV_LENGTH);
+		Botan::secure_vector<uint8_t> keyBytes(secretKey.begin(), secretKey.end());
+		Botan::secure_vector<uint8_t> ivBytes(data.end() - AES_MAX_IV_LENGTH, data.end());
+
+		std::unique_ptr<Botan::Cipher_Mode> dec = Botan::Cipher_Mode::create(StringExtensions::Join({ __AES_256_ALGORITHM_STRING, __AES_MODE_CBC_STRING, __AES_PADDING_MODE_NONE_STRING }, SLASH_STRING), Botan::DECRYPTION);
+		dec->set_key(keyBytes);
+		dec->start(ivBytes);
 		dec->finish(dataBytes);
+		size_t newSize = dataBytes.size();
+		switch (padding)
+		{
+		case AesCbcPadding::None:
+		{
+			break;
+		}
+		case AesCbcPadding::Zeros:
+		{
+			ZeroPadding paddingMethod = ZeroPadding();
+			newSize = paddingMethod.unpad(dataBytes.data(), dataBytes.size());
+			break;
+		}
+		case AesCbcPadding::Pkcs7:
+		{
+			Botan::PKCS7_Padding paddingMethod = Botan::PKCS7_Padding();
+			newSize = paddingMethod.unpad(dataBytes.data(), dataBytes.size());
+			break;
+		}
+		case AesCbcPadding::AnsiX923:
+		{
+			Botan::ANSI_X923_Padding paddingMethod = Botan::ANSI_X923_Padding();
+			newSize = paddingMethod.unpad(dataBytes.data(), dataBytes.size());
+			break;
+		}
+		default:
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, AesCbcPaddingEnumExtensions::ToString(padding));
+		}
+
+		dataBytes.resize(newSize);
 		return String(dataBytes.begin(), dataBytes.end());
 	}
-	catch (const Botan::Exception &e)
+	catch (const NotImplementedException& ex)
 	{
-		throw Insane::Exception::CryptoException(e.what(), e.error_code());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException();
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 }
 
-String Insane::Cryptography::AesManager::EncryptToBase64(const String &data, const String &key) noexcept(false)
+String InsaneIO::Insane::Cryptography::AesExtensions::GenerateNormalizedKey(const String& key)
 {
-	return Base64EncodingExtensions::ToBase64(EncryptRaw(data, key));
+	String hash = HashExtensions::ToHash(key, HashAlgorithm::Sha512);
+	hash.resize(AES_MAX_KEY_LENGTH);
+	return hash;
 }
 
-String Insane::Cryptography::AesManager::DecryptFromBase64(const String &data, const String &key) noexcept(false)
+void InsaneIO::Insane::Cryptography::AesExtensions::ValidateKey(const String& key)
 {
-	return DecryptRaw(Base64EncodingExtensions::FromBase64(data), key);
-}
-
-String Insane::Cryptography::AesManager::GenerateValidKey(const String &key)
-{
-	// String hash = HashManager::ToRawHash(key, HashAlgorithm::Sha512);
-	// hash.resize(AES_MAX_KEY_LENGTH);
-	// return hash;
+	USING_NS_INSANE_EXCEPTION;
+	if (key.length() < 8)
+	{
+		throw new ArgumentException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Key must be at least 8 bytes.");
+	}
 }
 
 // ███ RsaKeyPair ███
 
-Insane::Cryptography::RsaKeyPair::RsaKeyPair(const String &publicKey, const String &privateKey)
+InsaneIO::Insane::Cryptography::RsaKeyPair::RsaKeyPair(const String& publicKey, const String& privateKey) : IJsonSerialize(EMPTY_STRING), PublicKey(publicKey), PrivateKey(privateKey)
 {
-	this->privateKey = privateKey;
-	this->publicKey = publicKey;
 }
 
-String Insane::Cryptography::RsaKeyPair::PublicKey() const
+String InsaneIO::Insane::Cryptography::RsaKeyPair::GetPublicKey() const
 {
-	return publicKey;
+	return PublicKey;
 }
 
-String Insane::Cryptography::RsaKeyPair::PrivateKey() const
+String InsaneIO::Insane::Cryptography::RsaKeyPair::GetPrivateKey() const
 {
-	return privateKey;
+	return PrivateKey;
 }
 
-void Insane::Cryptography::RsaKeyPair::SetPublicKey(const String &npublicKey)
+String InsaneIO::Insane::Cryptography::RsaKeyPair::Serialize() const noexcept(false)
 {
-	this->publicKey = npublicKey;
-}
-
-void Insane::Cryptography::RsaKeyPair::SetPrivateKey(const String &nprivateKey)
-{
-	this->privateKey = nprivateKey;
-}
-
-String Insane::Cryptography::RsaKeyPair::Serialize() const noexcept(false)
-{
+	USING_NS_INSANE_EXCEPTION;
 	try
 	{
 		rapidjson::StringBuffer sb;
 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
 		writer.StartObject();
-		writer.String(CNAMEOF(PublicKey));
-		writer.String(publicKey.c_str(), static_cast<rapidjson::SizeType>(publicKey.length()));
-		writer.String(CNAMEOF(PrivateKey));
-		writer.String(privateKey.c_str(), static_cast<rapidjson::SizeType>(privateKey.length()));
+
+		writer.Key(CNAMEOF(PublicKey));
+		writer.String(PublicKey.data(), static_cast<rapidjson::SizeType>(PublicKey.length()));
+
+		writer.Key(CNAMEOF(PrivateKey));
+		writer.String(PrivateKey.data(), static_cast<rapidjson::SizeType>(PrivateKey.length()));
+
 		writer.EndObject();
 		return String(sb.GetString(), sb.GetSize());
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException("Unable to serialize keypair."s);
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 }
 
-Insane::Cryptography::RsaKeyPair Insane::Cryptography::RsaKeyPair::Deserialize(String json) noexcept(false)
+InsaneIO::Insane::Cryptography::RsaKeyPair InsaneIO::Insane::Cryptography::RsaKeyPair::Deserialize(const String& json)
 {
-	USING_NS_INSANE_STR;
+	USING_NS_INSANE_EXCEPTION;
 	try
 	{
 		rapidjson::Document document;
@@ -705,223 +288,40 @@ Insane::Cryptography::RsaKeyPair Insane::Cryptography::RsaKeyPair::Deserialize(S
 		{
 			throw 1;
 		}
-		return RsaKeyPair(document["PublicKey"].GetString(), document["PrivateKey"].GetString());
+		return RsaKeyPair(document[CNAMEOF(PublicKey)].GetString(), document[CNAMEOF(PrivateKey)].GetString());
 	}
 	catch (...)
 	{
-		throw Insane::Exception::CryptoException(StringExtensions::Replace(R"(Unable to deserialize "#".)", "#", NAMEOF(RsaKeyPair)));
+		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 }
 
-// ███ RsaManager ███
+// ███ RsaExtensions ███
 
-Insane::Cryptography::RsaKeyPair Insane::Cryptography::RsaManager::CreateKeyPair(const Size &keySize, const RsaKeyEncoding &encoding, const bool &indent)
+InsaneIO::Insane::Cryptography::RsaKeyEncoding InsaneIO::Insane::Cryptography::RsaExtensions::GetRsaKeyEncoding(const String& key)
 {
+	USING_NS_INSANE_STR;
 	USING_NS_INSANE_EXCEPTION;
-	USING_NS_INSANE_STR;
-	std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
-	std::unique_ptr<Botan::RSA_PrivateKey> keyPair = std::make_unique<Botan::RSA_PrivateKey>(*rng, keySize);
-	switch (encoding)
-	{
-	case RsaKeyEncoding::Ber:
-	{
-		try
-		{
-			String privateKey = Botan::base64_encode(Botan::PKCS8::BER_encode(*keyPair));
-			String publicKey = Botan::base64_encode(Botan::X509::BER_encode(*keyPair));
-			return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
-		}
-		catch (...)
-		{
-			throw Insane::Exception::CryptoException("Unable to generate BER keypair."s);
-		}
-	}
-	case RsaKeyEncoding::Pem:
-	{
-		try
-		{
-			String privateKey = Botan::PKCS8::PEM_encode(*keyPair);
-			String publicKey = Botan::X509::PEM_encode(*keyPair);
-			return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
-		}
-		catch (...)
-		{
-			throw Insane::Exception::CryptoException("Unable to generate PEM keypair."s);
-		}
-	}
-	case RsaKeyEncoding::Xml:
-	{
-		try
-		{
-
-			std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
-			String rsaValueName = RSA_KEY_MAIN_NODE_STRING;
-			rapidxml::xml_node<> *mainNode = doc->allocate_node(rapidxml::node_type::node_element, rsaValueName.c_str());
-			doc->append_node(mainNode);
-
-			String modulus = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_n()));
-			String modulusName = RSA_KEY_MODULUS_NODE_STRING;
-			rapidxml::xml_node<> *childNode = doc->allocate_node(rapidxml::node_type::node_element, modulusName.c_str(), modulus.c_str(), 0, modulus.length());
-			mainNode->append_node(childNode);
-
-			String exponent = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_e()));
-			String exponentName = RSA_KEY_EXPONENT_NODE_STRING;
-			childNode = doc->allocate_node(rapidxml::node_type::node_element, exponentName.c_str(), exponent.c_str(), 0, exponent.length());
-			mainNode->append_node(childNode);
-
-			String publicKey;
-			rapidxml::print(std::back_inserter(publicKey), *doc, indent ? 0 : rapidxml::print_no_indenting);
-
-			String p = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_p()));
-			String pName = RSA_KEY_P_NODE_STRING;
-			childNode = doc->allocate_node(rapidxml::node_type::node_element, pName.c_str(), p.c_str(), 0, p.length());
-			mainNode->append_node(childNode);
-
-			String q = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_q()));
-			String qName = RSA_KEY_Q_NODE_STRING;
-			childNode = doc->allocate_node(rapidxml::node_type::node_element, qName.c_str(), q.c_str(), 0, q.length());
-			mainNode->append_node(childNode);
-
-			String dp = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d1()));
-			String dpName = RSA_KEY_DP_NODE_STRING;
-			childNode = doc->allocate_node(rapidxml::node_type::node_element, dpName.c_str(), dp.c_str(), 0, dp.length());
-			mainNode->append_node(childNode);
-
-			String dq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d2()));
-			String dqName = RSA_KEY_DQ_NODE_STRING;
-			childNode = doc->allocate_node(rapidxml::node_type::node_element, dqName.c_str(), dq.c_str(), 0, dq.length());
-			mainNode->append_node(childNode);
-
-			String inverseq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_c()));
-			String inverseqName = RSA_KEY_INVERSEQ_NODE_STRING;
-			childNode = doc->allocate_node(rapidxml::node_type::node_element, inverseqName.c_str(), inverseq.c_str(), 0, inverseq.length());
-			mainNode->append_node(childNode);
-
-			String d = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d()));
-			String dName = RSA_KEY_D_NODE_STRING;
-			childNode = doc->allocate_node(rapidxml::node_type::node_element, dName.c_str(), d.c_str(), 0, d.length());
-			mainNode->append_node(childNode);
-			String privateKey;
-			rapidxml::print(std::back_inserter(privateKey), *doc, indent ? 0 : rapidxml::print_no_indenting);
-			doc->clear();
-			return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
-		}
-		catch (...)
-		{
-			throw Insane::Exception::CryptoException("Unable to serialize xml keypair."s);
-		}
-	}
-	case RsaKeyEncoding::Json:
-	{
-		try
-		{
-			String modulus = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_n()));
-			String exponent = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_e()));
-			String p = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_p()));
-			String q = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_q()));
-			String dp = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d1()));
-			String dq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d2()));
-			String inverseq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_c()));
-			String d = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d()));
-
-			rapidjson::StringBuffer sb;
-			rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
-			if (indent)
-			{
-				writer.SetIndent(SPACE_CHAR, 2);
-			}
-			else
-			{
-				writer.SetIndent(SPACE_CHAR, 0);
-			}
-
-			writer.StartObject();
-			writer.String(RSA_KEY_MODULUS_NODE_STRING.c_str());
-			writer.String(modulus.c_str());
-
-			writer.String(RSA_KEY_EXPONENT_NODE_STRING.c_str());
-			writer.String(exponent.c_str());
-
-			writer.EndObject();
-			String publicKey = String(sb.GetString(), sb.GetSize());
-
-			sb.Clear();
-			writer.Reset(sb);
-
-			writer.StartObject();
-			writer.String(RSA_KEY_MODULUS_NODE_STRING.c_str());
-			writer.String(modulus.c_str());
-
-			writer.String(RSA_KEY_EXPONENT_NODE_STRING.c_str());
-			writer.String(exponent.c_str());
-
-			writer.String(RSA_KEY_P_NODE_STRING.c_str());
-			writer.String(p.c_str());
-
-			writer.String(RSA_KEY_Q_NODE_STRING.c_str());
-			writer.String(q.c_str());
-
-			writer.String(RSA_KEY_DP_NODE_STRING.c_str());
-			writer.String(dp.c_str());
-
-			writer.String(RSA_KEY_DQ_NODE_STRING.c_str());
-			writer.String(dq.c_str());
-
-			writer.String(RSA_KEY_INVERSEQ_NODE_STRING.c_str());
-			writer.String(inverseq.c_str());
-
-			writer.String(RSA_KEY_D_NODE_STRING.c_str());
-			writer.String(d.c_str());
-			writer.EndObject();
-			String privateKey = String(sb.GetString(), sb.GetSize());
-			return RsaKeyPair(StringExtensions::RemoveBlankSpaces(publicKey), StringExtensions::RemoveBlankSpaces(privateKey));
-		}
-		catch (...)
-		{
-			throw Insane::Exception::CryptoException("Unable to serialize json keypair."s);
-		}
-	}
-	default:
-		throw CryptoException("Not implemented encoding.");
-	}
-}
-
-static Insane::Cryptography::RsaKeyEncoding GetKeyEncoding(const String &key)
-{
-	USING_NS_INSANE_CRYPTO;
-	USING_NS_INSANE_STR;
-	USING_NS_INSANE_CORE;
 	String rsaKey = StringExtensions::Trim(key);
-#ifdef __clang__
-	if (StringExtensions::StartsWith(rsaKey, JSON_RSA_PUBLIC_AND_PRIVATE_KEY_INITIAL_STRING) && StringExtensions::EndsWith(rsaKey, JSON_RSA_PUBLIC_AND_PRIVATE_KEY_FINAL_STRING))
-#else
-	if (Strings::IsMatch(Strings::ReplaceLastOf(rsaKey, "\"", "\","), JSON_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
-#endif
-	{
-		return RsaKeyEncoding::Json;
-	}
-
-#ifdef __clang__
-	if (StringExtensions::StartsWith(rsaKey, XML_RSA_PUBLIC_AND_PRIVATE_KEY_INITIAL_STRING) && StringExtensions::EndsWith(rsaKey, XML_RSA_PUBLIC_AND_PRIVATE_KEY_FINAL_STRING))
-#else
-	if (Strings::IsMatch(Strings::ReplaceLastOf(rsaKey, "\"", "\","), XML_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
-#endif
+	if (StringExtensions::IsMatch(rsaKey, RSA_XML_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
 	{
 		return RsaKeyEncoding::Xml;
 	}
 
-#ifdef __clang__
-	if ((StringExtensions::StartsWith(rsaKey, PEM_RSA_PUBLIC_KEY_INITIAL_STRING) && StringExtensions::EndsWith(rsaKey, PEM_RSA_PUBLIC_KEY_FINAL_STRING)) || (StringExtensions::StartsWith(rsaKey, PEM_RSA_PRIVATE_KEY_INITIAL_STRING) && StringExtensions::EndsWith(rsaKey, PEM_RSA_PRIVATE_KEY_FINAL_STRING)))
-#else
-	if (Strings::IsMatch(Strings::ReplaceLastOf(rsaKey, "\"", "\","), PEM_RSA_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
-#endif
+	if (StringExtensions::IsMatch(rsaKey, RSA_PEM_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
 	{
 		return RsaKeyEncoding::Pem;
 	}
-	return RsaKeyEncoding::Ber;
+
+	if (StringExtensions::IsMatch(rsaKey, BASE64_VALUE_REGEX_CHAR_STRING))
+	{
+		return RsaKeyEncoding::Ber;
+	}
+
+	throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Invalid key encoding.");
 }
 
-static std::unique_ptr<Botan::Public_Key> ParsePublicKey(const String &key)
+static inline std::unique_ptr<Botan::Public_Key> InternalParsePublicKey(const String& key)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_EXCEPTION;
@@ -932,30 +332,18 @@ static std::unique_ptr<Botan::Public_Key> ParsePublicKey(const String &key)
 
 	try
 	{
+
 		String publicKey = StringExtensions::Trim(key);
-		RsaKeyEncoding encoding = GetKeyEncoding(publicKey);
+		RsaKeyEncoding encoding = RsaExtensions::GetRsaKeyEncoding(publicKey);
 		switch (encoding)
 		{
-		case RsaKeyEncoding::Json:
-		{
-			rapidjson::Document document;
-			document.Parse(publicKey.c_str(), publicKey.length());
-			if (document.HasParseError())
-			{
-				throw Insane::Exception::CryptoException();
-			}
-			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_MODULUS_NODE_STRING.c_str()].GetString()));
-			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_EXPONENT_NODE_STRING.c_str()].GetString()));
-			pbk = std::make_unique<Botan::RSA_PublicKey>(*modulus, *exponent);
-			break;
-		}
 		case RsaKeyEncoding::Xml:
 		{
 			std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
 			String xml = String(publicKey);
 			doc->parse<0>(xml.data());
-			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_MODULUS_NODE_STRING.c_str())->value()));
-			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_EXPONENT_NODE_STRING.c_str())->value()));
+			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_MODULUS_NODE_STRING.c_str())->value()));
+			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_EXPONENT_NODE_STRING.c_str())->value()));
 			pbk = std::make_unique<Botan::RSA_PublicKey>(*modulus, *exponent);
 			break;
 		}
@@ -970,16 +358,22 @@ static std::unique_ptr<Botan::Public_Key> ParsePublicKey(const String &key)
 			pbk.reset(Botan::X509::load_key(std::vector<uint8_t>(keyBytes.begin(), keyBytes.end())));
 			break;
 		}
+		default:
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaKeyEncodingEnumExtensions::ToString(encoding, true));
 		}
+	}
+	catch (const ExceptionBase& ex)
+	{
+		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
 	}
 	catch (...)
 	{
-		throw CryptoException("Unable to parse key.");
+		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 	return pbk;
 }
 
-static std::unique_ptr<Botan::Private_Key> ParsePrivateKey(const String &key)
+static inline std::unique_ptr<Botan::Private_Key> InternalParsePrivateKey(const String& key)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_EXCEPTION;
@@ -993,35 +387,19 @@ static std::unique_ptr<Botan::Private_Key> ParsePrivateKey(const String &key)
 	try
 	{
 		String privateKey = StringExtensions::Trim(key);
-		RsaKeyEncoding encoding = GetKeyEncoding(privateKey);
+		RsaKeyEncoding encoding = RsaExtensions::GetRsaKeyEncoding(privateKey);
 		switch (encoding)
 		{
-		case RsaKeyEncoding::Json:
-		{
-			rapidjson::Document document;
-			document.Parse(privateKey.c_str(), privateKey.length());
-			if (document.HasParseError())
-			{
-				throw Insane::Exception::CryptoException();
-			}
-			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_MODULUS_NODE_STRING.c_str()].GetString()));
-			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_EXPONENT_NODE_STRING.c_str()].GetString()));
-			P = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_P_NODE_STRING.c_str()].GetString()));
-			Q = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_Q_NODE_STRING.c_str()].GetString()));
-			D = std::make_unique<Botan::BigInt>(Botan::base64_decode(document[RSA_KEY_D_NODE_STRING.c_str()].GetString()));
-			pvk = std::make_unique<Botan::RSA_PrivateKey>(*P, *Q, *exponent, *D, *modulus);
-			break;
-		}
 		case RsaKeyEncoding::Xml:
 		{
 			std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
 			String xml = String(privateKey);
 			doc->parse<0>(xml.data());
-			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_MODULUS_NODE_STRING.c_str())->value()));
-			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_EXPONENT_NODE_STRING.c_str())->value()));
-			P = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_P_NODE_STRING.c_str())->value()));
-			Q = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_Q_NODE_STRING.c_str())->value()));
-			D = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_KEY_D_NODE_STRING.c_str())->value()));
+			modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_MODULUS_NODE_STRING.c_str())->value()));
+			exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_EXPONENT_NODE_STRING.c_str())->value()));
+			P = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_P_NODE_STRING.c_str())->value()));
+			Q = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_Q_NODE_STRING.c_str())->value()));
+			D = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_D_NODE_STRING.c_str())->value()));
 			pvk = std::make_unique<Botan::RSA_PrivateKey>(*P, *Q, *exponent, *D, *modulus);
 			break;
 		}
@@ -1039,169 +417,335 @@ static std::unique_ptr<Botan::Private_Key> ParsePrivateKey(const String &key)
 			pvk = Botan::PKCS8::load_key(*source);
 			break;
 		}
+		default:
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaKeyEncodingEnumExtensions::ToString(encoding, true));
 		}
 	}
-	catch (Botan::Exception &exc)
+	catch (const ExceptionBase& ex)
 	{
-		throw CryptoException("Unable to parse key.");
+		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
 	}
 	catch (...)
 	{
-		throw CryptoException("Unable to parse key.");
+		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 	return pvk;
 }
 
-String Insane::Cryptography::RsaManager::EncryptRaw(const String &data, const String &publicKey) noexcept(false)
+bool InsaneIO::Insane::Cryptography::RsaExtensions::ValidateRsaPublicKey(const String& publicKey)
+{
+	USING_NS_INSANE_STR;
+	try
+	{
+		if (StringExtensions::Trim(publicKey).empty()) return false;
+		InternalParsePublicKey(publicKey);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool InsaneIO::Insane::Cryptography::RsaExtensions::ValidateRsaPrivateKey(const String& privateKey)
+{
+	USING_NS_INSANE_STR;
+	try
+	{
+		if (StringExtensions::Trim(privateKey).empty()) return false;
+		InternalParsePrivateKey(privateKey);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+InsaneIO::Insane::Cryptography::RsaKeyPair InsaneIO::Insane::Cryptography::RsaExtensions::CreateRsaKeyPair(const size_t& keySize, const RsaKeyEncoding& encoding)
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_STR;
+	try
+	{
+		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
+		std::unique_ptr<Botan::RSA_PrivateKey> keyPair = std::make_unique<Botan::RSA_PrivateKey>(*rng, keySize);
+		switch (encoding)
+		{
+		case RsaKeyEncoding::Ber:
+		{
+			String privateKey = Botan::base64_encode(Botan::PKCS8::BER_encode(*keyPair));
+			String publicKey = Botan::base64_encode(Botan::X509::BER_encode(*keyPair));
+			return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
+		}
+		case RsaKeyEncoding::Pem:
+		{
+
+			String privateKey = Botan::PKCS8::PEM_encode(*keyPair);
+			String publicKey = Botan::X509::PEM_encode(*keyPair);
+			return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
+		}
+		case RsaKeyEncoding::Xml:
+		{
+			String modulus = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_n()));
+			String exponent = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_e()));
+			String p = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_p()));
+			String q = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_q()));
+			String dp = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d1()));
+			String dq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d2()));
+			String inverseq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_c()));
+			String d = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d()));
+
+			std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
+			String rsaValueName = RSA_XML_KEY_MAIN_NODE_STRING;
+			rapidxml::xml_node<>* mainNode = doc->allocate_node(rapidxml::node_type::node_element, rsaValueName.c_str());
+			doc->append_node(mainNode);
+
+			String modulusName = RSA_XML_KEY_MODULUS_NODE_STRING;
+			rapidxml::xml_node<>* childNode = doc->allocate_node(rapidxml::node_type::node_element, modulusName.c_str(), modulus.c_str(), 0, modulus.length());
+			mainNode->append_node(childNode);
+
+			String exponentName = RSA_XML_KEY_EXPONENT_NODE_STRING;
+			childNode = doc->allocate_node(rapidxml::node_type::node_element, exponentName.c_str(), exponent.c_str(), 0, exponent.length());
+			mainNode->append_node(childNode);
+
+			String publicKey;
+			rapidxml::print(std::back_inserter(publicKey), *doc, 0);
+
+			String pName = RSA_XML_KEY_P_NODE_STRING;
+			childNode = doc->allocate_node(rapidxml::node_type::node_element, pName.c_str(), p.c_str(), 0, p.length());
+			mainNode->append_node(childNode);
+
+			String qName = RSA_XML_KEY_Q_NODE_STRING;
+			childNode = doc->allocate_node(rapidxml::node_type::node_element, qName.c_str(), q.c_str(), 0, q.length());
+			mainNode->append_node(childNode);
+
+			String dpName = RSA_XML_KEY_DP_NODE_STRING;
+			childNode = doc->allocate_node(rapidxml::node_type::node_element, dpName.c_str(), dp.c_str(), 0, dp.length());
+			mainNode->append_node(childNode);
+
+			String dqName = RSA_XML_KEY_DQ_NODE_STRING;
+			childNode = doc->allocate_node(rapidxml::node_type::node_element, dqName.c_str(), dq.c_str(), 0, dq.length());
+			mainNode->append_node(childNode);
+
+			String inverseqName = RSA_XML_KEY_INVERSEQ_NODE_STRING;
+			childNode = doc->allocate_node(rapidxml::node_type::node_element, inverseqName.c_str(), inverseq.c_str(), 0, inverseq.length());
+			mainNode->append_node(childNode);
+
+			String dName = RSA_XML_KEY_D_NODE_STRING;
+			childNode = doc->allocate_node(rapidxml::node_type::node_element, dName.c_str(), d.c_str(), 0, d.length());
+			mainNode->append_node(childNode);
+			String privateKey;
+			rapidxml::print(std::back_inserter(privateKey), *doc, 0);
+			doc->clear();
+			return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
+		}
+		default:
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaKeyEncodingEnumExtensions::ToString(encoding, true));
+		}
+	}
+	catch (const NotImplementedException& ex)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
+	}
+	catch (...)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+String InsaneIO::Insane::Cryptography::RsaExtensions::EncryptRsa(const String& data, const String& publicKey, const RsaPadding& padding)
 {
 	USING_NS_INSANE_STR;
 	USING_NS_INSANE_EXCEPTION;
 	try
 	{
+		String paddingStr;
+		switch (padding)
+		{
+		case RsaPadding::Pkcs1:
+			paddingStr = __RSA_PADDING_PKCS1_V1_5_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha1:
+			paddingStr = __RSA_PADDING_OAEP_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha256:
+			paddingStr = __RSA_PADDING_OAEP_256_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha384:
+			paddingStr = __RSA_PADDING_OAEP_384_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha512:
+			paddingStr = __RSA_PADDING_OAEP_512_ALGORITHM_STRING;
+			break;
+		default:
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaPaddingEnumExtensions::ToString(padding, true));
+		}
 		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
-		std::unique_ptr<Botan::Public_Key> pbk = ParsePublicKey(publicKey);
-		std::unique_ptr<Botan::PK_Encryptor_EME> enc = std::make_unique<Botan::PK_Encryptor_EME>(*pbk, *rng, RSA_PADDING_ALGORITHM_STRING);
+		std::unique_ptr<Botan::Public_Key> pbk = InternalParsePublicKey(publicKey);
+		std::unique_ptr<Botan::PK_Encryptor_EME> enc = std::make_unique<Botan::PK_Encryptor_EME>(*pbk, *rng, paddingStr);
 		Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
 		std::vector<uint8_t> encrypted = enc->encrypt(dataBytes, *rng);
 		return String(encrypted.begin(), encrypted.end());
 	}
-	catch (const Botan::Exception &e)
+	catch (const Botan::Exception& e)
 	{
-		throw CryptoException(e.what(), e.error_code());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.error_code());
+	}
+	catch (const NotImplementedException& ex)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
 	}
 	catch (...)
 	{
-		throw CryptoException("Fatal error. Unable to RsaEncrypt.");
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 }
 
-String Insane::Cryptography::RsaManager::DecryptRaw(const String &data, const String &privateKey) noexcept(false)
+String InsaneIO::Insane::Cryptography::RsaExtensions::DecryptRsa(const String& data, const String& privateKey, const RsaPadding& padding)
 {
 	USING_NS_INSANE_EXCEPTION;
 	try
 	{
+		String paddingStr;
+		switch (padding)
+		{
+		case RsaPadding::Pkcs1:
+			paddingStr = __RSA_PADDING_PKCS1_V1_5_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha1:
+			paddingStr = __RSA_PADDING_OAEP_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha256:
+			paddingStr = __RSA_PADDING_OAEP_256_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha384:
+			paddingStr = __RSA_PADDING_OAEP_384_ALGORITHM_STRING;
+			break;
+		case RsaPadding::OaepSha512:
+			paddingStr = __RSA_PADDING_OAEP_512_ALGORITHM_STRING;
+			break;
+		default:
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaPaddingEnumExtensions::ToString(padding, true));
+			break;
+		}
 		std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
-		std::unique_ptr<Botan::Private_Key> pvk = ParsePrivateKey(privateKey);
-		std::unique_ptr<Botan::PK_Decryptor_EME> dec = std::make_unique<Botan::PK_Decryptor_EME>(*pvk, *rng, RSA_PADDING_ALGORITHM_STRING);
+		std::unique_ptr<Botan::Private_Key> pvk = InternalParsePrivateKey(privateKey);
+		std::unique_ptr<Botan::PK_Decryptor_EME> dec = std::make_unique<Botan::PK_Decryptor_EME>(*pvk, *rng, paddingStr);
 		Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
 		Botan::SecureVector<uint8_t> decrypted = dec->decrypt(dataBytes);
 		return String(decrypted.begin(), decrypted.end());
 	}
-	catch (const Botan::Exception &e)
+	catch (const Botan::Exception& e)
 	{
-		throw CryptoException(e.what(), e.error_code());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.error_code());
+	}
+	catch (const NotImplementedException& ex)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
 	}
 	catch (...)
 	{
-		throw CryptoException();
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
 }
 
-String Insane::Cryptography::RsaManager::EncryptToBase64(const String &data, const String &publicKey) noexcept(false)
-{
-	return Base64EncodingExtensions::ToBase64(EncryptRaw(data, publicKey));
-}
-
-String Insane::Cryptography::RsaManager::DecryptFromBase64(const String &data, const String &privateKey) noexcept(false)
-{
-	return DecryptRaw(Base64EncodingExtensions::FromBase64(data), privateKey);
-}
 
 // ███ HexEncodingExtensions ███
 
-String Insane::Cryptography::HexEncodingExtensions::FromHex(const String &data)
+String InsaneIO::Insane::Cryptography::HexEncodingExtensions::FromHex(const String& data)
 {
 	auto decoded = Botan::hex_decode(data);
 	return String(decoded.begin(), decoded.end());
 }
 
-String Insane::Cryptography::HexEncodingExtensions::ToHex(const String &data, const bool &toUpper)
+String InsaneIO::Insane::Cryptography::HexEncodingExtensions::ToHex(const String& data, const bool& toUpper)
 {
 	return Botan::hex_encode(std::vector<uint8_t>(data.begin(), data.end()), toUpper);
 }
 
 // ███ Base32EncodingExtensions ███
 
-String Insane::Cryptography::Base32EncodingExtensions::FromBase32(const String &data)
+String InsaneIO::Insane::Cryptography::Base32EncodingExtensions::FromBase32(const String& data)
 {
 	USING_NS_INSANE_STR;
 	auto decoded = Botan::base32_decode(StringExtensions::ToUpper(data));
 	return String(decoded.begin(), decoded.end());
 }
 
-String Insane::Cryptography::Base32EncodingExtensions::ToBase32(const String &data, const bool &removePadding, const bool &toLower)
+String InsaneIO::Insane::Cryptography::Base32EncodingExtensions::ToBase32(const String& data, const bool& removePadding, const bool& toLower)
 {
 	USING_NS_INSANE_STR;
-	auto encoded = Botan::base32_encode(std::vector<uint8_t>(data.begin(), data.end()));
+	String encoded = Botan::base32_encode(std::vector<uint8_t>(data.begin(), data.end()));
 	encoded = removePadding ? StringExtensions::Replace(encoded, EQUAL_SIGN_STRING, EMPTY_STRING) : encoded;
 	return toLower ? StringExtensions::ToLower(encoded) : encoded;
 }
 
 // ███ Base64EncodingExtensions ███
 
-String Insane::Cryptography::Base64EncodingExtensions::ToBase64(const String &data, const size_t &lineBreaksLength, const bool &removePadding)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::ToBase64(const String& data, const size_t& lineBreaksLength, const bool& removePadding)
 {
 	USING_NS_INSANE_STR;
 	String ret = Botan::base64_encode(std::vector<uint8_t>(data.begin(), data.end()));
 	if (lineBreaksLength > 0)
 	{
-		ret = StringExtensions::InsertRepeat(ret, lineBreaksLength, NEW_LINE_STR);
+		ret = StringExtensions::InsertRepeat(ret, lineBreaksLength, NEW_LINE_STRING);
 	}
 	return removePadding ? StringExtensions::Remove(ret, EQUAL_SIGN_STRING) : ret;
 }
 
-String Insane::Cryptography::Base64EncodingExtensions::FromBase64(const String &data)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::FromBase64(const String& data)
 {
 	USING_NS_INSANE_STR;
 	USING_NS_INSANE_CORE;
 	String base64 = data;
-	base64 = StringExtensions::Replace(base64, {{URL_ENCODED_PLUS_SIGN_STRING, PLUS_SIGN_STRING}, {URL_ENCODED_SLASH_STRING, SLASH_STRING}, {URL_ENCODED_EQUAL_SIGN_STRING, EQUAL_SIGN_STRING}, {MINUS_SIGN_STRING, PLUS_SIGN_STRING}, {UNDERSCORE_STRING, SLASH_STRING}});
+	base64 = StringExtensions::Replace(base64, { {URL_ENCODED_PLUS_SIGN_STRING, PLUS_SIGN_STRING}, {URL_ENCODED_SLASH_STRING, SLASH_STRING}, {URL_ENCODED_EQUAL_SIGN_STRING, EQUAL_SIGN_STRING}, {MINUS_SIGN_STRING, PLUS_SIGN_STRING}, {UNDERSCORE_STRING, SLASH_STRING} });
 	base64 = StringExtensions::RemoveBlankSpaces(base64);
-	int modulo = base64.length() % 4;
+	size_t modulo = base64.length() % 4;
 	base64 = StringExtensions::PadRight(base64, base64.length() + (modulo > 0 ? 4 - modulo : 0), EQUAL_SIGN_STRING);
 	Botan::secure_vector<uint8_t> result = Botan::base64_decode(base64);
 	return String(result.begin(), result.end());
 }
 
-String Insane::Cryptography::Base64EncodingExtensions::ToUrlSafeBase64(const String &data)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::ToUrlSafeBase64(const String& data)
 {
 	USING_NS_INSANE_STR;
-	return StringExtensions::Replace(ToBase64(data), {{PLUS_SIGN_STRING, MINUS_SIGN_STRING}, {SLASH_STRING, UNDERSCORE_STRING}, {EQUAL_SIGN_STRING, EMPTY_STRING}});
+	return StringExtensions::Replace(ToBase64(data), { {PLUS_SIGN_STRING, MINUS_SIGN_STRING}, {SLASH_STRING, UNDERSCORE_STRING}, {EQUAL_SIGN_STRING, EMPTY_STRING} });
 }
 
-String Insane::Cryptography::Base64EncodingExtensions::ToFilenameSafeBase64(const String &data)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::ToFilenameSafeBase64(const String& data)
 {
 	USING_NS_INSANE_STR;
 	return ToUrlSafeBase64(data);
 }
 
-String Insane::Cryptography::Base64EncodingExtensions::ToUrlEncodedBase64(const String &data)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::ToUrlEncodedBase64(const String& data)
 {
 	USING_NS_INSANE_STR;
-	return StringExtensions::Replace(ToBase64(data), {{PLUS_SIGN_STRING, URL_ENCODED_PLUS_SIGN_STRING}, {SLASH_STRING, URL_ENCODED_SLASH_STRING}, {EQUAL_SIGN_STRING, URL_ENCODED_EQUAL_SIGN_STRING}});
+	return StringExtensions::Replace(ToBase64(data), { {PLUS_SIGN_STRING, URL_ENCODED_PLUS_SIGN_STRING}, {SLASH_STRING, URL_ENCODED_SLASH_STRING}, {EQUAL_SIGN_STRING, URL_ENCODED_EQUAL_SIGN_STRING} });
 }
 
-String Insane::Cryptography::Base64EncodingExtensions::Base64ToUrlSafeBase64(const String &base64)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::Base64ToUrlSafeBase64(const String& base64)
 {
 	return ToUrlSafeBase64(FromBase64(base64));
 }
 
-String Insane::Cryptography::Base64EncodingExtensions::Base64ToFilenameSafeBase64(const String &base64)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::Base64ToFilenameSafeBase64(const String& base64)
 {
 	return ToFilenameSafeBase64(FromBase64(base64));
 }
 
-String Insane::Cryptography::Base64EncodingExtensions::Base64ToUrlEncodedBase64(const String &base64)
+String InsaneIO::Insane::Cryptography::Base64EncodingExtensions::Base64ToUrlEncodedBase64(const String& base64)
 {
 	return ToUrlEncodedBase64(FromBase64(base64));
 }
 
 // ███ CryptoTests ███
-void Insane::Cryptography::CryptoTests::HexEncodingExtensionsTests(const bool & showValues)
+void InsaneIO::Insane::Cryptography::CryptoTests::HexEncodingExtensionsTests(const bool& showValues)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_TEST;
-	String testTytes = {(char)0xff, 0xa, 1, 0x22};
+	String testTytes = { (char)0xff, 0xa, 1, 0x22 };
 	String hexStringUppercase = "FF0A0122";
 	String hexStringLowercase = "ff0a0122";
 
@@ -1218,15 +762,15 @@ void Insane::Cryptography::CryptoTests::HexEncodingExtensionsTests(const bool & 
 	data = hexStringUppercase;
 	result = HexEncodingExtensions::FromHex(data);
 	expected = testTytes;
-	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 1", expected, result,  showValues);
+	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 1", expected, result, showValues);
 
 	data = hexStringLowercase;
 	result = HexEncodingExtensions::FromHex(data);
 	expected = testTytes;
-	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 2", expected, result,  showValues);
+	TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 2", expected, result, showValues);
 }
 
-void Insane::Cryptography::CryptoTests::Base32EncodingExtensionsTests(const bool & showValues)
+void InsaneIO::Insane::Cryptography::CryptoTests::Base32EncodingExtensionsTests(const bool& showValues)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_TEST;
@@ -1306,11 +850,11 @@ void Insane::Cryptography::CryptoTests::Base32EncodingExtensionsTests(const bool
 	TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 6", expected, result, showValues);
 }
 
-void Insane::Cryptography::CryptoTests::Base64EncodingExtensionsTests(const bool & showValues)
+void InsaneIO::Insane::Cryptography::CryptoTests::Base64EncodingExtensionsTests(const bool& showValues)
 {
 	USING_NS_INSANE_CRYPTO;
 	USING_NS_INSANE_TEST;
-	auto testBytes = {(char)0x30, (char)0x82, (char)0x02, (char)0x22, (char)0x30, (char)0x0d, (char)0x06, (char)0x09, (char)0x2a, (char)0x86, (char)0x48, (char)0x86, (char)0xf7, (char)0x0d, (char)0x01, (char)0x01, (char)0x01, (char)0x05, (char)0x00, (char)0x03, (char)0x82, (char)0x02, (char)0x0f, (char)0x00, (char)0x30, (char)0x82, (char)0x02, (char)0x0a, (char)0x02, (char)0x82, (char)0x02, (char)0x01, (char)0x00, (char)0xf2, (char)0xe8, (char)0xe5, (char)0x81, (char)0x32, (char)0x36, (char)0xb8, (char)0xb6, (char)0x3f, (char)0xb5, (char)0xbe, (char)0x76, (char)0x65, (char)0x65, (char)0xd1, (char)0x8f, (char)0x2d, (char)0xc4, (char)0xc5, (char)0xa1, (char)0x91, (char)0x3b, (char)0x8b, (char)0xdc, (char)0x8b, (char)0xf6, (char)0x4f, (char)0x42, (char)0x64, (char)0xd1, (char)0xea, (char)0xdc, (char)0x75, (char)0x6c, (char)0x83, (char)0x0b, (char)0x81, (char)0x1f, (char)0x57, (char)0xeb, (char)0xac, (char)0xe5, (char)0xd0, (char)0x5c, (char)0x6b, (char)0x5f, (char)0x37, (char)0xa8, (char)0x53, (char)0x1c, (char)0x65, (char)0x6b, (char)0x75, (char)0x5e, (char)0xbc, (char)0xd3, (char)0x59, (char)0xd2, (char)0x54, (char)0x17, (char)0xf7, (char)0x69, (char)0x4d, (char)0x23, (char)0x92, (char)0x7e, (char)0x78, (char)0x47, (char)0xf1, (char)0x06, (char)0x04, (char)0x5b, (char)0x55, (char)0x00, (char)0xb1, (char)0xaa, (char)0x82, (char)0x70, (char)0x70, (char)0xc0, (char)0xff, (char)0x3c, (char)0x29, (char)0x4a, (char)0x2f, (char)0xc3, (char)0xff, (char)0x56, (char)0x60, (char)0x4a, (char)0x22, (char)0x12, (char)0xfe, (char)0x10, (char)0xa4, (char)0xe1, (char)0xeb, (char)0x9d, (char)0x82, (char)0xb3, (char)0x76, (char)0x1c, (char)0xa0, (char)0x18, (char)0x4c, (char)0xca, (char)0xcd, (char)0x68, (char)0x40, (char)0x2e, (char)0x6a, (char)0x21, (char)0x2a, (char)0x7b, (char)0x7b, (char)0xc6, (char)0x0b, (char)0x85, (char)0x14, (char)0x19, (char)0x03, (char)0x40, (char)0xe9, (char)0x78, (char)0x54, (char)0xfe, (char)0x97, (char)0xf4, (char)0xe8, (char)0x39, (char)0x45, (char)0x06, (char)0x76, (char)0x8e, (char)0x5e, (char)0x0e, (char)0xdb, (char)0x62, (char)0x41, (char)0x60, (char)0x2b, (char)0xfb, (char)0x1e, (char)0x1a, (char)0x65, (char)0x3a, (char)0x25, (char)0x48, (char)0xba, (char)0xe6, (char)0x73, (char)0x8f, (char)0x35, (char)0xf0, (char)0xfd, (char)0x99, (char)0xe4, (char)0x1d, (char)0xe9, (char)0xbf, (char)0x67, (char)0x8b, (char)0xf4, (char)0x1d, (char)0xfa, (char)0xfa, (char)0x58, (char)0x8e, (char)0xe7, (char)0x1b, (char)0x7b, (char)0xb5, (char)0x7d, (char)0x74, (char)0x90, (char)0x26, (char)0x41, (char)0x88, (char)0xbd, (char)0x4d, (char)0x20, (char)0x69, (char)0x4b, (char)0x4c, (char)0x8a, (char)0xef, (char)0x47, (char)0x87, (char)0xc1, (char)0xf3, (char)0x5b, (char)0x42, (char)0x79, (char)0x04, (char)0xd7, (char)0x9d, (char)0x42, (char)0xa7, (char)0xdf, (char)0xca, (char)0x0d, (char)0xf4, (char)0x19, (char)0x4a, (char)0x8d, (char)0x7c, (char)0x93, (char)0x3f, (char)0x1a, (char)0xa5, (char)0x39, (char)0xef, (char)0xcd, (char)0x6d, (char)0xe5, (char)0x0a, (char)0xe5, (char)0xf0, (char)0x41, (char)0x16, (char)0x96, (char)0x58, (char)0x14, (char)0x99, (char)0x77, (char)0xdc, (char)0x69, (char)0x27, (char)0xc7, (char)0xa6, (char)0x11, (char)0xb4, (char)0xd3, (char)0xa2, (char)0x17, (char)0x23, (char)0x50, (char)0xa0, (char)0xbd, (char)0x06, (char)0x7d, (char)0x5a, (char)0x72, (char)0xa0, (char)0xb1, (char)0xed, (char)0x48, (char)0xd1, (char)0x42, (char)0xfc, (char)0x66, (char)0x3e, (char)0x4a, (char)0x22, (char)0x69, (char)0xac, (char)0xe4, (char)0xee, (char)0x82, (char)0xbc, (char)0x48, (char)0x83, (char)0x81, (char)0x34, (char)0x6e, (char)0x29, (char)0x4b, (char)0x64, (char)0x71, (char)0x37, (char)0x25, (char)0x13, (char)0x28, (char)0x52, (char)0x71, (char)0x5b, (char)0xd5, (char)0x95, (char)0x20, (char)0xa5, (char)0xb4, (char)0x66, (char)0xa7, (char)0x9e, (char)0x06, (char)0x5f, (char)0x2d, (char)0x8e, (char)0x78, (char)0xf5, (char)0x37, (char)0xcf, (char)0xed, (char)0x65, (char)0x84, (char)0xdf, (char)0xda, (char)0x78, (char)0x27, (char)0xa9, (char)0x09, (char)0xaa, (char)0x70, (char)0x73, (char)0x5a, (char)0xc6, (char)0xa9, (char)0xba, (char)0xb7, (char)0xce, (char)0x38, (char)0x2c, (char)0x28, (char)0x4b, (char)0x3e, (char)0xae, (char)0x11, (char)0x3c, (char)0xed, (char)0x94, (char)0xd9, (char)0x2a, (char)0x26, (char)0xd2, (char)0xbc, (char)0xa5, (char)0x19, (char)0x7c, (char)0x3a, (char)0x98, (char)0x0a, (char)0x51, (char)0xdb, (char)0x14, (char)0x99, (char)0xd8, (char)0x4e, (char)0xc3, (char)0x5d, (char)0x0a, (char)0xc9, (char)0x93, (char)0xa9, (char)0xce, (char)0xb0, (char)0x12, (char)0x62, (char)0x6b, (char)0x6b, (char)0x48, (char)0x42, (char)0x42, (char)0x04, (char)0x95, (char)0x29, (char)0x77, (char)0x49, (char)0xaa, (char)0x88, (char)0x2a, (char)0x94, (char)0xcd, (char)0x55, (char)0x7d, (char)0xb6, (char)0xcb, (char)0xb1, (char)0x1e, (char)0x93, (char)0xa9, (char)0xa2, (char)0xba, (char)0x73, (char)0xff, (char)0x2e, (char)0xa6, (char)0xff, (char)0xd6, (char)0x14, (char)0x65, (char)0x3b, (char)0x8c, (char)0x7d, (char)0x0b, (char)0xa7, (char)0xda, (char)0xbd, (char)0x50, (char)0x2c, (char)0x1d, (char)0x2e, (char)0xf1, (char)0xd9, (char)0xf5, (char)0x8a, (char)0x08, (char)0xe9, (char)0x54, (char)0x7d, (char)0x4a, (char)0x25, (char)0xf5, (char)0xb7, (char)0x53, (char)0xd8, (char)0x3f, (char)0xad, (char)0x98, (char)0x5f, (char)0xea, (char)0xa9, (char)0xd5, (char)0x3d, (char)0x13, (char)0x7d, (char)0x26, (char)0x5d, (char)0xab, (char)0x0e, (char)0xa6, (char)0xcd, (char)0xe7, (char)0xc1, (char)0x81, (char)0x0f, (char)0x12, (char)0x8c, (char)0x59, (char)0x77, (char)0xa9, (char)0x67, (char)0xa4, (char)0x37, (char)0xf3, (char)0x8e, (char)0xdf, (char)0xe5, (char)0x5c, (char)0x0c, (char)0x65, (char)0x07, (char)0x93, (char)0xcd, (char)0xb0, (char)0xeb, (char)0x19, (char)0x89, (char)0x6f, (char)0x81, (char)0x90, (char)0x9a, (char)0xf4, (char)0x99, (char)0xb8, (char)0x33, (char)0x35, (char)0xdb, (char)0x40, (char)0x8e, (char)0x85, (char)0x53, (char)0x26, (char)0x4a, (char)0xe9, (char)0x8c, (char)0x5a, (char)0x5d, (char)0x68, (char)0xd5, (char)0x4e, (char)0xff, (char)0x21, (char)0x77, (char)0xb9, (char)0xcb, (char)0xc1, (char)0xaf, (char)0x69, (char)0x69, (char)0x10, (char)0x56, (char)0x6d, (char)0x9e, (char)0xbd, (char)0xe4, (char)0xa4, (char)0x2b, (char)0xd9, (char)0xf9, (char)0x65, (char)0x63, (char)0xb5, (char)0x00, (char)0x48, (char)0xb0, (char)0x04, (char)0xca, (char)0x98, (char)0x10, (char)0x8e, (char)0x2a, (char)0x4f, (char)0x18, (char)0x47, (char)0xef, (char)0x5e, (char)0x26, (char)0x07, (char)0x72, (char)0xf9, (char)0xbe, (char)0x25, (char)0x02, (char)0x03, (char)0x01, (char)0x00, (char)0x01};
+	auto testBytes = { (char)0x30, (char)0x82, (char)0x02, (char)0x22, (char)0x30, (char)0x0d, (char)0x06, (char)0x09, (char)0x2a, (char)0x86, (char)0x48, (char)0x86, (char)0xf7, (char)0x0d, (char)0x01, (char)0x01, (char)0x01, (char)0x05, (char)0x00, (char)0x03, (char)0x82, (char)0x02, (char)0x0f, (char)0x00, (char)0x30, (char)0x82, (char)0x02, (char)0x0a, (char)0x02, (char)0x82, (char)0x02, (char)0x01, (char)0x00, (char)0xf2, (char)0xe8, (char)0xe5, (char)0x81, (char)0x32, (char)0x36, (char)0xb8, (char)0xb6, (char)0x3f, (char)0xb5, (char)0xbe, (char)0x76, (char)0x65, (char)0x65, (char)0xd1, (char)0x8f, (char)0x2d, (char)0xc4, (char)0xc5, (char)0xa1, (char)0x91, (char)0x3b, (char)0x8b, (char)0xdc, (char)0x8b, (char)0xf6, (char)0x4f, (char)0x42, (char)0x64, (char)0xd1, (char)0xea, (char)0xdc, (char)0x75, (char)0x6c, (char)0x83, (char)0x0b, (char)0x81, (char)0x1f, (char)0x57, (char)0xeb, (char)0xac, (char)0xe5, (char)0xd0, (char)0x5c, (char)0x6b, (char)0x5f, (char)0x37, (char)0xa8, (char)0x53, (char)0x1c, (char)0x65, (char)0x6b, (char)0x75, (char)0x5e, (char)0xbc, (char)0xd3, (char)0x59, (char)0xd2, (char)0x54, (char)0x17, (char)0xf7, (char)0x69, (char)0x4d, (char)0x23, (char)0x92, (char)0x7e, (char)0x78, (char)0x47, (char)0xf1, (char)0x06, (char)0x04, (char)0x5b, (char)0x55, (char)0x00, (char)0xb1, (char)0xaa, (char)0x82, (char)0x70, (char)0x70, (char)0xc0, (char)0xff, (char)0x3c, (char)0x29, (char)0x4a, (char)0x2f, (char)0xc3, (char)0xff, (char)0x56, (char)0x60, (char)0x4a, (char)0x22, (char)0x12, (char)0xfe, (char)0x10, (char)0xa4, (char)0xe1, (char)0xeb, (char)0x9d, (char)0x82, (char)0xb3, (char)0x76, (char)0x1c, (char)0xa0, (char)0x18, (char)0x4c, (char)0xca, (char)0xcd, (char)0x68, (char)0x40, (char)0x2e, (char)0x6a, (char)0x21, (char)0x2a, (char)0x7b, (char)0x7b, (char)0xc6, (char)0x0b, (char)0x85, (char)0x14, (char)0x19, (char)0x03, (char)0x40, (char)0xe9, (char)0x78, (char)0x54, (char)0xfe, (char)0x97, (char)0xf4, (char)0xe8, (char)0x39, (char)0x45, (char)0x06, (char)0x76, (char)0x8e, (char)0x5e, (char)0x0e, (char)0xdb, (char)0x62, (char)0x41, (char)0x60, (char)0x2b, (char)0xfb, (char)0x1e, (char)0x1a, (char)0x65, (char)0x3a, (char)0x25, (char)0x48, (char)0xba, (char)0xe6, (char)0x73, (char)0x8f, (char)0x35, (char)0xf0, (char)0xfd, (char)0x99, (char)0xe4, (char)0x1d, (char)0xe9, (char)0xbf, (char)0x67, (char)0x8b, (char)0xf4, (char)0x1d, (char)0xfa, (char)0xfa, (char)0x58, (char)0x8e, (char)0xe7, (char)0x1b, (char)0x7b, (char)0xb5, (char)0x7d, (char)0x74, (char)0x90, (char)0x26, (char)0x41, (char)0x88, (char)0xbd, (char)0x4d, (char)0x20, (char)0x69, (char)0x4b, (char)0x4c, (char)0x8a, (char)0xef, (char)0x47, (char)0x87, (char)0xc1, (char)0xf3, (char)0x5b, (char)0x42, (char)0x79, (char)0x04, (char)0xd7, (char)0x9d, (char)0x42, (char)0xa7, (char)0xdf, (char)0xca, (char)0x0d, (char)0xf4, (char)0x19, (char)0x4a, (char)0x8d, (char)0x7c, (char)0x93, (char)0x3f, (char)0x1a, (char)0xa5, (char)0x39, (char)0xef, (char)0xcd, (char)0x6d, (char)0xe5, (char)0x0a, (char)0xe5, (char)0xf0, (char)0x41, (char)0x16, (char)0x96, (char)0x58, (char)0x14, (char)0x99, (char)0x77, (char)0xdc, (char)0x69, (char)0x27, (char)0xc7, (char)0xa6, (char)0x11, (char)0xb4, (char)0xd3, (char)0xa2, (char)0x17, (char)0x23, (char)0x50, (char)0xa0, (char)0xbd, (char)0x06, (char)0x7d, (char)0x5a, (char)0x72, (char)0xa0, (char)0xb1, (char)0xed, (char)0x48, (char)0xd1, (char)0x42, (char)0xfc, (char)0x66, (char)0x3e, (char)0x4a, (char)0x22, (char)0x69, (char)0xac, (char)0xe4, (char)0xee, (char)0x82, (char)0xbc, (char)0x48, (char)0x83, (char)0x81, (char)0x34, (char)0x6e, (char)0x29, (char)0x4b, (char)0x64, (char)0x71, (char)0x37, (char)0x25, (char)0x13, (char)0x28, (char)0x52, (char)0x71, (char)0x5b, (char)0xd5, (char)0x95, (char)0x20, (char)0xa5, (char)0xb4, (char)0x66, (char)0xa7, (char)0x9e, (char)0x06, (char)0x5f, (char)0x2d, (char)0x8e, (char)0x78, (char)0xf5, (char)0x37, (char)0xcf, (char)0xed, (char)0x65, (char)0x84, (char)0xdf, (char)0xda, (char)0x78, (char)0x27, (char)0xa9, (char)0x09, (char)0xaa, (char)0x70, (char)0x73, (char)0x5a, (char)0xc6, (char)0xa9, (char)0xba, (char)0xb7, (char)0xce, (char)0x38, (char)0x2c, (char)0x28, (char)0x4b, (char)0x3e, (char)0xae, (char)0x11, (char)0x3c, (char)0xed, (char)0x94, (char)0xd9, (char)0x2a, (char)0x26, (char)0xd2, (char)0xbc, (char)0xa5, (char)0x19, (char)0x7c, (char)0x3a, (char)0x98, (char)0x0a, (char)0x51, (char)0xdb, (char)0x14, (char)0x99, (char)0xd8, (char)0x4e, (char)0xc3, (char)0x5d, (char)0x0a, (char)0xc9, (char)0x93, (char)0xa9, (char)0xce, (char)0xb0, (char)0x12, (char)0x62, (char)0x6b, (char)0x6b, (char)0x48, (char)0x42, (char)0x42, (char)0x04, (char)0x95, (char)0x29, (char)0x77, (char)0x49, (char)0xaa, (char)0x88, (char)0x2a, (char)0x94, (char)0xcd, (char)0x55, (char)0x7d, (char)0xb6, (char)0xcb, (char)0xb1, (char)0x1e, (char)0x93, (char)0xa9, (char)0xa2, (char)0xba, (char)0x73, (char)0xff, (char)0x2e, (char)0xa6, (char)0xff, (char)0xd6, (char)0x14, (char)0x65, (char)0x3b, (char)0x8c, (char)0x7d, (char)0x0b, (char)0xa7, (char)0xda, (char)0xbd, (char)0x50, (char)0x2c, (char)0x1d, (char)0x2e, (char)0xf1, (char)0xd9, (char)0xf5, (char)0x8a, (char)0x08, (char)0xe9, (char)0x54, (char)0x7d, (char)0x4a, (char)0x25, (char)0xf5, (char)0xb7, (char)0x53, (char)0xd8, (char)0x3f, (char)0xad, (char)0x98, (char)0x5f, (char)0xea, (char)0xa9, (char)0xd5, (char)0x3d, (char)0x13, (char)0x7d, (char)0x26, (char)0x5d, (char)0xab, (char)0x0e, (char)0xa6, (char)0xcd, (char)0xe7, (char)0xc1, (char)0x81, (char)0x0f, (char)0x12, (char)0x8c, (char)0x59, (char)0x77, (char)0xa9, (char)0x67, (char)0xa4, (char)0x37, (char)0xf3, (char)0x8e, (char)0xdf, (char)0xe5, (char)0x5c, (char)0x0c, (char)0x65, (char)0x07, (char)0x93, (char)0xcd, (char)0xb0, (char)0xeb, (char)0x19, (char)0x89, (char)0x6f, (char)0x81, (char)0x90, (char)0x9a, (char)0xf4, (char)0x99, (char)0xb8, (char)0x33, (char)0x35, (char)0xdb, (char)0x40, (char)0x8e, (char)0x85, (char)0x53, (char)0x26, (char)0x4a, (char)0xe9, (char)0x8c, (char)0x5a, (char)0x5d, (char)0x68, (char)0xd5, (char)0x4e, (char)0xff, (char)0x21, (char)0x77, (char)0xb9, (char)0xcb, (char)0xc1, (char)0xaf, (char)0x69, (char)0x69, (char)0x10, (char)0x56, (char)0x6d, (char)0x9e, (char)0xbd, (char)0xe4, (char)0xa4, (char)0x2b, (char)0xd9, (char)0xf9, (char)0x65, (char)0x63, (char)0xb5, (char)0x00, (char)0x48, (char)0xb0, (char)0x04, (char)0xca, (char)0x98, (char)0x10, (char)0x8e, (char)0x2a, (char)0x4f, (char)0x18, (char)0x47, (char)0xef, (char)0x5e, (char)0x26, (char)0x07, (char)0x72, (char)0xf9, (char)0xbe, (char)0x25, (char)0x02, (char)0x03, (char)0x01, (char)0x00, (char)0x01 };
 	String str = String(testBytes.begin(), testBytes.end());
 
 	String resultWith0Pad = "QUFB";
@@ -1500,3 +1044,965 @@ BMqYEI4qTxhH714mB3L5viUCAwEAAQ==)";
 	result = Base64EncodingExtensions::FromBase64(data);
 	TestExtensions::Equals(NAMEOF(Base64EncodingExtensions) + " - Decode  - 13", expected, result, showValues);
 }
+
+// ███ HashExtensions ███
+
+String InsaneIO::Insane::Cryptography::HashExtensions::ToHash(const String& data, const HashAlgorithm& algorithm)
+{
+	USING_NS_INSANE_EXCEPTION;
+	switch (algorithm)
+	{
+	case HashAlgorithm::Md5:
+	{
+		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(MD5_ALGORITHM_NAME_STRING));
+		hash->update(data);
+		Botan::SecureVector<uint8_t> result = hash->final();
+		return String(result.begin(), result.end());
+	}
+	case HashAlgorithm::Sha1:
+	{
+		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA1_ALGORITHM_NAME_STRING));
+		hash->update(data);
+		Botan::SecureVector<uint8_t> result = hash->final();
+		return String(result.begin(), result.end());
+	}
+	case HashAlgorithm::Sha256:
+	{
+		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA256_ALGORITHM_NAME_STRING));
+		hash->update(data);
+		Botan::SecureVector<uint8_t> result = hash->final();
+		return String(result.begin(), result.end());
+	}
+	case HashAlgorithm::Sha384:
+	{
+		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA384_ALGORITHM_NAME_STRING));
+		hash->update(data);
+		Botan::SecureVector<uint8_t> result = hash->final();
+		return String(result.begin(), result.end());
+	}
+	case HashAlgorithm::Sha512:
+	{
+		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA512_ALGORITHM_NAME_STRING));
+		hash->update(data);
+		Botan::SecureVector<uint8_t> result = hash->final();
+		return String(result.begin(), result.end());
+	}
+	default:
+		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, HashAlgorithmEnumExtensions::ToString(algorithm));
+	}
+}
+
+String InsaneIO::Insane::Cryptography::HashExtensions::ToHmac(const String& data, const String& key, const HashAlgorithm& algorithm)
+{
+	USING_NS_INSANE_CRYPTO;
+	USING_NS_INSANE_EXCEPTION;
+	size_t blockSize = 0;
+	String secret = key;
+	switch (algorithm)
+	{
+	case HashAlgorithm::Md5:
+		[[fallthrough]];
+	case HashAlgorithm::Sha1:
+		[[fallthrough]];
+	case HashAlgorithm::Sha256:
+		blockSize = HMAC_64_BYTES_BLOCK_SIZE;
+		break;
+	case HashAlgorithm::Sha384:
+		[[fallthrough]];
+	case HashAlgorithm::Sha512:
+		blockSize = HMAC_128_BYTES_BLOCK_SIZE;
+		break;
+	default:
+		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, HashAlgorithmEnumExtensions::ToString(algorithm));
+	}
+
+	if (secret.length() > blockSize)
+	{
+		secret = ToHash(secret, algorithm);
+	}
+
+	if (secret.length() < blockSize)
+	{
+		secret.append(String((size_t)(blockSize - secret.length()), static_cast<char>(0)));
+	}
+	String outerKeyPadding = String(blockSize, HMAC_OUTER_PADDING);
+	String innerKeyPadding = String(blockSize, HMAC_INNER_PADDING);
+	for (size_t i = 0; i < blockSize; i++)
+	{
+		innerKeyPadding[i] = (SignedChar)(secret[i] ^ innerKeyPadding[i]);
+		outerKeyPadding[i] = (SignedChar)(secret[i] ^ outerKeyPadding[i]);
+	}
+	innerKeyPadding.append(data);
+	String ret = ToHash(innerKeyPadding, algorithm);
+	outerKeyPadding.append(ret);
+	ret = ToHash(outerKeyPadding, algorithm);
+	return ret;
+}
+
+String InsaneIO::Insane::Cryptography::HashExtensions::ToScrypt(const String& data, const String& salt, const size_t& iterations, const size_t& blockSize, const size_t& parallelism, const size_t& derivedKeyLength)
+{
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		Botan::Scrypt engine = Botan::Scrypt(iterations, blockSize, parallelism);
+		std::vector<uint8_t> out(derivedKeyLength);
+		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t*>(salt.data()), salt.size());
+		return String(out.begin(), out.end());
+	}
+	catch (...)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+String InsaneIO::Insane::Cryptography::HashExtensions::ToArgon2(const String& data, const String& salt, const size_t& iterations, const size_t& memorySizeKiB, const size_t& parallelism, const Argon2Variant& variant, const size_t& derivedKeyLength)
+{
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		Botan::Argon2 engine(static_cast<uint8_t>(variant), memorySizeKiB, iterations, parallelism);
+		std::vector<uint8_t> out(derivedKeyLength);
+		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t*>(salt.data()), salt.size());
+		return String(out.begin(), out.end());
+	}
+	catch (std::exception& ex)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.what());
+	}
+}
+
+// ███ IEncoder ███
+
+InsaneIO::Insane::Cryptography::IEncoder::IEncoder(String name)
+	: IJsonSerialize(name)
+{
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::IEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver = nullptr)
+{
+	return IJsonSerialize::Deserialize(json, resolver);
+}
+
+const std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::IEncoder::DefaultInstance()
+{
+	USING_NS_INSANE_EXCEPTION;
+	throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+}
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::IEncoder::DefaultResolver()
+{
+	return IJsonSerialize::DefaultResolver();
+}
+
+// ███ HexEncoder ███
+
+InsaneIO::Insane::Cryptography::HexEncoder::HexEncoder(const bool& toUpper)
+	: IEncoder(HEX_ENCODER_NAME_STRING), ToUpper(toUpper)
+{
+}
+
+bool InsaneIO::Insane::Cryptography::HexEncoder::GetToUpper() const
+{
+	return ToUpper;
+}
+
+String InsaneIO::Insane::Cryptography::HexEncoder::Encode(const String& data) const
+{
+	return HexEncodingExtensions::ToHex(data, ToUpper);
+}
+
+String InsaneIO::Insane::Cryptography::HexEncoder::Decode(const String& data) const
+{
+	return HexEncodingExtensions::FromHex(data);
+}
+
+String InsaneIO::Insane::Cryptography::HexEncoder::Serialize() const
+{
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		String number;
+		writer.StartObject();
+
+		writer.Key(CNAMEOF(Name));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF(ToUpper));
+		writer.Bool(ToUpper);
+
+		writer.EndObject();
+		return String(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HexEncoder::DefaultInstance()
+{
+	HexEncoder* instance = dynamic_cast<HexEncoder*>(_DefaultInstance.get());
+	return std::move(std::make_unique<HexEncoder>(*instance));
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HexEncoder::Clone() const
+{
+	return std::move(std::make_unique<HexEncoder>(*this));
+}
+
+const std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HexEncoder::_DefaultInstance = std::make_unique<InsaneIO::Insane::Cryptography::HexEncoder>();
+
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::HexEncoder::_DefaultResolver = [](const String& json)->std::unique_ptr<IEncoder> {
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() || !(document.IsObject() && document.HasMember(CSTRINGIFY(ToUpper))))
+		{
+			throw true;
+		}
+		return std::move(std::make_unique<HexEncoder>(document[CNAMEOF(ToUpper)].GetBool()));
+	}
+	catch (...)
+	{
+		throw InsaneIO::Insane::Exception::DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HexEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver)
+{
+	return std::move(resolver(json));
+}
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::HexEncoder::DefaultResolver()
+{
+	return _DefaultResolver;
+}
+
+
+// ███ Base32Encoder ███
+
+InsaneIO::Insane::Cryptography::Base32Encoder::Base32Encoder(const size_t& removePadding, const bool& toLower)
+	: IEncoder(BASE32_ENCODER_NAME_STRING), RemovePadding(removePadding), ToLower(toLower)
+{
+}
+
+size_t InsaneIO::Insane::Cryptography::Base32Encoder::GetToLower() const
+{
+	return ToLower;
+}
+
+bool InsaneIO::Insane::Cryptography::Base32Encoder::GetRemovePadding() const
+{
+	return RemovePadding;
+}
+
+String InsaneIO::Insane::Cryptography::Base32Encoder::Encode(const String& data) const
+{
+	return Base32EncodingExtensions::ToBase32(data, RemovePadding, ToLower);
+}
+
+String InsaneIO::Insane::Cryptography::Base32Encoder::Decode(const String& data) const
+{
+	return Base32EncodingExtensions::FromBase32(data);
+}
+
+String InsaneIO::Insane::Cryptography::Base32Encoder::Serialize() const
+{
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		String number;
+		writer.StartObject();
+
+		writer.Key(CNAMEOF(Name));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF(RemovePadding));
+		writer.Bool(RemovePadding);
+
+		writer.Key(CNAMEOF(ToLower));
+		writer.Bool(ToLower);
+
+		writer.EndObject();
+		return String(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base32Encoder::Clone() const
+{
+	return std::move(std::make_unique<Base32Encoder>(*this));
+}
+
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base32Encoder::_DefaultResolver = [](const String& json)->std::unique_ptr<IEncoder>
+{
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() ||
+			!(document.IsObject() && document.HasMember(CSTRINGIFY(ToLower)) && document.HasMember(CSTRINGIFY(RemovePadding))))
+		{
+			throw true;
+		}
+		return std::move(std::make_unique<Base32Encoder>(document[CNAMEOF(RemovePadding)].GetBool(),
+			document[CNAMEOF(ToLower)].GetBool()));
+	}
+	catch (...)
+	{
+		throw InsaneIO::Insane::Exception::DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+const std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base32Encoder::_DefaultInstance = std::make_unique<InsaneIO::Insane::Cryptography::Base32Encoder>();
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base32Encoder::DefaultInstance()
+{
+	Base32Encoder* instance = dynamic_cast<Base32Encoder*>(_DefaultInstance.get());
+	return std::move(std::make_unique<Base32Encoder>(*instance));
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base32Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver)
+{
+	return std::move(resolver(json));
+}
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base32Encoder::DefaultResolver()
+{
+	return _DefaultResolver;
+}
+
+// ███ Base64Encoder ███
+
+InsaneIO::Insane::Cryptography::Base64Encoder::Base64Encoder(const size_t& lineBreaksLength, const bool& removePadding, const Base64Encoding& encodingType)
+	: IEncoder(BASE64_ENCODER_NAME_STRING), LineBreaksLength(lineBreaksLength), RemovePadding(removePadding), EncodingType(encodingType)
+{
+}
+
+
+inline size_t InsaneIO::Insane::Cryptography::Base64Encoder::GetLineBreaksLength() const {
+	return LineBreaksLength;
+}
+
+inline bool InsaneIO::Insane::Cryptography::Base64Encoder::GetRemovePadding() const {
+	return RemovePadding;
+}
+
+inline InsaneIO::Insane::Cryptography::Base64Encoding InsaneIO::Insane::Cryptography::Base64Encoder::GetEncodingType() const {
+	return EncodingType;
+}
+
+String InsaneIO::Insane::Cryptography::Base64Encoder::Encode(const String& data) const
+{
+	USING_NS_INSANE_EXCEPTION;
+	switch (EncodingType)
+	{
+	case Base64Encoding::Base64:
+		return Base64EncodingExtensions::ToBase64(data, LineBreaksLength, RemovePadding);
+	case Base64Encoding::UrlSafeBase64:
+		return Base64EncodingExtensions::ToUrlSafeBase64(data);
+	case Base64Encoding::FileNameSafeBase64:
+		return Base64EncodingExtensions::ToFilenameSafeBase64(data);
+	case Base64Encoding::UrlEncodedBase64:
+		return Base64EncodingExtensions::ToUrlEncodedBase64(data);
+	default:
+		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, Base64EncodingEnumExtensions::ToString(EncodingType, true));
+	}
+}
+
+String InsaneIO::Insane::Cryptography::Base64Encoder::Decode(const String& data) const
+{
+	return Base64EncodingExtensions::FromBase64(data);
+}
+
+String InsaneIO::Insane::Cryptography::Base64Encoder::Serialize() const {
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		String number;
+		writer.StartObject();
+
+		writer.Key(CNAMEOF(Name));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF(LineBreaksLength));
+#if SIZE_MAX == UINT32_MAX
+		writer.Uint(LineBreaksLength());
+#elif SIZE_MAX == UINT64_MAX
+		writer.Uint64(LineBreaksLength);
+#endif
+
+		writer.Key(CNAMEOF(RemovePadding));
+		writer.Bool(RemovePadding);
+
+		writer.Key(CNAMEOF(EncodingType));
+		writer.Int(Base64EncodingEnumExtensions::ToIntegral(EncodingType));
+
+		writer.EndObject();
+		return String(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base64Encoder::Clone() const
+{
+	return std::move(std::make_unique<Base64Encoder>(*this));
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base64Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver)
+{
+	return std::move(resolver(json));
+}
+
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base64Encoder::_DefaultResolver = [](const String& json)->std::unique_ptr<IEncoder>
+{
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() ||
+			!(document.IsObject() && document.HasMember(CSTRINGIFY(LineBreaksLength)) && document.HasMember(CSTRINGIFY(RemovePadding)) && document.HasMember(CSTRINGIFY(EncodingType))))
+		{
+			throw true;
+		}
+		return std::move(std::make_unique<Base64Encoder>(document[CNAMEOF(LineBreaksLength)].GetUint(),
+			document[CNAMEOF(RemovePadding)].GetBool(),
+			Base64EncodingEnumExtensions::Parse(document[CNAMEOF(EncodingType)].GetInt())));
+	}
+	catch (...)
+	{
+		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+const std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base64Encoder::_DefaultInstance = std::make_unique<InsaneIO::Insane::Cryptography::Base64Encoder>();
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base64Encoder::DefaultInstance()
+{
+	Base64Encoder* instance = dynamic_cast<Base64Encoder*>(_DefaultInstance.get());
+	return std::move(std::make_unique<Base64Encoder>(*instance));
+}
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base64Encoder::DefaultResolver()
+{
+	return _DefaultResolver;
+}
+
+// ███ DefaultEncoderFunctions ███
+
+static inline const std::map<String, std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>()>> DefaultEncoderFunctions = {
+	{ HEX_ENCODER_NAME_STRING,
+		[]() { return std::move(InsaneIO::Insane::Cryptography::HexEncoder::DefaultInstance()); }
+	} ,
+
+	{ BASE32_ENCODER_NAME_STRING,
+		[]() { return std::move(InsaneIO::Insane::Cryptography::Base32Encoder::DefaultInstance()); }
+	} ,
+
+	{ BASE64_ENCODER_NAME_STRING,
+		[]() { return std::move(InsaneIO::Insane::Cryptography::Base64Encoder::DefaultInstance()); }
+	} ,
+};
+
+// ███ IHasher ███
+
+InsaneIO::Insane::Cryptography::IHasher::IHasher(const String& name) : IJsonSerialize(name)
+{
+
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::IHasher::Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver)
+{
+	return IJsonSerialize::Deserialize(json, resolver);
+}
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::IHasher::DefaultResolver()
+{
+	return IJsonSerialize::DefaultResolver();
+}
+
+// ███ ShaHasher ███
+
+InsaneIO::Insane::Cryptography::ShaHasher::ShaHasher(const InsaneIO::Insane::Cryptography::HashAlgorithm& hashAlgorithm, std::unique_ptr<IEncoder>&& encoder) :
+	IHasher(SHA_HASHER_NAME_STRING), _HashAlgorithm(hashAlgorithm), _Encoder(encoder ? std::move(encoder) : Base64Encoder::DefaultInstance())
+{
+}
+
+InsaneIO::Insane::Cryptography::ShaHasher::ShaHasher(const ShaHasher& instance) : ShaHasher(instance._HashAlgorithm, std::move(instance.GetEncoder()))
+{
+}
+
+InsaneIO::Insane::Cryptography::HashAlgorithm InsaneIO::Insane::Cryptography::ShaHasher::GetHashAlgorithm() const
+{
+	return _HashAlgorithm;
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::ShaHasher::GetEncoder() const
+{
+	return std::move(_Encoder->Clone());
+}
+
+String InsaneIO::Insane::Cryptography::ShaHasher::Compute(const String& data)
+{
+	return HashExtensions::ToHash(data, _HashAlgorithm);
+}
+
+bool InsaneIO::Insane::Cryptography::ShaHasher::Verify(const String& data, const String& expected)
+{
+	return Compute(data) == expected;
+}
+
+String InsaneIO::Insane::Cryptography::ShaHasher::ComputeEncoded(const String& data)
+{
+	return _Encoder->Encode(Compute(data));
+}
+
+bool InsaneIO::Insane::Cryptography::ShaHasher::VerifyEncoded(const String& data, const String& expected)
+{
+	return ComputeEncoded(data) == expected;
+}
+
+String InsaneIO::Insane::Cryptography::ShaHasher::Serialize() const
+{
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		writer.StartObject();
+
+		writer.Key(CNAMEOF(Name));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF(HashAlgorithm));
+		writer.Int(HashAlgorithmEnumExtensions::ToIntegral(_HashAlgorithm));
+
+		writer.Key(CNAMEOF(Encoder));
+		String serialized = _Encoder->Serialize();
+		writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
+
+		writer.EndObject();
+		String json = String(sb.GetString(), sb.GetSize());
+		sb.Clear();
+		writer.Reset(sb);
+		rapidjson::Document doc;
+		doc.Parse(json.data(), json.length());
+		doc.Accept(writer);
+		return String(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::ShaHasher::Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver)
+{
+	return std::move(resolver(json));
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::ShaHasher::Clone() const
+{
+	return std::move(std::make_unique<ShaHasher>(*this));
+}
+
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::ShaHasher::DefaultResolver()
+{
+	return _DefaultResolver;
+}
+
+static inline std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InternalDefaultDeserializeIEncoder(const rapidjson::Value& value)
+{
+	USING_NS_INSANE_CRYPTO;
+	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		String json = RapidJsonExtensions::ToJson(value);
+		String name = RapidJsonExtensions::GetStringValue(value, STRINGIFY(Name));
+		auto encoderFx = DefaultEncoderFunctions.at(name);
+		return std::move(encoderFx());
+	}
+	catch (...)
+	{
+		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::ShaHasher::_DefaultResolver = [](const String& json)->std::unique_ptr<IHasher>
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CRYPTO;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() ||
+			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+		{
+			throw true;
+		}
+		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+		HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
+		return std::move(std::make_unique<ShaHasher>(algorithm, std::move(encoder)));
+	}
+	/*catch(const NotImplementedException & ex)
+	{
+		DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, EMPTY_STRING, 0, std ex);
+	}*/
+	catch (...)
+	{
+		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+// ███ HmacHasher ███
+
+InsaneIO::Insane::Cryptography::HmacHasher::HmacHasher(const String& key, const HashAlgorithm& hashAlgorithm, std::unique_ptr<IEncoder>&& encoder)
+	: IHasher(HMAC_HASHER_NAME_STRING), _Key(key.empty() ? RandomExtensions::Next(SHA512_DIGEST_LENGTH) : key), _HashAlgorithm(hashAlgorithm), _Encoder(encoder? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+{
+}
+
+InsaneIO::Insane::Cryptography::HmacHasher::HmacHasher(const HmacHasher& instance)
+	: HmacHasher(instance.GetKey(), instance.GetHashAlgorithm(), std::move(instance.GetEncoder()))
+{
+}
+
+InsaneIO::Insane::Cryptography::HashAlgorithm InsaneIO::Insane::Cryptography::HmacHasher::GetHashAlgorithm() const
+{
+	return _HashAlgorithm;
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HmacHasher::GetEncoder() const
+{
+	return std::move(_Encoder->Clone());
+}
+
+String InsaneIO::Insane::Cryptography::HmacHasher::GetKey() const
+{
+	return _Key;
+}
+
+String InsaneIO::Insane::Cryptography::HmacHasher::GetKeyEncoded() const
+{
+	return _Encoder->Encode(_Key);
+}
+
+String InsaneIO::Insane::Cryptography::HmacHasher::Compute(const String& data)
+{
+	return HashExtensions::ToHmac(data, _Key, _HashAlgorithm);
+}
+
+bool InsaneIO::Insane::Cryptography::HmacHasher::Verify(const String& data, const String& expected)
+{
+	return Compute(data) == expected;
+}
+
+String InsaneIO::Insane::Cryptography::HmacHasher::ComputeEncoded(const String& data)
+{
+	return _Encoder->Encode(Compute(data));
+}
+
+bool InsaneIO::Insane::Cryptography::HmacHasher::VerifyEncoded(const String& data, const String& expected)
+{
+	return ComputeEncoded(data) == expected;
+}
+
+String InsaneIO::Insane::Cryptography::HmacHasher::Serialize() const
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_STR;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		writer.StartObject();
+
+		writer.Key(CNAMEOF_TRIM_GET(GetName));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetKey));
+		String key = GetKeyEncoded();
+		writer.String(key.data(), key.length());
+
+		writer.Key(CNAMEOF_TRIM_GET(GetHashAlgorithm));
+		writer.Int(HashAlgorithmEnumExtensions::ToIntegral(_HashAlgorithm));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
+		String serialized = _Encoder->Serialize();
+		writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kStringType);
+
+		writer.EndObject();
+		String json = String(sb.GetString(), sb.GetSize());
+		sb.Clear();
+		writer.Reset(sb);
+		rapidjson::Document doc;
+		doc.Parse(json.data(), json.length());
+		doc.Accept(writer);
+		return String(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::HmacHasher::Clone() const
+{
+	return std::move(std::make_unique<HmacHasher>(*this));
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::HmacHasher::Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver)
+{
+	return std::move(resolver(json));
+}
+
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::HmacHasher::_DefaultResolver = [](const String& json)->std::unique_ptr<IHasher>
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CRYPTO;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() ||
+			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+		{
+			throw true;
+		}
+		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+		HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
+		String key = encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
+		return std::make_unique<HmacHasher>(key, algorithm, std::move(encoder));
+	}
+	catch (...)
+	{
+		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::HmacHasher::DefaultResolver()
+{
+	return _DefaultResolver;
+}
+
+// ███ Argon2Hasher ███
+
+InsaneIO::Insane::Cryptography::Argon2Hasher::Argon2Hasher(const String& salt,
+	const size_t& iterations,
+	const size_t& memorySizeKiB,
+	const size_t& degreeOfParallelism,
+	const Argon2Variant argon2Variant,
+	const size_t derivedKeyLength,
+	std::unique_ptr<IEncoder>&& encoder) : IHasher(ARGON2_HASHER_NAME_STRING),
+	_Salt(salt),
+	_Iterations(iterations),
+	_MemorySizeKiB(memorySizeKiB),
+	_DegreeOfParallelism(degreeOfParallelism),
+	_Argon2Variant(argon2Variant),
+	_DerivedKeyLength(derivedKeyLength),
+	_Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+{
+}
+
+InsaneIO::Insane::Cryptography::Argon2Hasher::Argon2Hasher(const Argon2Hasher& instance)
+	:Argon2Hasher(instance.GetSalt(), instance.GetIterations(), instance.GetMemorySizeKiB(), instance.GetDegreeOfParallelism(),instance.GetArgon2Variant(),instance.GetDerivedKeyLength(),std::move(instance.GetEncoder()))
+{
+}
+
+String InsaneIO::Insane::Cryptography::Argon2Hasher::GetSalt() const
+{
+	return _Salt;
+}
+
+String InsaneIO::Insane::Cryptography::Argon2Hasher::GetSaltEncoded() const
+{
+	return _Encoder->Encode(_Salt);
+}
+
+size_t InsaneIO::Insane::Cryptography::Argon2Hasher::GetIterations() const
+{
+	return _Iterations;
+}
+
+size_t InsaneIO::Insane::Cryptography::Argon2Hasher::GetMemorySizeKiB() const
+{
+	return _MemorySizeKiB;
+}
+
+size_t InsaneIO::Insane::Cryptography::Argon2Hasher::GetDegreeOfParallelism() const
+{
+	return _DegreeOfParallelism;
+}
+
+size_t InsaneIO::Insane::Cryptography::Argon2Hasher::GetDerivedKeyLength() const
+{
+	return _DerivedKeyLength;
+}
+
+InsaneIO::Insane::Cryptography::Argon2Variant InsaneIO::Insane::Cryptography::Argon2Hasher::GetArgon2Variant() const
+{
+	return _Argon2Variant;
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Argon2Hasher::GetEncoder() const
+{
+	return std::move(_Encoder->Clone());
+}
+
+String InsaneIO::Insane::Cryptography::Argon2Hasher::Compute(const String& data)
+{
+	return HashExtensions::ToArgon2(data, _Salt, _Iterations, _MemorySizeKiB, _DegreeOfParallelism, _Argon2Variant, _DerivedKeyLength);
+}
+
+bool InsaneIO::Insane::Cryptography::Argon2Hasher::Verify(const String& data, const String& expected)
+{
+	return Compute(data) == expected;
+}
+
+String InsaneIO::Insane::Cryptography::Argon2Hasher::ComputeEncoded(const String& data)
+{
+	return _Encoder->Encode(Compute(data));
+}
+
+bool InsaneIO::Insane::Cryptography::Argon2Hasher::VerifyEncoded(const String& data, const String& expected)
+{
+	return ComputeEncoded(data) == expected;
+}
+
+String InsaneIO::Insane::Cryptography::Argon2Hasher::Serialize() const
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_STR;
+	USING_NS_INSANE_CORE;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		writer.StartObject();
+
+		writer.Key(CNAMEOF_TRIM_GET(GetName));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetSalt));
+		String salt = GetSaltEncoded();
+		writer.String(salt.data(), salt.length());
+
+		writer.Key(CNAMEOF_TRIM_GET(GetIterations));
+		String numberSizeT = IntegralExtensions::ToString(GetIterations());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetMemorySizeKiB));
+		numberSizeT = IntegralExtensions::ToString(GetMemorySizeKiB());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetDegreeOfParallelism));
+		numberSizeT = IntegralExtensions::ToString(GetDegreeOfParallelism());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetArgon2Variant));
+		writer.Int(Argon2VariantEnumExtensions::ToIntegral(GetArgon2Variant()));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetDerivedKeyLength));
+		numberSizeT = IntegralExtensions::ToString(GetDerivedKeyLength());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
+		String serialized = _Encoder->Serialize();
+		writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
+
+		writer.EndObject();
+		String json = String(sb.GetString(), sb.GetSize());
+		sb.Clear();
+		writer.Reset(sb);
+		rapidjson::Document doc;
+		doc.Parse(json.data(), json.length());
+		doc.Accept(writer);
+		return String(sb.GetString(), sb.GetSize());
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::Argon2Hasher::Clone() const
+{
+	return std::move(std::make_unique<Argon2Hasher>(*this));
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::Argon2Hasher::Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver)
+{
+	return std::move(resolver(json));
+}
+
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::Argon2Hasher::DefaultResolver()
+{
+	return _DefaultResolver;
+}
+
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::Argon2Hasher::_DefaultResolver = [](const String& json)->std::unique_ptr<IHasher>
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CRYPTO;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() ||
+			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetMemorySizeKiB)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetDegreeOfParallelism)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetArgon2Variant)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+		{
+			throw true;
+		}
+		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+		String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
+#if SIZE_MAX == UINT64_MAX
+		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
+		size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint();
+		size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint();
+		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
+#elif SIZE_MAX == UINT64_MAX
+		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
+		size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint64();
+		size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint64();
+		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
+#endif
+		Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
+		return std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder));
+	}
+	catch (...)
+	{
+		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+
+

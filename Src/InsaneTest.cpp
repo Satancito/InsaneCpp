@@ -3,7 +3,7 @@
 #include <Insane/InsaneException.h>
 #include <Insane/InsanePreprocessor.h>
 
-String Insane::Test::TestExtensions::GetTestTypeHeader(const TestType &testType)
+String InsaneIO::Insane::Test::TestExtensions::GetTestTypeHeader(const TestType &testType)
 {
     switch (testType)
     {
@@ -12,6 +12,6 @@ String Insane::Test::TestExtensions::GetTestTypeHeader(const TestType &testType)
     case TestType::NotEquals:
         return __TEST_HEADER_NOT_EQUALS_STRING;
     default:
-        throw Insane::Exception::NotImplementedException(STRINGIFY(Insane::Test::TestExtensions::GetTestTypeHeader - TestType = ) + std::to_string(static_cast<int>(testType)));
+        throw InsaneIO::Insane::Exception::NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__,__LINE__, TestTypeEnumExtensions::ToString(testType));
     }
 }

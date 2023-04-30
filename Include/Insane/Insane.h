@@ -1,9 +1,7 @@
 #pragma once
 #ifndef INSANE_BASE_H
 #define INSANE_BASE_H
-
 #define INSANE_STRING "Insane"s
-#define INSANE_STR "Insane"
 
 #define STDCALL _stdcall
 #define CDECL _cdecl
@@ -28,109 +26,30 @@
 #include <cstdlib>
 #include <regex>
 
-// WINDOWS
-#if (_WIN32)
-#include <Windows.h>
-#include <conio.h>
-#define WINDOWS_PLATFORM 1
-#define DLLCALL STDCALL
-#define DLLIMPORT _declspec(dllimport)
-#define DLLEXPORT _declspec(dllexport)
-#define DLLPRIVATE
-#define NOMINMAX
-typedef std::wstring DefaultString;
-#if _WIN64
-#define IS64 1
-#else
-#define IS32 1
-#endif
+#include <Insane/InsanePreprocessor.h>
 
-// EMSCRIPTEN
-#elif defined(__EMSCRIPTEN__)
-#include <emscripten/emscripten.h>
-#include <emscripten/bind.h>
-#include <unistd.h>
-#include <termios.h>
-#define EMSCRIPTEN_PLATFORM 1
-#define DLLCALL
-#define DLLIMPORT
-#define DLLEXPORT __attribute__((visibility("default")))
-#define DLLPRIVATE __attribute__((visibility("hidden")))
-typedef std::string DefaultString;
-
-// LINUX - Ubuntu, Fedora, , Centos, Debian, RedHat
-#elif (__LINUX__ || __gnu_linux__ || __linux__ || __linux || linux)
-#define LINUX_PLATFORM 1
-#include <unistd.h>
-#include <termios.h>
-#define DLLCALL CDECL
-#define DLLIMPORT
-#define DLLEXPORT __attribute__((visibility("default")))
-#define DLLPRIVATE __attribute__((visibility("hidden")))
-#define CoTaskMemAlloc(p) malloc(p)
-#define CoTaskMemFree(p) free(p)
-typedef std::string DefaultString;
-#if __x86_64__ || __ppc64__
-#define IS64 1
-#else
-#define IS32 1
-#endif
-
-// ANDROID
-#elif (__ANDROID__ || ANDROID)
-#define ANDROID_PLATFORM 1
-#define DLLCALL
-#define DLLIMPORT
-#define DLLEXPORT __attribute__((visibility("default")))
-#define DLLPRIVATE __attribute__((visibility("hidden")))
-typedef std::string DefaultString;
-
-// MACOS
-#elif defined(__APPLE__)
-#include <unistd.h>
-#include <termios.h>
-#define DLLCALL
-#define DLLIMPORT
-#define DLLEXPORT __attribute__((visibility("default")))
-#define DLLPRIVATE __attribute__((visibility("hidden")))
-typedef std::string DefaultString;
-#include "TargetConditionals.h"
-#if TARGET_OS_IPHONE && TARGET_IPHONE_SIMULATOR
-#define IOS_SIMULATOR_PLATFORM 1
-#elif TARGET_OS_IPHONE
-#define IOS_PLATFORM 1
-#elif TARGET_OS_MAC
-#define MACOS_PLATFORM 1
-#else
-
-#endif
-
-#endif
-
-#if defined(INSANE_EXPORTS)
-#define DLLSPEC DLLEXPORT
-#else
-#define DLLSPEC DLLIMPORT
-#endif
-
-typedef __UINT32_TYPE__ UnsignedInt32;
-typedef __INT32_TYPE__ SignedInt32;
-typedef __UINT64_TYPE__ UnsignedInt64;
-typedef __INT64_TYPE__ SignedInt64;
+typedef uint8_t UnsignedInt8;
+typedef int8_t SignedInt8;
+typedef uint16_t UnsignedInt16;
+typedef int16_t SignedInt16;
+typedef uint32_t UnsignedInt32;
+typedef int32_t SignedInt32;
+typedef uint64_t UnsignedInt64;
+typedef int64_t SignedInt64;
 
 typedef unsigned char UnsignedChar;
 typedef char SignedChar;
-typedef time_t Time;
-typedef size_t Size;
 typedef std::string String;
 typedef std::wstring WString;
 
 #define thisvalue (*this)
 #define USING_NS_INSANE using namespace Insane
+#define IS_DEBUG InsaneIO::Insane::UtilityExtensions::IsDebug()
 using namespace std::string_literals;
 
-namespace Insane
+namespace InsaneIO::Insane
 {
+    // ███ Concepts ███
     template <typename T>
     concept HasOstream = requires(std::ostream &os, T t) {
                              os << t;
@@ -138,6 +57,29 @@ namespace Insane
 
     template <typename T>
     concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
+
+    // ███ IClone ███
+
+    template <typename T>
+    class IClone {
+    public:
+        virtual std::unique_ptr<T> Clone() const = 0;
+    };
+
+    // ███ UtilityExtensions ███
+
+    class UtilityExtensions {
+    public:
+        [[nodiscard]] static bool IsDebug()
+        {
+#if defined(_DEBUG)
+            return true;
+#else
+            return false;
+#endif // !
+        }
+    }; 
+    
 }
 
 #endif // !INSANE_BASE_H
