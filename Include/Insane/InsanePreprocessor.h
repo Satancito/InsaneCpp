@@ -190,6 +190,7 @@ static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown co
 #define EQUAL_SIGN_STRING ("="s)
 
 #define EMPTY_CHAR_ARRAY ("")
+#define EMPTY_CHAR ('')
 #define NULL_CHAR ('\000')
 #define CR_CHAR ('\r')
 #define CARRIAGE_RETURN_CHAR ('\r')

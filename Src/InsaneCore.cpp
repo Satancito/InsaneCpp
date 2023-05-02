@@ -93,7 +93,7 @@ void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground
 	std::cout << format;
 }
 
-void InsaneIO::Insane::Core::Console::Write(const String &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::Write(const String& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	USING_NS_INSANE_STR;
 #ifndef EMSCRIPTEN_PLATFORM
@@ -115,13 +115,13 @@ void InsaneIO::Insane::Core::Console::Write(const String &s, ConsoleForeground f
 #endif
 }
 
-void InsaneIO::Insane::Core::Console::WriteLine(const String &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::WriteLine(const String& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	Write(s, foreground, background, styles);
 	std::cout << std::endl;
 }
 
-void InsaneIO::Insane::Core::Console::Write(const WString &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::Write(const WString& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	USING_NS_INSANE_STR;
 #ifndef EMSCRIPTEN_PLATFORM
@@ -143,7 +143,7 @@ void InsaneIO::Insane::Core::Console::Write(const WString &s, ConsoleForeground 
 #endif
 }
 
-void InsaneIO::Insane::Core::Console::WriteLine(const WString &s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void InsaneIO::Insane::Core::Console::WriteLine(const WString& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	Write(s, foreground, background, styles);
 	std::cout << std::endl;
@@ -160,9 +160,9 @@ void InsaneIO::Insane::Core::Console::Pause()
 	do
 	{
 		c = getchar();
-		std::cout<< "Press Key " << std::endl;
-	} while (c !=  64);
-	std::cout<<"KeyPressed"<<std::endl;
+		std::cout << "Press Key " << std::endl;
+	} while (c != 64);
+	std::cout << "KeyPressed" << std::endl;
 }
 
 int InsaneIO::Insane::Core::Console::PauseAny(bool printWhenPressed)
@@ -198,6 +198,17 @@ String InsaneIO::Insane::Core::RapidJsonExtensions::ToJson(const rapidjson::Valu
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 	doc.Accept(writer);
 	return String(buffer.GetString(), buffer.GetSize());
+}
+
+String InsaneIO::Insane::Core::RapidJsonExtensions::Prettify(const String& json)
+{
+	rapidjson::Document doc;
+	rapidjson::StringBuffer sb;
+	rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+	doc.Parse(json.data(), json.length());
+	doc.Accept(writer);
+	return String(sb.GetString(), sb.GetSize());
+
 }
 
 String InsaneIO::Insane::Core::RapidJsonExtensions::GetStringValue(const rapidjson::Value& object, const String& propertyName)

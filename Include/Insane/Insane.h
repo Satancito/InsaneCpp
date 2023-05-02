@@ -46,7 +46,7 @@ typedef std::wstring WString;
 #define USING_NS_INSANE using namespace Insane
 #define IS_DEBUG InsaneIO::Insane::UtilityExtensions::IsDebug()
 using namespace std::string_literals;
-
+using namespace std::chrono_literals;
 namespace InsaneIO::Insane
 {
     // ███ Concepts ███

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef INSANE_CRYPOGRAPHY_H
 #define INSANE_CRYPOGRAPHY_H
 
@@ -89,10 +89,17 @@
 #define HEX_ENCODER_NAME_STRING ("InsaneIO.Insane.Cryptography.HexEncoder, InsaneIO.Insane"s)
 #define BASE32_ENCODER_NAME_STRING ("InsaneIO.Insane.Cryptography.Base32Encoder, InsaneIO.Insane"s)
 #define BASE64_ENCODER_NAME_STRING ("InsaneIO.Insane.Cryptography.Base64Encoder, InsaneIO.Insane"s)
+
 #define SHA_HASHER_NAME_STRING ("InsaneIO.Insane.Cryptography.ShaHasher, InsaneIO.Insane"s)
 #define HMAC_HASHER_NAME_STRING ("InsaneIO.Insane.Cryptography.HmacHasher, InsaneIO.Insane"s)
 #define ARGON2_HASHER_NAME_STRING ("InsaneIO.Insane.Cryptography.Argon2Hasher, InsaneIO.Insane"s)
 #define SCRYPT_HASHER_NAME_STRING ("InsaneIO.Insane.Cryptography.ScryptHasher, InsaneIO.Insane"s)
+
+#define AES_CBC_ENCRYPTOR_NAME_STRING ("InsaneIO.Insane.Cryptography.AesCbcEncryptor, InsaneIO.Insane"s)
+#define RSA_ENCRYPTOR_NAME_STRING ("InsaneIO.Insane.Cryptography.RsaEncryptor, InsaneIO.Insane"s)
+
+#define AES_CBC_PROTECTOR_NAME_STRING ("InsaneIO.Insane.Cryptography.AesCbcProtector, InsaneIO.Insane"s)
+
 
 #define BASE64_VALUE_REGEX_CHAR_STRING (R"(^(?:(?:[A-Za-z0-9+\/]{4})*)(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$)"s)
 
@@ -135,6 +142,7 @@ namespace InsaneIO::Insane::Cryptography
 		OaepSha384, _, _,
 		OaepSha512, _, _);
 
+	// ███
 	class HexEncodingExtensions
 	{
 	public:
@@ -144,6 +152,7 @@ namespace InsaneIO::Insane::Cryptography
 	private:
 	};
 
+	// ███
 	class Base32EncodingExtensions
 	{
 	public:
@@ -153,6 +162,7 @@ namespace InsaneIO::Insane::Cryptography
 	private:
 	};
 
+	// ███
 	class Base64EncodingExtensions
 	{
 	public:
@@ -169,6 +179,7 @@ namespace InsaneIO::Insane::Cryptography
 	private:
 	};
 
+	// ███
 	class HashExtensions
 	{
 	public:
@@ -180,37 +191,45 @@ namespace InsaneIO::Insane::Cryptography
 	private:
 	};
 
-	template <typename T>
-	class IJsonSerialize
+	// ███ IBaseSerialize ███
+	class IBaseSerialize
 	{
 	public:
-		IJsonSerialize(String name) :Name(name) {
+		IBaseSerialize(String name);
+		[[nodiscard]] String GetName() const;
+	private:
+		const String _Name;
+	};
+
+
+	// ███ IJsonSerialize ███
+	template <typename T>
+	class IJsonSerialize : public IBaseSerialize
+	{
+	public:
+		IJsonSerialize(String name) :IBaseSerialize(name) {
 
 		}
 
-		[[nodiscard]] String GetName() const {
-			return Name;
-		}
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const = 0;
 
-		[[nodiscard]] virtual String Serialize() const {
+
+		[[nodiscard]] static std::unique_ptr<T> Deserialize(const String& json, const std::function<std::unique_ptr<T>(const String&)>& resolver)
+		{
 			USING_NS_INSANE_EXCEPTION;
 			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 		}
 
-		[[nodiscard]] static std::unique_ptr<T> Deserialize(const String& json, const std::function<std::unique_ptr<T>(String)>& resolver) {
-			USING_NS_INSANE_EXCEPTION;
-			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-		}
-
-		[[nodiscard]] static std::function<std::unique_ptr<T>(String)> DefaultResolver() {
+		[[nodiscard]] static std::function<std::unique_ptr<T>(const String&)> DefaultDeserializeResolver()
+		{
 			USING_NS_INSANE_EXCEPTION;
 			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 		}
 
 	private:
-		const String Name;
 	};
 
+	// ███
 	class IEncoder : public IJsonSerialize<IEncoder>, public IClone<IEncoder>
 	{
 	public:
@@ -218,12 +237,13 @@ namespace InsaneIO::Insane::Cryptography
 
 		[[nodiscard]] virtual String Encode(const String& data) const = 0;
 		[[nodiscard]] virtual String Decode(const String& data) const = 0;
-		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver);
+		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver);
 		[[nodiscard]] static const std::unique_ptr<IEncoder> DefaultInstance();
-		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(String)> DefaultResolver();
+		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(const String&)> DefaultDeserializeResolver();
 	private:
 	};
 
+	// ███
 	class HexEncoder : public IEncoder {
 	public:
 		HexEncoder(const bool& toUpper = false);
@@ -232,18 +252,19 @@ namespace InsaneIO::Insane::Cryptography
 
 		[[nodiscard]] virtual String Encode(const String& data) const override;
 		[[nodiscard]] virtual String Decode(const String& data) const override;
-		[[nodiscard]] virtual String Serialize() const override;
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IEncoder> Clone() const override;
-		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver = DefaultResolver());
+		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static std::unique_ptr<IEncoder> DefaultInstance();
-		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(String)> DefaultResolver();
+		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(const String&)> DefaultDeserializeResolver();
 
 	private:
 		static const std::unique_ptr<IEncoder> _DefaultInstance;
-		static const std::function<std::unique_ptr<IEncoder>(String)> _DefaultResolver;
+		static const std::function<std::unique_ptr<IEncoder>(const String&)> _DefaultDeserializeResolver;
 		const bool ToUpper;
 	};
 
+	// ███
 	class Base32Encoder : public IEncoder
 	{
 	public:
@@ -254,18 +275,19 @@ namespace InsaneIO::Insane::Cryptography
 
 		[[nodiscard]] virtual String Encode(const String& data) const override;
 		[[nodiscard]] virtual String Decode(const String& data) const override;
-		[[nodiscard]] virtual String Serialize() const override;
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IEncoder> Clone() const override;
 		[[nodiscard]] static std::unique_ptr<IEncoder> DefaultInstance();
-		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver = DefaultResolver());
-		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(String)> DefaultResolver();
+		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver = DefaultDeserializeResolver());
+		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(const String&)> DefaultDeserializeResolver();
 	private:
 		static const std::unique_ptr<IEncoder> _DefaultInstance;
-		static const std::function<std::unique_ptr<IEncoder>(String)> _DefaultResolver;
+		static const std::function<std::unique_ptr<IEncoder>(const String&)> _DefaultDeserializeResolver;
 		const bool RemovePadding;
 		const bool ToLower;
 	};
 
+	// ███
 	class Base64Encoder : public IEncoder
 	{
 	public:
@@ -277,32 +299,34 @@ namespace InsaneIO::Insane::Cryptography
 
 		[[nodiscard]] virtual String Encode(const String& data) const override;
 		[[nodiscard]] virtual String Decode(const String& data) const override;
-		[[nodiscard]] virtual String Serialize() const override;
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IEncoder> Clone() const override;
-		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver = DefaultResolver());
+		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static std::unique_ptr<IEncoder> DefaultInstance();
-		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(String)> DefaultResolver();
+		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(const String&)> DefaultDeserializeResolver();
 	private:
 		static const std::unique_ptr<IEncoder> _DefaultInstance;
-		static const std::function<std::unique_ptr<IEncoder>(String)> _DefaultResolver;
+		static const std::function<std::unique_ptr<IEncoder>(const String&)> _DefaultDeserializeResolver;
 		const size_t LineBreaksLength;
 		const bool RemovePadding;
 		const Base64Encoding EncodingType;
 	};
 
+	// ███
 	class RsaKeyPair : public IJsonSerialize<RsaKeyPair>
 	{
 	public:
 		RsaKeyPair(const String& publicKey, const String& privateKey);
 		[[nodiscard]] String GetPublicKey() const;
 		[[nodiscard]] String GetPrivateKey() const;
-		[[nodiscard]] virtual String Serialize() const override;
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
 		[[nodiscard]] static RsaKeyPair Deserialize(const String& json);
 	private:
 		const String PublicKey;
 		const String PrivateKey;
 	};
 
+	// ███
 	class AesExtensions
 	{
 	public:
@@ -313,6 +337,7 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] static void ValidateKey(const String& key);
 	};
 
+	// ███
 	class RsaExtensions
 	{
 	public:
@@ -325,6 +350,7 @@ namespace InsaneIO::Insane::Cryptography
 	private:
 	};
 
+	// ███
 	class IHasher : public IJsonSerialize<IHasher>, IClone<IHasher>
 	{
 	public:
@@ -333,12 +359,13 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] virtual bool Verify(const String& data, const String& expected) = 0;
 		[[nodiscard]] virtual String ComputeEncoded(const String& data) = 0;
 		[[nodiscard]] virtual bool VerifyEncoded(const String& data, const String& expected) = 0;
-		[[nodiscard]] virtual String Serialize() const override = 0;
-		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultResolver());
-		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultResolver();
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override = 0;
+		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultDeserializeResolver());
+		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultDeserializeResolver();
 	private:
 	};
 
+	// ███
 	class ShaHasher : public IHasher
 	{
 	public:
@@ -352,16 +379,17 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] virtual bool Verify(const String& data, const String& expected) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String& data) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String& data, const String& expected) override;
-		[[nodiscard]] virtual String Serialize() const override;
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
-		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultResolver());
-		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultResolver();
+		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultDeserializeResolver());
+		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultDeserializeResolver();
 	private:
-		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultResolver;
+		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultDeserializeResolver;
 		const HashAlgorithm _HashAlgorithm;
 		const std::unique_ptr<IEncoder> _Encoder;
 	};
 
+	// ███
 	class RandomExtensions
 	{
 	public:
@@ -374,6 +402,8 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] RandomExtensions() = default;
 	};
 
+
+	// ███
 	class HmacHasher : public IHasher
 	{
 	public:
@@ -384,31 +414,35 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 		[[nodiscard]] String GetKey() const;
 		[[nodiscard]] String GetKeyEncoded() const;
+
 		[[nodiscard]] virtual String Compute(const String& data) override;
 		[[nodiscard]] virtual bool Verify(const String& data, const String& expected) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String& data) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String& data, const String& expected) override;
-		[[nodiscard]] virtual String Serialize() const override;
+
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
-		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultResolver());
-		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultResolver();
+		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultDeserializeResolver());
+		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultDeserializeResolver();
 	private:
-		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultResolver;
+		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultDeserializeResolver;
 		const HashAlgorithm _HashAlgorithm;
 		const std::unique_ptr<IEncoder> _Encoder;
 		const String _Key;
 	};
 
+	//TODO. Arreglar los Uint y Uint64 en Serialize y deserialize
+	// ███
 	class Argon2Hasher : public IHasher
 	{
 	public:
-		Argon2Hasher(const String & salt = RandomExtensions::Next(ARGON2_SALTSIZE),
-			const size_t &iterations = ARGON2_ITERATIONS,
-			const size_t & memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB,
-			const size_t & degreeOfParallelism = ARGON2_DEGREEOF_PARALLELISM, 
-			const Argon2Variant argon2Variant = Argon2Variant::Argon2id, 
-			const size_t derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH, 
-			std::unique_ptr<IEncoder> && encoder = std::move(Base64Encoder::DefaultInstance()));
+		Argon2Hasher(const String& salt = RandomExtensions::Next(ARGON2_SALTSIZE),
+			const size_t& iterations = ARGON2_ITERATIONS,
+			const size_t& memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB,
+			const size_t& degreeOfParallelism = ARGON2_DEGREEOF_PARALLELISM,
+			const Argon2Variant argon2Variant = Argon2Variant::Argon2id,
+			const size_t& derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH,
+			std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
 		Argon2Hasher(const Argon2Hasher& instance);
 
 		[[nodiscard]] String GetSalt() const;
@@ -424,10 +458,11 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] virtual bool Verify(const String& data, const String& expected) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String& data) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String& data, const String& expected) override;
-		[[nodiscard]] virtual String Serialize() const override;
+
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
-		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultResolver());
-		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultResolver();
+		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultDeserializeResolver());
+		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultDeserializeResolver();
 	private:
 		const String _Salt;
 		const size_t _Iterations;
@@ -437,48 +472,158 @@ namespace InsaneIO::Insane::Cryptography
 		const Argon2Variant _Argon2Variant;
 		const std::unique_ptr<IEncoder> _Encoder;
 
-		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultResolver;
+		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultDeserializeResolver;
 	};
 
+	// ███
 	class ScryptHasher : public IHasher
 	{
 	public:
-		ScryptHasher(const String& salt = RandomExtensions::Next(ARGON2_SALTSIZE),
-			const size_t& iterations = ARGON2_ITERATIONS,
-			const size_t& memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB,
-			const size_t& degreeOfParallelism = ARGON2_DEGREEOF_PARALLELISM,
-			const Argon2Variant argon2Variant = Argon2Variant::Argon2id,
-			const size_t derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH,
+		ScryptHasher(const String& salt = RandomExtensions::Next(SCRYPT_SALT_SIZE),
+			const size_t& iterations = SCRYPT_ITERATIONS,
+			const size_t& blockSize = SCRYPT_BLOCKSIZE,
+			const size_t& parallelism = SCRYPT_PARALLELISM,
+			const size_t& derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH,
 			std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
-		ScryptHasher(const Argon2Hasher& instance);
+		ScryptHasher(const ScryptHasher& instance);
 
 		[[nodiscard]] String GetSalt() const;
 		[[nodiscard]] String GetSaltEncoded() const;
 		[[nodiscard]] size_t GetIterations() const;
-		[[nodiscard]] size_t GetMemorySizeKiB() const;
-		[[nodiscard]] size_t GetDegreeOfParallelism() const;
+		[[nodiscard]] size_t GetBlockSize() const;
+		[[nodiscard]] size_t GetParallelism() const;
 		[[nodiscard]] size_t GetDerivedKeyLength() const;
-		[[nodiscard]] Argon2Variant GetArgon2Variant() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
 		[[nodiscard]] virtual String Compute(const String& data) override;
 		[[nodiscard]] virtual bool Verify(const String& data, const String& expected) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String& data) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String& data, const String& expected) override;
-		[[nodiscard]] virtual String Serialize() const override;
+
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
-		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultResolver());
-		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultResolver();
+		[[nodiscard]] static std::function<std::unique_ptr<IHasher>(String)> DefaultDeserializeResolver();
+		[[nodiscard]] virtual String Serialize(const bool& indent = false) const override;
+		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver = DefaultDeserializeResolver());
 	private:
 		const String _Salt;
 		const size_t _Iterations;
-		const size_t _MemorySizeKiB;
-		const size_t _DegreeOfParallelism;
+		const size_t _BlockSize;
+		const size_t _Parallelism;
 		const size_t _DerivedKeyLength;
-		const Argon2Variant _Argon2Variant;
 		const std::unique_ptr<IEncoder> _Encoder;
 
-		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultResolver;
+		static const std::function<std::unique_ptr<IHasher>(String)> _DefaultDeserializeResolver;
+	};
+	//TODO. Resolver el tipo de los resolvers de String -> const String&.
+
+	// ███ ISecretProtector ███
+	class ISecretProtector {
+	public:
+		ISecretProtector(const String& name);
+		String GetName();
+		virtual String Protect(const String& secret, const String& key) = 0;
+		virtual String Unprotect(const String& secret, const String& key) = 0;
+		static std::unique_ptr<ISecretProtector> DefaultInstance() {
+			USING_NS_INSANE_EXCEPTION;
+			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	private:
+		const String _Name;
+	};
+
+	// ███ AesCbcProtector ███
+	class AesCbcProtector : public ISecretProtector {
+	public:
+		AesCbcProtector();
+		virtual String Protect(const String& secret, const String& key) override;
+		virtual String Unprotect(const String& secret, const String& key) override;
+		static std::unique_ptr<ISecretProtector> DefaultInstance();
+	private:
+		static const std::unique_ptr<ISecretProtector> _DefaultInstance;
+	};
+
+	// ███ ProtectorResolver ███
+	using ProtectorResolver = std::function<std::unique_ptr<ISecretProtector>(const String& protectorName)>;
+
+	// ███ SecureDeserializeResolver ███
+	template<typename T>
+	using SecureDeserializeResolver = std::function<std::unique_ptr<T>(const String& json, const String& serializeKey)>;
+
+	// ███ ISecureJsonSerialize ███
+	template <typename T>
+	class ISecureJsonSerialize : public IBaseSerialize
+	{
+	public:
+		ISecureJsonSerialize(String name) :IBaseSerialize(name) {
+
+		}
+
+		[[nodiscard]] virtual String Serialize(const String& serializeKey, const bool& indent = false, const std::unique_ptr<ISecretProtector>& protector = AesCbcProtector::DefaultInstance()) const = 0;
+
+		[[nodiscard]] static std::unique_ptr<T> Deserialize(const String& json, const String& serializeKey, const SecureDeserializeResolver<T>& deserializeResolver)
+		{
+			USING_NS_INSANE_EXCEPTION;
+			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+
+		[[nodiscard]] static SecureDeserializeResolver<T> DefaultDeserializeResolver()
+		{
+			USING_NS_INSANE_EXCEPTION;
+			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+
+		[[nodiscard]] static ProtectorResolver DefaultProtectorResolver()
+		{
+			USING_NS_INSANE_EXCEPTION;
+			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	private:
+
+	};
+
+	// ███ 
+	class IEncryptor :public ISecureJsonSerialize<IEncryptor>, public IClone<IEncryptor>
+	{
+	public:
+		IEncryptor(const String& name);
+		[[nodiscard]] virtual String Encrypt(const String& data) const = 0;
+		[[nodiscard]] virtual String EncryptEncoded(const String& data) const = 0;
+		[[nodiscard]] virtual String Decrypt(const String& data) const = 0;
+		[[nodiscard]] virtual String DecryptEncoded(const String& data) const = 0;
+	private:
+	};
+
+	// ███ 
+	class AesCbcEncryptor : public IEncryptor
+	{
+	public:
+		AesCbcEncryptor(const String& key, const AesCbcPadding& padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+		AesCbcEncryptor(const AesCbcEncryptor& instance);
+
+		[[nodiscard]] String GetKey() const;
+		[[nodiscard]] String GetKeyEncoded() const;
+		[[nodiscard]] AesCbcPadding GetPadding() const;
+		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
+
+
+		[[nodiscard]] virtual String Encrypt(const String& data) const override;
+		[[nodiscard]] virtual String EncryptEncoded(const String& data) const override;
+		[[nodiscard]] virtual String Decrypt(const String& data) const override;
+		[[nodiscard]] virtual String DecryptEncoded(const String& data) const override;
+
+		[[nodiscard]] std::unique_ptr<IEncryptor> Clone() const override;
+		[[nodiscard]] virtual String Serialize(const String& serializeKey, const bool& indent = false, const std::unique_ptr<ISecretProtector>& protector = AesCbcProtector::DefaultInstance()) const override;
+
+		[[nodiscard]] static ProtectorResolver DefaultProtectorResolver();
+		[[nodiscard]] static SecureDeserializeResolver<IEncryptor> DefaultDeserializeResolver();
+		[[nodiscard]] static std::unique_ptr<IEncryptor> Deserialize(const String& json, const String& serializeKey, const SecureDeserializeResolver<IEncryptor>& deserializeResolver = DefaultDeserializeResolver());
+
+	private:
+		static const SecureDeserializeResolver<IEncryptor> _DefaultDeserializeResolver;
+		static const ProtectorResolver _DefaultProtectorResolver;
+		const String _Key;
+		const AesCbcPadding _Padding;
+		const std::unique_ptr<IEncoder> _Encoder;
 	};
 
 
@@ -489,9 +634,6 @@ namespace InsaneIO::Insane::Cryptography
 
 
 
-
-
-	
 
 	class CryptoTests
 	{

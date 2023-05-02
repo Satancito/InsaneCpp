@@ -15,6 +15,7 @@ namespace InsaneIO::Insane::Core
 	class RapidJsonExtensions {
 	public:
 		[[nodiscard]] static String ToJson(const rapidjson::Value& value);
+		[[nodiscard]] static String Prettify(const String& json);
 		[[nodiscard]] static String GetStringValue(const rapidjson::Value& object, const String& propertyName);
 	};
 

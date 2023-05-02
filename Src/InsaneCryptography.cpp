@@ -24,7 +24,7 @@
 #include <botan/pubkey.h>
 #include <botan/hash.h>
 #include <botan/exceptn.h>
-#include <botan/scrypt.h>
+#include <botan/pwdhash.h>
 #include <botan/argon2.h>
 #include <botan/sym_algo.h>
 #include <botan/mode_pad.h>
@@ -40,6 +40,7 @@
 
 #include <unicode/regex.h>
 
+USING_NS_INSANE_CRYPTO;
 
 // ███ RandomExtensions ███
 
@@ -253,13 +254,14 @@ String InsaneIO::Insane::Cryptography::RsaKeyPair::GetPrivateKey() const
 	return PrivateKey;
 }
 
-String InsaneIO::Insane::Cryptography::RsaKeyPair::Serialize() const noexcept(false)
+String InsaneIO::Insane::Cryptography::RsaKeyPair::Serialize(const bool& indent) const noexcept(false)
 {
 	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
 		writer.StartObject();
 
 		writer.Key(CNAMEOF(PublicKey));
@@ -269,7 +271,8 @@ String InsaneIO::Insane::Cryptography::RsaKeyPair::Serialize() const noexcept(fa
 		writer.String(PrivateKey.data(), static_cast<rapidjson::SizeType>(PrivateKey.length()));
 
 		writer.EndObject();
-		return String(sb.GetString(), sb.GetSize());
+		String json = String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
 	}
 	catch (...)
 	{
@@ -1144,9 +1147,10 @@ String InsaneIO::Insane::Cryptography::HashExtensions::ToScrypt(const String& da
 	USING_NS_INSANE_EXCEPTION;
 	try
 	{
-		Botan::Scrypt engine = Botan::Scrypt(iterations, blockSize, parallelism);
+		std::unique_ptr<Botan::PasswordHashFamily> family = Botan::PasswordHashFamily::create("Scrypt");
+		std::unique_ptr<Botan::PasswordHash> hash = family->from_params(iterations, blockSize, parallelism);
 		std::vector<uint8_t> out(derivedKeyLength);
-		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t*>(salt.data()), salt.size());
+		hash->derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t*>(salt.data()), salt.size());
 		return String(out.begin(), out.end());
 	}
 	catch (...)
@@ -1160,15 +1164,27 @@ String InsaneIO::Insane::Cryptography::HashExtensions::ToArgon2(const String& da
 	USING_NS_INSANE_EXCEPTION;
 	try
 	{
-		Botan::Argon2 engine(static_cast<uint8_t>(variant), memorySizeKiB, iterations, parallelism);
+		std::unique_ptr<Botan::PasswordHashFamily> family = Botan::PasswordHashFamily::create(Argon2VariantEnumExtensions::ToString(variant));
+		std::unique_ptr<Botan::PasswordHash> hash = family->from_params(memorySizeKiB, iterations, parallelism);
 		std::vector<uint8_t> out(derivedKeyLength);
-		engine.derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t*>(salt.data()), salt.size());
+		hash->derive_key(out.data(), out.size(), data.data(), data.size(), reinterpret_cast<const uint8_t*>(salt.data()), salt.size());
 		return String(out.begin(), out.end());
 	}
-	catch (std::exception& ex)
+	catch (...)
 	{
-		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.what());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 	}
+}
+
+// ███ IBaseSerialize ███
+
+InsaneIO::Insane::Cryptography::IBaseSerialize::IBaseSerialize(String name) : _Name(name)
+{
+}
+
+String InsaneIO::Insane::Cryptography::IBaseSerialize::GetName() const
+{
+	return _Name;
 }
 
 // ███ IEncoder ███
@@ -1178,7 +1194,7 @@ InsaneIO::Insane::Cryptography::IEncoder::IEncoder(String name)
 {
 }
 
-std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::IEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver = nullptr)
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::IEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver = nullptr)
 {
 	return IJsonSerialize::Deserialize(json, resolver);
 }
@@ -1189,9 +1205,9 @@ const std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane
 	throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 }
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::IEncoder::DefaultResolver()
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(const String&)> InsaneIO::Insane::Cryptography::IEncoder::DefaultDeserializeResolver()
 {
-	return IJsonSerialize::DefaultResolver();
+	return IJsonSerialize::DefaultDeserializeResolver();
 }
 
 // ███ HexEncoder ███
@@ -1216,13 +1232,15 @@ String InsaneIO::Insane::Cryptography::HexEncoder::Decode(const String& data) co
 	return HexEncodingExtensions::FromHex(data);
 }
 
-String InsaneIO::Insane::Cryptography::HexEncoder::Serialize() const
+String InsaneIO::Insane::Cryptography::HexEncoder::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+
 		String number;
 		writer.StartObject();
 
@@ -1233,7 +1251,8 @@ String InsaneIO::Insane::Cryptography::HexEncoder::Serialize() const
 		writer.Bool(ToUpper);
 
 		writer.EndObject();
-		return String(sb.GetString(), sb.GetSize());
+		String json = String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
 	}
 	catch (...)
 	{
@@ -1255,7 +1274,7 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryp
 
 const std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HexEncoder::_DefaultInstance = std::make_unique<InsaneIO::Insane::Cryptography::HexEncoder>();
 
-const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::HexEncoder::_DefaultResolver = [](const String& json)->std::unique_ptr<IEncoder> {
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(const String&)> InsaneIO::Insane::Cryptography::HexEncoder::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IEncoder> {
 	try
 	{
 		rapidjson::Document document;
@@ -1272,14 +1291,14 @@ const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(St
 	}
 };
 
-std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HexEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver)
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::HexEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver)
 {
 	return std::move(resolver(json));
 }
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::HexEncoder::DefaultResolver()
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(const String&)> InsaneIO::Insane::Cryptography::HexEncoder::DefaultDeserializeResolver()
 {
-	return _DefaultResolver;
+	return _DefaultDeserializeResolver;
 }
 
 
@@ -1310,13 +1329,15 @@ String InsaneIO::Insane::Cryptography::Base32Encoder::Decode(const String& data)
 	return Base32EncodingExtensions::FromBase32(data);
 }
 
-String InsaneIO::Insane::Cryptography::Base32Encoder::Serialize() const
+String InsaneIO::Insane::Cryptography::Base32Encoder::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+
 		String number;
 		writer.StartObject();
 
@@ -1330,7 +1351,8 @@ String InsaneIO::Insane::Cryptography::Base32Encoder::Serialize() const
 		writer.Bool(ToLower);
 
 		writer.EndObject();
-		return String(sb.GetString(), sb.GetSize());
+		String json = String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
 	}
 	catch (...)
 	{
@@ -1343,7 +1365,7 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryp
 	return std::move(std::make_unique<Base32Encoder>(*this));
 }
 
-const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base32Encoder::_DefaultResolver = [](const String& json)->std::unique_ptr<IEncoder>
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(const String&)> InsaneIO::Insane::Cryptography::Base32Encoder::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IEncoder>
 {
 	try
 	{
@@ -1371,14 +1393,14 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryp
 	return std::move(std::make_unique<Base32Encoder>(*instance));
 }
 
-std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base32Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver)
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base32Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver)
 {
 	return std::move(resolver(json));
 }
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base32Encoder::DefaultResolver()
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(const String&)> InsaneIO::Insane::Cryptography::Base32Encoder::DefaultDeserializeResolver()
 {
-	return _DefaultResolver;
+	return _DefaultDeserializeResolver;
 }
 
 // ███ Base64Encoder ███
@@ -1424,12 +1446,15 @@ String InsaneIO::Insane::Cryptography::Base64Encoder::Decode(const String& data)
 	return Base64EncodingExtensions::FromBase64(data);
 }
 
-String InsaneIO::Insane::Cryptography::Base64Encoder::Serialize() const {
+String InsaneIO::Insane::Cryptography::Base64Encoder::Serialize(const bool& indent) const {
 	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CORE;
 	try
 	{
+		using namespace rapidjson;
 		rapidjson::StringBuffer sb;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		Writer<StringBuffer> writer(sb);
+
 		String number;
 		writer.StartObject();
 
@@ -1438,7 +1463,7 @@ String InsaneIO::Insane::Cryptography::Base64Encoder::Serialize() const {
 
 		writer.Key(CNAMEOF(LineBreaksLength));
 #if SIZE_MAX == UINT32_MAX
-		writer.Uint(LineBreaksLength());
+		writer->Uint(LineBreaksLength());
 #elif SIZE_MAX == UINT64_MAX
 		writer.Uint64(LineBreaksLength);
 #endif
@@ -1450,7 +1475,8 @@ String InsaneIO::Insane::Cryptography::Base64Encoder::Serialize() const {
 		writer.Int(Base64EncodingEnumExtensions::ToIntegral(EncodingType));
 
 		writer.EndObject();
-		return String(sb.GetString(), sb.GetSize());
+		auto result = String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(result) : result;
 	}
 	catch (...)
 	{
@@ -1463,12 +1489,12 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryp
 	return std::move(std::make_unique<Base64Encoder>(*this));
 }
 
-std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base64Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(String)>& resolver)
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::Base64Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver)
 {
 	return std::move(resolver(json));
 }
 
-const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base64Encoder::_DefaultResolver = [](const String& json)->std::unique_ptr<IEncoder>
+const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(const String&)> InsaneIO::Insane::Cryptography::Base64Encoder::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IEncoder>
 {
 	USING_NS_INSANE_EXCEPTION;
 	try
@@ -1498,9 +1524,9 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryp
 	return std::move(std::make_unique<Base64Encoder>(*instance));
 }
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(String)> InsaneIO::Insane::Cryptography::Base64Encoder::DefaultResolver()
+std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder>(const String&)> InsaneIO::Insane::Cryptography::Base64Encoder::DefaultDeserializeResolver()
 {
-	return _DefaultResolver;
+	return _DefaultDeserializeResolver;
 }
 
 // ███ DefaultEncoderFunctions ███
@@ -1519,6 +1545,15 @@ static inline const std::map<String, std::function<std::unique_ptr<InsaneIO::Ins
 	} ,
 };
 
+// ███ DefaultProtectorsFunctions ███
+static inline const std::map<String, std::function< std::unique_ptr<ISecretProtector>()>> DefaultProtectorFunctions = {
+	{
+		AES_CBC_PROTECTOR_NAME_STRING,
+		[]() { return std::move(InsaneIO::Insane::Cryptography::AesCbcProtector::DefaultInstance()); }
+	}
+};
+
+
 // ███ IHasher ███
 
 InsaneIO::Insane::Cryptography::IHasher::IHasher(const String& name) : IJsonSerialize(name)
@@ -1531,9 +1566,9 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Crypt
 	return IJsonSerialize::Deserialize(json, resolver);
 }
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::IHasher::DefaultResolver()
+std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::IHasher::DefaultDeserializeResolver()
 {
-	return IJsonSerialize::DefaultResolver();
+	return IJsonSerialize::DefaultDeserializeResolver();
 }
 
 // ███ ShaHasher ███
@@ -1577,13 +1612,14 @@ bool InsaneIO::Insane::Cryptography::ShaHasher::VerifyEncoded(const String& data
 	return ComputeEncoded(data) == expected;
 }
 
-String InsaneIO::Insane::Cryptography::ShaHasher::Serialize() const
+String InsaneIO::Insane::Cryptography::ShaHasher::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
 		writer.StartObject();
 
 		writer.Key(CNAMEOF(Name));
@@ -1593,17 +1629,12 @@ String InsaneIO::Insane::Cryptography::ShaHasher::Serialize() const
 		writer.Int(HashAlgorithmEnumExtensions::ToIntegral(_HashAlgorithm));
 
 		writer.Key(CNAMEOF(Encoder));
-		String serialized = _Encoder->Serialize();
+		String serialized = _Encoder->Serialize(indent);
 		writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
 
 		writer.EndObject();
 		String json = String(sb.GetString(), sb.GetSize());
-		sb.Clear();
-		writer.Reset(sb);
-		rapidjson::Document doc;
-		doc.Parse(json.data(), json.length());
-		doc.Accept(writer);
-		return String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
 	}
 	catch (...)
 	{
@@ -1622,9 +1653,9 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Crypt
 }
 
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::ShaHasher::DefaultResolver()
+std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::ShaHasher::DefaultDeserializeResolver()
 {
-	return _DefaultResolver;
+	return _DefaultDeserializeResolver;
 }
 
 static inline std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InternalDefaultDeserializeIEncoder(const rapidjson::Value& value)
@@ -1636,7 +1667,7 @@ static inline std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> Internal
 	{
 		String json = RapidJsonExtensions::ToJson(value);
 		String name = RapidJsonExtensions::GetStringValue(value, STRINGIFY(Name));
-		auto encoderFx = DefaultEncoderFunctions.at(name);
+		std::function<std::unique_ptr<IEncoder>()> encoderFx = DefaultEncoderFunctions.at(name);
 		return std::move(encoderFx());
 	}
 	catch (...)
@@ -1645,7 +1676,7 @@ static inline std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> Internal
 	}
 }
 
-const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::ShaHasher::_DefaultResolver = [](const String& json)->std::unique_ptr<IHasher>
+const std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::ShaHasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CRYPTO;
@@ -1677,7 +1708,7 @@ const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(Str
 // ███ HmacHasher ███
 
 InsaneIO::Insane::Cryptography::HmacHasher::HmacHasher(const String& key, const HashAlgorithm& hashAlgorithm, std::unique_ptr<IEncoder>&& encoder)
-	: IHasher(HMAC_HASHER_NAME_STRING), _Key(key.empty() ? RandomExtensions::Next(SHA512_DIGEST_LENGTH) : key), _HashAlgorithm(hashAlgorithm), _Encoder(encoder? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+	: IHasher(HMAC_HASHER_NAME_STRING), _Key(key.empty() ? RandomExtensions::Next(SHA512_DIGEST_LENGTH) : key), _HashAlgorithm(hashAlgorithm), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
 {
 }
 
@@ -1726,14 +1757,15 @@ bool InsaneIO::Insane::Cryptography::HmacHasher::VerifyEncoded(const String& dat
 	return ComputeEncoded(data) == expected;
 }
 
-String InsaneIO::Insane::Cryptography::HmacHasher::Serialize() const
+String InsaneIO::Insane::Cryptography::HmacHasher::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_STR;
+	USING_NS_INSANE_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
 		writer.StartObject();
 
 		writer.Key(CNAMEOF_TRIM_GET(GetName));
@@ -1741,23 +1773,18 @@ String InsaneIO::Insane::Cryptography::HmacHasher::Serialize() const
 
 		writer.Key(CNAMEOF_TRIM_GET(GetKey));
 		String key = GetKeyEncoded();
-		writer.String(key.data(), key.length());
+		writer.String(key.data(), static_cast<rapidjson::SizeType>(key.length()));
 
 		writer.Key(CNAMEOF_TRIM_GET(GetHashAlgorithm));
 		writer.Int(HashAlgorithmEnumExtensions::ToIntegral(_HashAlgorithm));
 
 		writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
-		String serialized = _Encoder->Serialize();
+		String serialized = _Encoder->Serialize(indent);
 		writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kStringType);
 
 		writer.EndObject();
 		String json = String(sb.GetString(), sb.GetSize());
-		sb.Clear();
-		writer.Reset(sb);
-		rapidjson::Document doc;
-		doc.Parse(json.data(), json.length());
-		doc.Accept(writer);
-		return String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
 	}
 	catch (...)
 	{
@@ -1775,7 +1802,7 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Crypt
 	return std::move(resolver(json));
 }
 
-const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::HmacHasher::_DefaultResolver = [](const String& json)->std::unique_ptr<IHasher>
+const std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::HmacHasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CRYPTO;
@@ -1794,7 +1821,7 @@ const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(Str
 		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
 		HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
 		String key = encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
-		return std::make_unique<HmacHasher>(key, algorithm, std::move(encoder));
+		return std::move(std::make_unique<HmacHasher>(key, algorithm, std::move(encoder)));
 	}
 	catch (...)
 	{
@@ -1802,9 +1829,9 @@ const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(Str
 	}
 };
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::HmacHasher::DefaultResolver()
+std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::HmacHasher::DefaultDeserializeResolver()
 {
-	return _DefaultResolver;
+	return _DefaultDeserializeResolver;
 }
 
 // ███ Argon2Hasher ███
@@ -1814,7 +1841,7 @@ InsaneIO::Insane::Cryptography::Argon2Hasher::Argon2Hasher(const String& salt,
 	const size_t& memorySizeKiB,
 	const size_t& degreeOfParallelism,
 	const Argon2Variant argon2Variant,
-	const size_t derivedKeyLength,
+	const size_t& derivedKeyLength,
 	std::unique_ptr<IEncoder>&& encoder) : IHasher(ARGON2_HASHER_NAME_STRING),
 	_Salt(salt),
 	_Iterations(iterations),
@@ -1827,7 +1854,7 @@ InsaneIO::Insane::Cryptography::Argon2Hasher::Argon2Hasher(const String& salt,
 }
 
 InsaneIO::Insane::Cryptography::Argon2Hasher::Argon2Hasher(const Argon2Hasher& instance)
-	:Argon2Hasher(instance.GetSalt(), instance.GetIterations(), instance.GetMemorySizeKiB(), instance.GetDegreeOfParallelism(),instance.GetArgon2Variant(),instance.GetDerivedKeyLength(),std::move(instance.GetEncoder()))
+	:Argon2Hasher(instance.GetSalt(), instance.GetIterations(), instance.GetMemorySizeKiB(), instance.GetDegreeOfParallelism(), instance.GetArgon2Variant(), instance.GetDerivedKeyLength(), std::move(instance.GetEncoder()))
 {
 }
 
@@ -1891,7 +1918,7 @@ bool InsaneIO::Insane::Cryptography::Argon2Hasher::VerifyEncoded(const String& d
 	return ComputeEncoded(data) == expected;
 }
 
-String InsaneIO::Insane::Cryptography::Argon2Hasher::Serialize() const
+String InsaneIO::Insane::Cryptography::Argon2Hasher::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_STR;
@@ -1899,7 +1926,7 @@ String InsaneIO::Insane::Cryptography::Argon2Hasher::Serialize() const
 	try
 	{
 		rapidjson::StringBuffer sb;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
 		writer.StartObject();
 
 		writer.Key(CNAMEOF_TRIM_GET(GetName));
@@ -1907,7 +1934,7 @@ String InsaneIO::Insane::Cryptography::Argon2Hasher::Serialize() const
 
 		writer.Key(CNAMEOF_TRIM_GET(GetSalt));
 		String salt = GetSaltEncoded();
-		writer.String(salt.data(), salt.length());
+		writer.String(salt.data(), static_cast<rapidjson::SizeType>(salt.length()));
 
 		writer.Key(CNAMEOF_TRIM_GET(GetIterations));
 		String numberSizeT = IntegralExtensions::ToString(GetIterations());
@@ -1929,17 +1956,12 @@ String InsaneIO::Insane::Cryptography::Argon2Hasher::Serialize() const
 		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
 		writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
-		String serialized = _Encoder->Serialize();
+		String serialized = _Encoder->Serialize(indent);
 		writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
 
 		writer.EndObject();
 		String json = String(sb.GetString(), sb.GetSize());
-		sb.Clear();
-		writer.Reset(sb);
-		rapidjson::Document doc;
-		doc.Parse(json.data(), json.length());
-		doc.Accept(writer);
-		return String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
 	}
 	catch (...)
 	{
@@ -1957,12 +1979,12 @@ std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Crypt
 	return std::move(resolver(json));
 }
 
-std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::Argon2Hasher::DefaultResolver()
+std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::Argon2Hasher::DefaultDeserializeResolver()
 {
-	return _DefaultResolver;
+	return _DefaultDeserializeResolver;
 }
 
-const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(String)> InsaneIO::Insane::Cryptography::Argon2Hasher::_DefaultResolver = [](const String& json)->std::unique_ptr<IHasher>
+const std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::Argon2Hasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CRYPTO;
@@ -1984,7 +2006,7 @@ const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(Str
 		}
 		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
 		String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-#if SIZE_MAX == UINT64_MAX
+#if SIZE_MAX == UINT32_MAX
 		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
 		size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint();
 		size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint();
@@ -1996,7 +2018,7 @@ const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(Str
 		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
 #endif
 		Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
-		return std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder));
+		return std::move(std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder)));
 	}
 	catch (...)
 	{
@@ -2005,4 +2027,380 @@ const std::function<std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher>(Str
 };
 
 
+// ███ ScryptHasher ███
 
+InsaneIO::Insane::Cryptography::ScryptHasher::ScryptHasher(const String& salt,
+	const size_t& iterations,
+	const size_t& blocksize,
+	const size_t& parallelism,
+	const size_t& derivedKeyLength,
+	std::unique_ptr<IEncoder>&& encoder)
+	: IHasher(SCRYPT_HASHER_NAME_STRING),
+	_Salt(salt),
+	_Iterations(iterations),
+	_BlockSize(blocksize),
+	_Parallelism(parallelism),
+	_DerivedKeyLength(derivedKeyLength),
+	_Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+{
+}
+
+InsaneIO::Insane::Cryptography::ScryptHasher::ScryptHasher(const ScryptHasher& instance)
+	:ScryptHasher(instance.GetSalt(), instance.GetIterations(), instance.GetBlockSize(), instance.GetParallelism(), instance.GetDerivedKeyLength(), std::move(instance.GetEncoder()))
+{
+}
+
+String InsaneIO::Insane::Cryptography::ScryptHasher::GetSalt() const
+{
+	return _Salt;
+}
+
+String InsaneIO::Insane::Cryptography::ScryptHasher::GetSaltEncoded() const
+{
+	return _Encoder->Encode(_Salt);
+}
+
+size_t InsaneIO::Insane::Cryptography::ScryptHasher::GetIterations() const
+{
+	return _Iterations;
+}
+
+size_t InsaneIO::Insane::Cryptography::ScryptHasher::GetBlockSize() const
+{
+	return _BlockSize;
+}
+
+size_t InsaneIO::Insane::Cryptography::ScryptHasher::GetParallelism() const
+{
+	return _Parallelism;
+}
+
+size_t InsaneIO::Insane::Cryptography::ScryptHasher::GetDerivedKeyLength() const
+{
+	return _DerivedKeyLength;
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::ScryptHasher::GetEncoder() const
+{
+	return std::move(_Encoder->Clone());
+}
+
+String InsaneIO::Insane::Cryptography::ScryptHasher::Compute(const String& data)
+{
+	return HashExtensions::ToScrypt(data, _Salt, _Iterations, _BlockSize, _Parallelism, _DerivedKeyLength);
+}
+
+bool InsaneIO::Insane::Cryptography::ScryptHasher::Verify(const String& data, const String& expected)
+{
+	return Compute(data) == expected;
+}
+
+String InsaneIO::Insane::Cryptography::ScryptHasher::ComputeEncoded(const String& data)
+{
+	return _Encoder->Encode(Compute(data));
+}
+
+bool InsaneIO::Insane::Cryptography::ScryptHasher::VerifyEncoded(const String& data, const String& expected)
+{
+	return ComputeEncoded(data) == expected;
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::ScryptHasher::Clone() const
+{
+	return std::move(std::make_unique<ScryptHasher>(*this));
+}
+
+std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::ScryptHasher::DefaultDeserializeResolver()
+{
+	return _DefaultDeserializeResolver;
+}
+
+String InsaneIO::Insane::Cryptography::ScryptHasher::Serialize(const bool& indent) const
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_STR;
+	USING_NS_INSANE_CORE;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+
+		writer.StartObject();
+
+		writer.Key(CNAMEOF_TRIM_GET(GetName));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetSalt));
+		String salt = GetSaltEncoded();
+		writer.String(salt.data(), static_cast<rapidjson::SizeType>(salt.length()));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetIterations));
+		String numberSizeT = IntegralExtensions::ToString(GetIterations());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetBlockSize));
+		numberSizeT = IntegralExtensions::ToString(GetBlockSize());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetParallelism));
+		numberSizeT = IntegralExtensions::ToString(GetParallelism());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetDerivedKeyLength));
+		numberSizeT = IntegralExtensions::ToString(GetDerivedKeyLength());
+		writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
+		String serialized = _Encoder->Serialize(indent);
+		writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
+
+		writer.EndObject();
+		String json = String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IHasher> InsaneIO::Insane::Cryptography::ScryptHasher::Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver)
+{
+	return std::move(resolver(json));
+}
+
+const std::function<std::unique_ptr<IHasher>(String)> InsaneIO::Insane::Cryptography::ScryptHasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CRYPTO;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() ||
+			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetBlockSize)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetParallelism)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+		{
+			throw true;
+		}
+		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+		String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
+#if SIZE_MAX == UINT32_MAX
+		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
+		size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint();
+		size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint();
+		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
+#elif SIZE_MAX == UINT64_MAX
+		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
+		size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint64();
+		size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint64();
+		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
+#endif
+		return std::move(std::make_unique<ScryptHasher>(salt, iterations, blockSize, parallelism, derivedKeyLength, std::move(encoder)));
+	}
+	catch (...)
+	{
+		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+// ███ IEncryptor ███
+
+InsaneIO::Insane::Cryptography::IEncryptor::IEncryptor(const String& name) : ISecureJsonSerialize(name)
+{
+}
+
+
+// ███ AesCbcEncryptor ███
+InsaneIO::Insane::Cryptography::AesCbcEncryptor::AesCbcEncryptor(const String& key, const AesCbcPadding& padding, std::unique_ptr<IEncoder>&& encoder)
+	: IEncryptor(AES_CBC_ENCRYPTOR_NAME_STRING), _Key(key), _Padding(padding), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+{
+}
+
+InsaneIO::Insane::Cryptography::AesCbcEncryptor::AesCbcEncryptor(const AesCbcEncryptor& instance)
+	: AesCbcEncryptor(instance.GetKey(), instance.GetPadding(), std::move(instance.GetEncoder()))
+{
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcEncryptor::GetKey() const
+{
+	return _Key;
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcEncryptor::GetKeyEncoded() const
+{
+	return _Encoder->Encode(_Key);
+}
+
+InsaneIO::Insane::Cryptography::AesCbcPadding InsaneIO::Insane::Cryptography::AesCbcEncryptor::GetPadding() const
+{
+	return _Padding;
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncoder> InsaneIO::Insane::Cryptography::AesCbcEncryptor::GetEncoder() const
+{
+	return std::move(_Encoder->Clone());
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcEncryptor::Encrypt(const String& data) const
+{
+	return AesExtensions::EncryptAesCbc(data, _Key, _Padding);
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcEncryptor::EncryptEncoded(const String& data) const
+{
+	return _Encoder->Encode(Encrypt(data));
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcEncryptor::Decrypt(const String& data) const
+{
+	return AesExtensions::DecryptAesCbc(data, _Key, _Padding);
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcEncryptor::DecryptEncoded(const String& data) const
+{
+	return Decrypt(_Encoder->Decode(data));
+}
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::IEncryptor> InsaneIO::Insane::Cryptography::AesCbcEncryptor::Clone() const
+{
+	return std::make_unique<AesCbcEncryptor>(*this);
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcEncryptor::Serialize(const String& serializeKey, const bool& indent, const std::unique_ptr<ISecretProtector>& protector) const
+{
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_STR;
+	USING_NS_INSANE_CORE;
+	try
+	{
+		rapidjson::StringBuffer sb;
+		rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+		writer.StartObject();
+
+		writer.Key(CNAMEOF_TRIM_GET(GetName));
+		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
+
+		writer.Key(CNAMEOF(Protector));
+		writer.String(protector->GetName().c_str(), static_cast<rapidjson::SizeType>(protector->GetName().length()));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetKey));
+		String value = _Encoder->Encode(protector->Protect(GetKey(), serializeKey));
+		writer.String(value.data(), static_cast<rapidjson::SizeType>(value.length()));
+
+		writer.Key(CNAMEOF_TRIM_GET(GetPadding));
+		value = AesCbcPaddingEnumExtensions::ToIntegralString(GetPadding());
+		writer.RawValue(value.data(), value.length(), rapidjson::kNumberType);
+
+		writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
+		value = _Encoder->Serialize(indent);
+		writer.RawValue(value.c_str(), value.size(), rapidjson::kObjectType);
+
+		writer.EndObject();
+		String json = String(sb.GetString(), sb.GetSize());
+		return indent ? RapidJsonExtensions::Prettify(json) : json;
+	}
+	catch (...)
+	{
+		throw SerializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+}
+
+const ProtectorResolver AesCbcEncryptor::_DefaultProtectorResolver =
+[](const String& name)-> std::unique_ptr<ISecretProtector> {
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		std::function<std::unique_ptr<ISecretProtector>()> protectorFx = DefaultProtectorFunctions.at(name);
+		return std::move(protectorFx());
+	}
+	catch (...)
+	{
+		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+InsaneIO::Insane::Cryptography::ProtectorResolver InsaneIO::Insane::Cryptography::AesCbcEncryptor::DefaultProtectorResolver()
+{
+	return _DefaultProtectorResolver;
+}
+
+const SecureDeserializeResolver<InsaneIO::Insane::Cryptography::IEncryptor> InsaneIO::Insane::Cryptography::AesCbcEncryptor::_DefaultDeserializeResolver =
+[](const String& json, const String& serializeKey) ->std::unique_ptr<IEncryptor> {
+	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_CRYPTO;
+	try
+	{
+		rapidjson::Document document;
+		document.Parse(json.c_str(), json.length());
+		if (document.HasParseError() ||
+			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+				document.HasMember(CNAMEOF(Protector)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
+				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+		{
+			throw true;
+		}
+		String protectorName = document[CNAMEOF(Protector)].GetString();
+		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+		std::unique_ptr<ISecretProtector> protector = _DefaultProtectorResolver(protectorName);
+		String key = protector->Unprotect(encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString()), serializeKey);
+		AesCbcPadding padding = AesCbcPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
+		return std::move(std::make_unique<AesCbcEncryptor>(key, padding, std::move(encoder)));
+	}
+	catch (...)
+	{
+		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
+};
+
+SecureDeserializeResolver<IEncryptor> InsaneIO::Insane::Cryptography::AesCbcEncryptor::DefaultDeserializeResolver()
+{
+	return _DefaultDeserializeResolver;
+}
+
+std::unique_ptr<IEncryptor> InsaneIO::Insane::Cryptography::AesCbcEncryptor::Deserialize(const String& json, const String& serializeKey, const SecureDeserializeResolver<IEncryptor>& deserializeResolver)
+{
+	return deserializeResolver(json, serializeKey);
+}
+
+
+// ███ ISecretProtector ███
+InsaneIO::Insane::Cryptography::ISecretProtector::ISecretProtector(const String& name) : _Name(name)
+{
+
+}
+
+String InsaneIO::Insane::Cryptography::ISecretProtector::GetName()
+{
+	return _Name;
+}
+
+// ███ AesCbcProtector ███
+InsaneIO::Insane::Cryptography::AesCbcProtector::AesCbcProtector() : ISecretProtector(AES_CBC_PROTECTOR_NAME_STRING)
+{
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcProtector::Protect(const String& secret, const String& key)
+{
+	return AesExtensions::EncryptAesCbc(secret, key);
+}
+
+String InsaneIO::Insane::Cryptography::AesCbcProtector::Unprotect(const String& secret, const String& key)
+{
+	return AesExtensions::DecryptAesCbc(secret, key);
+}
+
+const std::unique_ptr<ISecretProtector> InsaneIO::Insane::Cryptography::AesCbcProtector::_DefaultInstance = std::make_unique<AesCbcProtector>(AesCbcProtector());
+
+std::unique_ptr<InsaneIO::Insane::Cryptography::ISecretProtector> InsaneIO::Insane::Cryptography::AesCbcProtector::DefaultInstance()
+{
+	AesCbcProtector* instance = dynamic_cast<AesCbcProtector*>(_DefaultInstance.get());
+	return std::move(std::make_unique<AesCbcProtector>(*instance));
+}

@@ -5,7 +5,6 @@
 #include <unicode/unistr.h>
 #include <unicode/locid.h>
 #include <unicode/ucsdet.h>
-#include <ctre/ctre-unicode.hpp>
 #include <unicode/regex.h>
 
 
@@ -49,8 +48,8 @@ bool InsaneIO::Insane::Strings::StringExtensions::IsMatch(const String &input, c
 	//std::regex regex(pattern, std::regex_constants::ECMAScript );
 	//return std::regex_match(input, regex);
 	UErrorCode status = U_ZERO_ERROR;
-	icu::UnicodeString uniPattern = icu::UnicodeString::fromUTF8(icu::StringPiece(pattern.data(), pattern.length()));
-	icu::UnicodeString uniInput = icu::UnicodeString::fromUTF8(icu::StringPiece(input.data(), input.length()));
+	icu::UnicodeString uniPattern = icu::UnicodeString::fromUTF8(icu::StringPiece(pattern.data(), static_cast<int32_t>(pattern.length())));
+	icu::UnicodeString uniInput = icu::UnicodeString::fromUTF8(icu::StringPiece(input.data(), static_cast<int32_t>(input.length())));
 	icu::RegexMatcher matcher = icu::RegexMatcher(uniPattern, 0, status);
 	matcher.reset(uniInput);
 	auto match= matcher.matches(status);
@@ -244,7 +243,7 @@ std::vector<String> InsaneIO::Insane::Strings::StringExtensions::Split(const Str
 String InsaneIO::Insane::Strings::StringExtensions::ToUpper(const String &data, const String &locale)
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
-	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), data.length()));
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), static_cast<int32_t>(data.length())));
 	uniStr.toUpper(loc);
 	std::string str;
 	uniStr.toUTF8String(str);
@@ -254,7 +253,7 @@ String InsaneIO::Insane::Strings::StringExtensions::ToUpper(const String &data, 
 String InsaneIO::Insane::Strings::StringExtensions::ToLower(const String &data, const String &locale)
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
-	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), data.length()));
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), static_cast<int32_t>(data.length())));
 	auto  l = uniStr.length();
 	uniStr.toLower(loc);
 	std::string str;
@@ -579,7 +578,7 @@ bool InsaneIO::Insane::Strings::StringExtensions::IsValidUTF8(const std::string 
 {
 	UErrorCode status = U_ZERO_ERROR;
 	UCharsetDetector *detector = ucsdet_open(&status);
-	ucsdet_setText(detector, data.c_str(), data.length(), &status);
+	ucsdet_setText(detector, data.c_str(), static_cast<int32_t>(data.length()), &status);
 	int32_t detectedNumber = 0;
 	auto matches = ucsdet_detectAll(detector, &detectedNumber, &status);
 	if (!matches)
@@ -641,7 +640,7 @@ String InsaneIO::Insane::Strings::StringExtensions::ToUnicodeEscapedCodeLiteral(
 	}
 	String result = EMPTY_STRING;
 	String quotes = (quotationMarkEnclosed ? QUOTATION_MARK_STRING : EMPTY_STRING);
-	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), data.length()));
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), static_cast<int32_t>(data.length())));
 	for (int32_t i = 0; i < uniStr.countChar32(); i++)
 	{
 		result += "\\U" + InternalToHexadecimal<UChar32>(uniStr.char32At(i));
@@ -660,7 +659,7 @@ String InsaneIO::Insane::Strings::StringExtensions::ToCodeLiteral(const String &
 
 	String result = EMPTY_STRING;
 	String quotes = (quotationMarkEnclosed ? QUOTATION_MARK_STRING : EMPTY_STRING);
-	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), data.length()));
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), static_cast<int32_t>(data.length())));
 	bool added;
 	for (size_t i = 0; i < data.length(); i++)
 	{
@@ -971,7 +970,7 @@ Xtring InsaneIO::Insane::Strings::Xtring::PadLeftUTF8(const size_t &totalWidth, 
 Xtring InsaneIO::Insane::Strings::Xtring::ToUpper(const String &locale)
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
-	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(thisvalue.data(), thisvalue.length()));
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(thisvalue.data(), static_cast<int32_t>(thisvalue.length())));
 	uniStr.toUpper(loc);
 	clear();
 	uniStr.toUTF8String(thisvalue);
@@ -981,7 +980,7 @@ Xtring InsaneIO::Insane::Strings::Xtring::ToUpper(const String &locale)
 Xtring InsaneIO::Insane::Strings::Xtring::ToLower(const String &locale)
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
-	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(thisvalue.data(), thisvalue.length()));
+	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(thisvalue.data(), static_cast<int32_t>(thisvalue.length())));
 	uniStr.toLower(loc);
 	clear();
 	uniStr.toUTF8String(thisvalue);

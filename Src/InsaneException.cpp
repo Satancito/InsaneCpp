@@ -60,7 +60,7 @@ const char* InsaneIO::Insane::Exception::ExceptionBase::what() const noexcept
 	return _ErrorMessage.c_str();
 }
 
-String InsaneIO::Insane::Exception::ExceptionBase::GetStackTrace(const String& tag, const String& headerPreffix, const String& footer) const const
+String InsaneIO::Insane::Exception::ExceptionBase::GetStackTrace(const String& tag, const String& headerPreffix, const String& footer) const 
 {
 	return (tag.empty() ? tag : headerPreffix + " \"" + tag + "\"" + LINE_FEED_STRING) + _ErrorMessage + (_InnerException ? _InnerException->GetStackTrace(EMPTY_STRING) : EMPTY_STRING) + (tag.empty() ? tag : footer );
 }
