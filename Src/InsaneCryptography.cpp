@@ -93,7 +93,7 @@ public:
 
 	bool valid_blocksize(size_t block_size) const override
 	{
-		return true;
+		return (block_size > 2 && block_size < 256);
 	}
 
 	std::string name() const override
@@ -226,7 +226,7 @@ String AesExtensions::DecryptAesCbc(const String& data, const String& key, const
 
 String AesExtensions::GenerateNormalizedKey(const String& key)
 {
-	String hash = HashExtensions::ToHash(key, HashAlgorithm::Sha256);
+	String hash = HashExtensions::ToHash(key, HashAlgorithm::Sha512);
 	hash.resize(AES_MAX_KEY_LENGTH);
 	return hash;
 }
@@ -289,7 +289,8 @@ RsaKeyPair RsaKeyPair::Deserialize(const String& json)
 	{
 		rapidjson::Document document;
 		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError())
+		if (document.HasParseError() || !(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(PublicKey)) &&
+			document.HasMember(CNAMEOF_TRIM_GET(PrivateKey))))
 		{
 			throw 1;
 		}
@@ -1464,11 +1465,7 @@ String Base64Encoder::Serialize(const bool& indent) const {
 		writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
 		writer.Key(CNAMEOF(LineBreaksLength));
-#if SIZE_MAX == UINT32_MAX
-		writer->Uint(LineBreaksLength());
-#elif SIZE_MAX == UINT64_MAX
 		writer.Uint64(LineBreaksLength);
-#endif
 
 		writer.Key(CNAMEOF(RemovePadding));
 		writer.Bool(RemovePadding);
@@ -2003,17 +2000,10 @@ const DeserializeResolver<IHasher> Argon2Hasher::_DefaultDeserializeResolver = [
 		}
 		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
 		String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-#if SIZE_MAX == UINT32_MAX
-		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
-		size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint();
-		size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint();
-		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
-#elif SIZE_MAX == UINT64_MAX
 		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
 		size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint64();
 		size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint64();
 		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
-#endif
 		Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
 		return std::move(std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder)));
 	}
@@ -2186,17 +2176,10 @@ const DeserializeResolver<IHasher> ScryptHasher::_DefaultDeserializeResolver = [
 		}
 		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
 		String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-#if SIZE_MAX == UINT32_MAX
-		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
-		size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint();
-		size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint();
-		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
-#elif SIZE_MAX == UINT64_MAX
 		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
 		size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint64();
 		size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint64();
 		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
-#endif
 		return std::move(std::make_unique<ScryptHasher>(salt, iterations, blockSize, parallelism, derivedKeyLength, std::move(encoder)));
 	}
 	catch (...)

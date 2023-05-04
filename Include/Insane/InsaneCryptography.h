@@ -596,7 +596,7 @@ namespace InsaneIO::Insane::Cryptography
 	class AesCbcEncryptor : public IEncryptor
 	{
 	public:
-		AesCbcEncryptor(const String& key, const AesCbcPadding& padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+		AesCbcEncryptor(const String& key = RandomExtensions::Next(AES_MAX_KEY_LENGTH), const AesCbcPadding& padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
 		AesCbcEncryptor(const AesCbcEncryptor& instance);
 
 		[[nodiscard]] String GetKey() const;
