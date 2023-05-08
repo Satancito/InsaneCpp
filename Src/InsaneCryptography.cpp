@@ -10,26 +10,25 @@
 #include <Insane/InsaneCore.h>
 #include <Insane/InsaneTest.h>
 
-#include <botan/block_cipher.h>
-#include <botan/cipher_mode.h>
-#include <botan/filters.h>
 #include <botan/auto_rng.h>
 #include <botan/hex.h>
 #include <botan/base32.h>
 #include <botan/base64.h>
+#include <botan/cipher_mode.h>
+#include <botan/block_cipher.h>
+#include <botan/filters.h>
 #include <botan/pkcs8.h>
 #include <botan/rsa.h>
+#include <botan/pubkey.h>
 #include <botan/x509_key.h>
 #include <botan/data_src.h>
 #include <botan/bigint.h>
-#include <botan/pubkey.h>
 #include <botan/hash.h>
 #include <botan/exceptn.h>
 #include <botan/pwdhash.h>
 #include <botan/argon2.h>
-#include <botan/sym_algo.h>
+//#include <botan/sym_algo.h>
 #include <botan/mode_pad.h>
-#include <botan/pipe.h>
 
 #include <rapidxml/rapidxml.hpp>
 #include <rapidxml/rapidxml_print.hpp>
@@ -59,7 +58,7 @@ int RandomExtensions::Next(int min, int max)
 	Botan::AutoSeeded_RNG rng;
 	if (min >= max)
 	{
-		throw ArgumentException(INSANE_FUNCTION_SIGNATURE,__FILE__,__LINE__, "Min value is greater or equals than Max value."s);
+		throw ArgumentException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Min value is greater or equals than Max value."s);
 	}
 	String intBytes = RandomExtensions::Next(4);
 	int num = (intBytes[0] << 24) | (intBytes[1] << 16) | (intBytes[2] << 8) | intBytes[3];
@@ -695,7 +694,7 @@ String Base64EncodingExtensions::ToBase64(const String& data, const size_t& line
 	String ret = Botan::base64_encode(std::vector<uint8_t>(data.begin(), data.end()));
 	if (lineBreaksLength > 0)
 	{
-		ret = StringExtensions::InsertRepeat(ret, lineBreaksLength, NEW_LINE_STRING);
+		ret = StringExtensions::InsertRepeat(ret, lineBreaksLength, LINE_FEED_STRING);
 	}
 	return removePadding ? StringExtensions::Remove(ret, EQUAL_SIGN_STRING) : ret;
 }
@@ -1056,39 +1055,40 @@ BMqYEI4qTxhH714mB3L5viUCAwEAAQ==)";
 String HashExtensions::ToHash(const String& data, const HashAlgorithm& algorithm)
 {
 	USING_NS_INSANE_EXCEPTION;
+
 	switch (algorithm)
 	{
 	case HashAlgorithm::Md5:
 	{
-		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(MD5_ALGORITHM_NAME_STRING));
+		std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(MD5_ALGORITHM_NAME_STRING);
 		hash->update(data);
 		Botan::SecureVector<uint8_t> result = hash->final();
 		return String(result.begin(), result.end());
 	}
 	case HashAlgorithm::Sha1:
 	{
-		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA1_ALGORITHM_NAME_STRING));
+		std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(SHA1_ALGORITHM_NAME_STRING);
 		hash->update(data);
 		Botan::SecureVector<uint8_t> result = hash->final();
 		return String(result.begin(), result.end());
 	}
 	case HashAlgorithm::Sha256:
 	{
-		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA256_ALGORITHM_NAME_STRING));
+		std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create_or_throw(SHA256_ALGORITHM_NAME_STRING);
 		hash->update(data);
 		Botan::SecureVector<uint8_t> result = hash->final();
 		return String(result.begin(), result.end());
 	}
 	case HashAlgorithm::Sha384:
 	{
-		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA384_ALGORITHM_NAME_STRING));
+		std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(SHA384_ALGORITHM_NAME_STRING);
 		hash->update(data);
 		Botan::SecureVector<uint8_t> result = hash->final();
 		return String(result.begin(), result.end());
 	}
 	case HashAlgorithm::Sha512:
 	{
-		std::unique_ptr<Botan::HashFunction> hash(Botan::HashFunction::create(SHA512_ALGORITHM_NAME_STRING));
+		std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(SHA512_ALGORITHM_NAME_STRING);
 		hash->update(data);
 		Botan::SecureVector<uint8_t> result = hash->final();
 		return String(result.begin(), result.end());
@@ -1197,7 +1197,7 @@ IEncoder::IEncoder(String name)
 {
 }
 
-std::unique_ptr<IEncoder> IEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver = nullptr)
+std::unique_ptr<IEncoder> IEncoder::Deserialize(const String& json, const DeserializeResolver<IEncoder>& resolver = nullptr)
 {
 	return IJsonSerialize::Deserialize(json, resolver);
 }
@@ -1208,7 +1208,7 @@ const std::unique_ptr<IEncoder> IEncoder::DefaultInstance()
 	throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 }
 
-std::function<std::unique_ptr<IEncoder>(const String&)> IEncoder::DefaultDeserializeResolver()
+DeserializeResolver<IEncoder> IEncoder::DefaultDeserializeResolver()
 {
 	return IJsonSerialize::DefaultDeserializeResolver();
 }
@@ -1266,8 +1266,7 @@ String HexEncoder::Serialize(const bool& indent) const
 
 std::unique_ptr<IEncoder> HexEncoder::DefaultInstance()
 {
-	HexEncoder* instance = dynamic_cast<HexEncoder*>(_DefaultInstance.get());
-	return std::move(std::make_unique<HexEncoder>(*instance));
+	return std::move(std::make_unique<HexEncoder>());
 }
 
 std::unique_ptr<IEncoder> HexEncoder::Clone() const
@@ -1275,33 +1274,30 @@ std::unique_ptr<IEncoder> HexEncoder::Clone() const
 	return std::move(std::make_unique<HexEncoder>(*this));
 }
 
-const std::unique_ptr<IEncoder> HexEncoder::_DefaultInstance = std::make_unique<HexEncoder>();
 
-const std::function<std::unique_ptr<IEncoder>(const String&)> HexEncoder::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IEncoder> {
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() || !(document.IsObject() && document.HasMember(CSTRINGIFY(ToUpper))))
-		{
-			throw true;
-		}
-		return std::move(std::make_unique<HexEncoder>(document[CNAMEOF(ToUpper)].GetBool()));
-	}
-	catch (...)
-	{
-		throw InsaneIO::Insane::Exception::DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
-
-std::unique_ptr<IEncoder> HexEncoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver)
+std::unique_ptr<IEncoder> HexEncoder::Deserialize(const String& json, const DeserializeResolver<IEncoder>& resolver)
 {
 	return std::move(resolver(json));
 }
 
-std::function<std::unique_ptr<IEncoder>(const String&)> HexEncoder::DefaultDeserializeResolver()
+DeserializeResolver<IEncoder> HexEncoder::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
+	return [](const String& json)->std::unique_ptr<IEncoder> {
+		try
+		{
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() || !(document.IsObject() && document.HasMember(CSTRINGIFY(ToUpper))))
+			{
+				throw true;
+			}
+			return std::move(std::make_unique<HexEncoder>(document[CNAMEOF(ToUpper)].GetBool()));
+		}
+		catch (...)
+		{
+			throw InsaneIO::Insane::Exception::DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
 }
 
 
@@ -1368,42 +1364,38 @@ std::unique_ptr<IEncoder> Base32Encoder::Clone() const
 	return std::move(std::make_unique<Base32Encoder>(*this));
 }
 
-const std::function<std::unique_ptr<IEncoder>(const String&)> Base32Encoder::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IEncoder>
-{
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CSTRINGIFY(ToLower)) && document.HasMember(CSTRINGIFY(RemovePadding))))
-		{
-			throw true;
-		}
-		return std::move(std::make_unique<Base32Encoder>(document[CNAMEOF(RemovePadding)].GetBool(),
-			document[CNAMEOF(ToLower)].GetBool()));
-	}
-	catch (...)
-	{
-		throw InsaneIO::Insane::Exception::DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
-
-const std::unique_ptr<IEncoder> Base32Encoder::_DefaultInstance = std::make_unique<Base32Encoder>();
 
 std::unique_ptr<IEncoder> Base32Encoder::DefaultInstance()
 {
-	Base32Encoder* instance = dynamic_cast<Base32Encoder*>(_DefaultInstance.get());
-	return std::move(std::make_unique<Base32Encoder>(*instance));
+	return std::move(std::make_unique<Base32Encoder>());
 }
 
-std::unique_ptr<IEncoder> Base32Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver)
+std::unique_ptr<IEncoder> Base32Encoder::Deserialize(const String& json, const DeserializeResolver<IEncoder>& resolver)
 {
 	return std::move(resolver(json));
 }
 
-std::function<std::unique_ptr<IEncoder>(const String&)> Base32Encoder::DefaultDeserializeResolver()
+DeserializeResolver<IEncoder> Base32Encoder::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
+	return [](const String& json)->std::unique_ptr<IEncoder>
+	{
+		try
+		{
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CSTRINGIFY(ToLower)) && document.HasMember(CSTRINGIFY(RemovePadding))))
+			{
+				throw true;
+			}
+			return std::move(std::make_unique<Base32Encoder>(document[CNAMEOF(RemovePadding)].GetBool(),
+				document[CNAMEOF(ToLower)].GetBool()));
+		}
+		catch (...)
+		{
+			throw InsaneIO::Insane::Exception::DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
 }
 
 // ███ Base64Encoder ███
@@ -1488,44 +1480,40 @@ std::unique_ptr<IEncoder> Base64Encoder::Clone() const
 	return std::move(std::make_unique<Base64Encoder>(*this));
 }
 
-std::unique_ptr<IEncoder> Base64Encoder::Deserialize(const String& json, const std::function<std::unique_ptr<IEncoder>(const String&)>& resolver)
+std::unique_ptr<IEncoder> Base64Encoder::Deserialize(const String& json, const DeserializeResolver<IEncoder>& resolver)
 {
 	return std::move(resolver(json));
 }
 
-const std::function<std::unique_ptr<IEncoder>(const String&)> Base64Encoder::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IEncoder>
-{
-	USING_NS_INSANE_EXCEPTION;
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CSTRINGIFY(LineBreaksLength)) && document.HasMember(CSTRINGIFY(RemovePadding)) && document.HasMember(CSTRINGIFY(EncodingType))))
-		{
-			throw true;
-		}
-		return std::move(std::make_unique<Base64Encoder>(document[CNAMEOF(LineBreaksLength)].GetUint(),
-			document[CNAMEOF(RemovePadding)].GetBool(),
-			Base64EncodingEnumExtensions::Parse(document[CNAMEOF(EncodingType)].GetInt())));
-	}
-	catch (...)
-	{
-		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
-
-const std::unique_ptr<IEncoder> Base64Encoder::_DefaultInstance = std::make_unique<Base64Encoder>();
-
 std::unique_ptr<IEncoder> Base64Encoder::DefaultInstance()
 {
-	Base64Encoder* instance = dynamic_cast<Base64Encoder*>(_DefaultInstance.get());
-	return std::move(std::make_unique<Base64Encoder>(*instance));
+	return std::move(std::make_unique<Base64Encoder>());
 }
 
-std::function<std::unique_ptr<IEncoder>(const String&)> Base64Encoder::DefaultDeserializeResolver()
+DeserializeResolver<IEncoder> Base64Encoder::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
+	static const DeserializeResolver<IEncoder> resolver =  [](const String& json)->std::unique_ptr<IEncoder>
+	{
+		USING_NS_INSANE_EXCEPTION;
+		try
+		{
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CSTRINGIFY(LineBreaksLength)) && document.HasMember(CSTRINGIFY(RemovePadding)) && document.HasMember(CSTRINGIFY(EncodingType))))
+			{
+				throw true;
+			}
+			return std::move(std::make_unique<Base64Encoder>(document[CNAMEOF(LineBreaksLength)].GetUint(),
+				document[CNAMEOF(RemovePadding)].GetBool(),
+				Base64EncodingEnumExtensions::Parse(document[CNAMEOF(EncodingType)].GetInt())));
+		}
+		catch (...)
+		{
+			throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
+	return resolver;
 }
 
 // ███ DefaultEncoderFunctions ███
@@ -1568,6 +1556,24 @@ std::unique_ptr<IHasher> IHasher::Deserialize(const String& json, const Deserial
 DeserializeResolver<IHasher> IHasher::DefaultDeserializeResolver()
 {
 	return IJsonSerialize::DefaultDeserializeResolver();
+}
+
+static inline std::unique_ptr<IEncoder> InternalDefaultDeserializeIEncoder(const rapidjson::Value& value)
+{
+
+	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_EXCEPTION;
+	try
+	{
+		String json = RapidJsonExtensions::ToJson(value);
+		String name = RapidJsonExtensions::GetStringValue(value, STRINGIFY(Name));
+		std::function<std::unique_ptr<IEncoder>()> encoderFx = DefaultEncoderFunctions.at(name);
+		return std::move(encoderFx());
+	}
+	catch (...)
+	{
+		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+	}
 }
 
 // ███ ShaHasher ███
@@ -1654,51 +1660,32 @@ std::unique_ptr<IHasher> ShaHasher::Clone() const
 
 DeserializeResolver<IHasher> ShaHasher::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
-}
-
-static inline std::unique_ptr<IEncoder> InternalDefaultDeserializeIEncoder(const rapidjson::Value& value)
-{
-
-	USING_NS_INSANE_CORE;
-	USING_NS_INSANE_EXCEPTION;
-	try
+	return [](const String& json)->std::unique_ptr<IHasher>
 	{
-		String json = RapidJsonExtensions::ToJson(value);
-		String name = RapidJsonExtensions::GetStringValue(value, STRINGIFY(Name));
-		std::function<std::unique_ptr<IEncoder>()> encoderFx = DefaultEncoderFunctions.at(name);
-		return std::move(encoderFx());
-	}
-	catch (...)
-	{
-		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-}
+		USING_NS_INSANE_EXCEPTION;
 
-const DeserializeResolver<IHasher> ShaHasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
-{
-	USING_NS_INSANE_EXCEPTION;
-
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+		try
 		{
-			throw true;
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+			{
+				throw true;
+			}
+			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+			HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
+			return std::move(std::make_unique<ShaHasher>(algorithm, std::move(encoder)));
 		}
-		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
-		HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
-		return std::move(std::make_unique<ShaHasher>(algorithm, std::move(encoder)));
-	}
-	catch (...)
-	{
-		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
+		catch (...)
+		{
+			throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
+}
+
 
 // ███ HmacHasher ███
 
@@ -1797,36 +1784,35 @@ std::unique_ptr<IHasher> HmacHasher::Deserialize(const String& json, const Deser
 	return std::move(resolver(json));
 }
 
-const DeserializeResolver<IHasher> HmacHasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
-{
-	USING_NS_INSANE_EXCEPTION;
-
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-		{
-			throw true;
-		}
-		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
-		HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
-		String key = encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
-		return std::move(std::make_unique<HmacHasher>(key, algorithm, std::move(encoder)));
-	}
-	catch (...)
-	{
-		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
-
 DeserializeResolver<IHasher> HmacHasher::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
+	return [](const String& json)->std::unique_ptr<IHasher>
+	{
+		USING_NS_INSANE_EXCEPTION;
+
+		try
+		{
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+			{
+				throw true;
+			}
+			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+			HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
+			String key = encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
+			return std::move(std::make_unique<HmacHasher>(key, algorithm, std::move(encoder)));
+		}
+		catch (...)
+		{
+			throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
+
 }
 
 // ███ Argon2Hasher ███
@@ -1976,42 +1962,40 @@ std::unique_ptr<IHasher> Argon2Hasher::Deserialize(const String& json, const Des
 
 DeserializeResolver<IHasher> Argon2Hasher::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
-}
-
-const DeserializeResolver<IHasher> Argon2Hasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
-{
-	USING_NS_INSANE_EXCEPTION;
-	try
+	return [](const String& json)->std::unique_ptr<IHasher>
 	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetMemorySizeKiB)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetDegreeOfParallelism)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetArgon2Variant)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+		USING_NS_INSANE_EXCEPTION;
+		try
 		{
-			throw true;
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetMemorySizeKiB)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetDegreeOfParallelism)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetArgon2Variant)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+			{
+				throw true;
+			}
+			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+			String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
+			size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
+			size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint64();
+			size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint64();
+			size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
+			Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
+			return std::move(std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder)));
 		}
-		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
-		String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
-		size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint64();
-		size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint64();
-		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
-		Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
-		return std::move(std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder)));
-	}
-	catch (...)
-	{
-		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
+		catch (...)
+		{
+			throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
+}
 
 
 // ███ ScryptHasher ███
@@ -2099,7 +2083,37 @@ std::unique_ptr<IHasher> ScryptHasher::Clone() const
 
 DeserializeResolver<IHasher> ScryptHasher::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
+	return [](const String& json)->std::unique_ptr<IHasher>
+	{
+		USING_NS_INSANE_EXCEPTION;
+		try
+		{
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetBlockSize)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetParallelism)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+			{
+				throw true;
+			}
+			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+			String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
+			size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
+			size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint64();
+			size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint64();
+			size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
+			return std::move(std::make_unique<ScryptHasher>(salt, iterations, blockSize, parallelism, derivedKeyLength, std::move(encoder)));
+		}
+		catch (...)
+		{
+			throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
 }
 
 String ScryptHasher::Serialize(const bool& indent) const
@@ -2156,38 +2170,6 @@ std::unique_ptr<IHasher> ScryptHasher::Deserialize(const String& json, const Des
 	return std::move(resolver(json));
 }
 
-const DeserializeResolver<IHasher> ScryptHasher::_DefaultDeserializeResolver = [](const String& json)->std::unique_ptr<IHasher>
-{
-	USING_NS_INSANE_EXCEPTION;
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetBlockSize)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetParallelism)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-		{
-			throw true;
-		}
-		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
-		String salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-		size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
-		size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint64();
-		size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint64();
-		size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
-		return std::move(std::make_unique<ScryptHasher>(salt, iterations, blockSize, parallelism, derivedKeyLength, std::move(encoder)));
-	}
-	catch (...)
-	{
-		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
-
 // ███ ISecretProtector ███
 ISecretProtector::ISecretProtector(const String& name) : _Name(name)
 {
@@ -2214,12 +2196,9 @@ String AesCbcProtector::Unprotect(const String& secret, const String& key)
 	return AesExtensions::DecryptAesCbc(secret, key, AesCbcPadding::Pkcs7);
 }
 
-const std::unique_ptr<ISecretProtector> AesCbcProtector::_DefaultInstance = std::make_unique<AesCbcProtector>(AesCbcProtector());
-
 std::unique_ptr<ISecretProtector> AesCbcProtector::DefaultInstance()
 {
-	AesCbcProtector* instance = dynamic_cast<AesCbcProtector*>(_DefaultInstance.get());
-	return std::move(std::make_unique<AesCbcProtector>(*instance));
+	return std::move(std::make_unique<AesCbcProtector>());
 }
 
 // ███ IEncryptor ███
@@ -2324,57 +2303,52 @@ String AesCbcEncryptor::Serialize(const String& serializeKey, const bool& indent
 	}
 }
 
-const ProtectorResolver AesCbcEncryptor::_DefaultProtectorResolver =
-[](const String& name)-> std::unique_ptr<ISecretProtector> {
-	USING_NS_INSANE_EXCEPTION;
-	try
-	{
-		std::function<std::unique_ptr<ISecretProtector>()> protectorFx = DefaultProtectorFunctions.at(name);
-		return std::move(protectorFx());
-	}
-	catch (...)
-	{
-		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
-
 ProtectorResolver AesCbcEncryptor::DefaultProtectorResolver()
 {
-	return _DefaultProtectorResolver;
+	return [](const String& name)-> std::unique_ptr<ISecretProtector> {
+		USING_NS_INSANE_EXCEPTION;
+		try
+		{
+			std::function<std::unique_ptr<ISecretProtector>()> protectorFx = DefaultProtectorFunctions.at(name);
+			return std::move(protectorFx());
+		}
+		catch (...)
+		{
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
 }
 
-const SecureDeserializeResolver<IEncryptor> AesCbcEncryptor::_DefaultDeserializeResolver =
-[](const String& json, const String& serializeKey) ->std::unique_ptr<IEncryptor> {
-	USING_NS_INSANE_EXCEPTION;
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-				document.HasMember(CNAMEOF(Protector)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-		{
-			throw true;
-		}
-		String protectorName = document[CNAMEOF(Protector)].GetString();
-		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
-		std::unique_ptr<ISecretProtector> protector = _DefaultProtectorResolver(protectorName);
-		String key = protector->Unprotect(encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString()), serializeKey);
-		AesCbcPadding padding = AesCbcPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
-		return std::move(std::make_unique<AesCbcEncryptor>(key, padding, std::move(encoder)));
-	}
-	catch (...)
-	{
-		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
 
 SecureDeserializeResolver<IEncryptor> AesCbcEncryptor::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
+	return [](const String& json, const String& serializeKey) ->std::unique_ptr<IEncryptor> {
+		USING_NS_INSANE_EXCEPTION;
+		try
+		{
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+					document.HasMember(CNAMEOF(Protector)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+			{
+				throw true;
+			}
+			String protectorName = document[CNAMEOF(Protector)].GetString();
+			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+			std::unique_ptr<ISecretProtector> protector = DefaultProtectorResolver()(protectorName);
+			String key = protector->Unprotect(encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString()), serializeKey);
+			AesCbcPadding padding = AesCbcPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
+			return std::move(std::make_unique<AesCbcEncryptor>(key, padding, std::move(encoder)));
+		}
+		catch (...)
+		{
+			throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
 }
 
 std::unique_ptr<IEncryptor> AesCbcEncryptor::Deserialize(const String& json, const String& serializeKey, const SecureDeserializeResolver<IEncryptor>& deserializeResolver)
@@ -2475,69 +2449,65 @@ String RsaEncryptor::Serialize(const String& serializeKey, const bool& indent, c
 	}
 }
 
-const ProtectorResolver RsaEncryptor::_DefaultProtectorResolver =
-[](const String& name)-> std::unique_ptr<ISecretProtector> {
-	USING_NS_INSANE_EXCEPTION;
-	try
-	{
-		std::function<std::unique_ptr<ISecretProtector>()> protectorFx = DefaultProtectorFunctions.at(name);
-		return std::move(protectorFx());
-	}
-	catch (...)
-	{
-		throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
-
 ProtectorResolver RsaEncryptor::DefaultProtectorResolver()
 {
-	return _DefaultProtectorResolver;
-}
-
-const SecureDeserializeResolver<IEncryptor> RsaEncryptor::_DefaultDeserializeResolver =
-[](const String& json, const String& serializeKey) ->std::unique_ptr<IEncryptor> {
-	USING_NS_INSANE_EXCEPTION;
-	USING_NS_INSANE_CORE;
-	try
-	{
-		rapidjson::Document document;
-		document.Parse(json.c_str(), json.length());
-		if (document.HasParseError() ||
-			!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-				document.HasMember(CNAMEOF(Protector)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetKeyPair)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
-				document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+	return [](const String& name)-> std::unique_ptr<ISecretProtector> {
+		USING_NS_INSANE_EXCEPTION;
+		try
 		{
-			throw true;
+			std::function<std::unique_ptr<ISecretProtector>()> protectorFx = DefaultProtectorFunctions.at(name);
+			return std::move(protectorFx());
 		}
-		String protectorName = document[CNAMEOF(Protector)].GetString();
-		std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
-		std::unique_ptr<ISecretProtector> protector = _DefaultProtectorResolver(protectorName);
-
-		auto keyPairJson = RapidJsonExtensions::ToJson(document[CNAMEOF_TRIM_GET(GetKeyPair)]);
-		String publicKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPublicKey));
-		String privateKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPrivateKey));
-		publicKey = protector->Unprotect(encoder->Decode(publicKey), serializeKey);
-		privateKey = protector->Unprotect(encoder->Decode(privateKey), serializeKey);
-
-		RsaKeyPair keypair{ publicKey, privateKey };
-		RsaPadding padding = RsaPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
-		return std::move(std::make_unique<RsaEncryptor>(keypair, padding, std::move(encoder)));
-	}
-	catch (...)
-	{
-		throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-	}
-};
+		catch (...)
+		{
+			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
+}
 
 SecureDeserializeResolver<IEncryptor> RsaEncryptor::DefaultDeserializeResolver()
 {
-	return _DefaultDeserializeResolver;
+	return [](const String& json, const String& serializeKey) ->std::unique_ptr<IEncryptor> {
+		USING_NS_INSANE_EXCEPTION;
+		USING_NS_INSANE_CORE;
+		try
+		{
+			rapidjson::Document document;
+			document.Parse(json.c_str(), json.length());
+			if (document.HasParseError() ||
+				!(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+					document.HasMember(CNAMEOF(Protector)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetKeyPair)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
+					document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+			{
+				throw true;
+			}
+			String protectorName = document[CNAMEOF(Protector)].GetString();
+			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
+			std::unique_ptr<ISecretProtector> protector = DefaultProtectorResolver()(protectorName);
+
+			auto keyPairJson = RapidJsonExtensions::ToJson(document[CNAMEOF_TRIM_GET(GetKeyPair)]);
+			String publicKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPublicKey));
+			String privateKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPrivateKey));
+			publicKey = protector->Unprotect(encoder->Decode(publicKey), serializeKey);
+			privateKey = protector->Unprotect(encoder->Decode(privateKey), serializeKey);
+
+			RsaKeyPair keypair{ publicKey, privateKey };
+			RsaPadding padding = RsaPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
+			return std::move(std::make_unique<RsaEncryptor>(keypair, padding, std::move(encoder)));
+		}
+		catch (...)
+		{
+			throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		}
+	};
 }
 
 std::unique_ptr<IEncryptor> RsaEncryptor::Deserialize(const String& json, const String& serializeKey, const SecureDeserializeResolver<IEncryptor>& deserializeResolver)
 {
 	return std::move(deserializeResolver(json, serializeKey));
 }
+
+
 

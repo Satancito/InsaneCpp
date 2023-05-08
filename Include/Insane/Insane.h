@@ -3,10 +3,6 @@
 #define INSANE_BASE_H
 #define INSANE_STRING "Insane"s
 
-#define STDCALL _stdcall
-#define CDECL _cdecl
-#define EXTERNC extern "C"
-
 #include <iomanip>
 #include <sstream>
 #include <iostream>
@@ -49,37 +45,37 @@ using namespace std::string_literals;
 using namespace std::chrono_literals;
 namespace InsaneIO::Insane
 {
-    // ███ Concepts ███
-    template <typename T>
-    concept HasOstream = requires(std::ostream &os, T t) {
-                             os << t;
-                         };
+	// ███ Concepts ███
+	template <typename T>
+	concept HasOstream = requires(std::ostream & os, T t) {
+		os << t;
+	};
 
-    template <typename T>
-    concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
+	template <typename T>
+	concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
 
-    // ███ IClone ███
+	// ███ IClone ███
 
-    template <typename T>
-    class IClone {
-    public:
-        virtual std::unique_ptr<T> Clone() const = 0;
-    };
+	template <typename T>
+	class INSANE_API IClone {
+	public:
+		virtual std::unique_ptr<T> Clone() const = 0;
+	};
 
-    // ███ UtilityExtensions ███
+	// ███ UtilityExtensions ███
 
-    class UtilityExtensions {
-    public:
-        [[nodiscard]] static bool IsDebug()
-        {
+	class INSANE_API UtilityExtensions {
+	public:
+		[[nodiscard]] static bool IsDebug()
+		{
 #if defined(_DEBUG)
-            return true;
+			return true;
 #else
-            return false;
+			return false;
 #endif // !
-        }
-    }; 
-    
+		}
+	};
+
 }
 
 #endif // !INSANE_BASE_H

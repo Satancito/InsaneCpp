@@ -7,6 +7,10 @@ namespace InsaneIO::Insane::Preprocessor
 
 } // namespace InsaneIO::Insane::Preprocessor
 
+#define STDCALL _stdcall
+#define CDECL _cdecl
+#define EXTERNC extern "C"
+
 // WINDOWS
 #if defined(_WIN32)
 #define NOMINMAX
@@ -17,7 +21,6 @@ namespace InsaneIO::Insane::Preprocessor
 #define DLLIMPORT _declspec(dllimport)
 #define DLLEXPORT _declspec(dllexport)
 #define DLLPRIVATE
-typedef std::wstring DefaultString;
 #if _WIN64
 #define IS64 1
 #else
@@ -35,7 +38,6 @@ typedef std::wstring DefaultString;
 #define DLLIMPORT
 #define DLLEXPORT __attribute__((visibility("default")))
 #define DLLPRIVATE __attribute__((visibility("hidden")))
-typedef std::string DefaultString;
 
 // LINUX - Ubuntu, Fedora, , Centos, Debian, RedHat
 #elif (__LINUX__ || __gnu_linux__ || __linux__ || __linux || linux)
@@ -48,7 +50,6 @@ typedef std::string DefaultString;
 #define DLLPRIVATE __attribute__((visibility("hidden")))
 #define CoTaskMemAlloc(p) malloc(p)
 #define CoTaskMemFree(p) free(p)
-typedef std::string DefaultString;
 #if __x86_64__ || __ppc64__
 #define IS64 1
 #else
@@ -62,7 +63,6 @@ typedef std::string DefaultString;
 #define DLLIMPORT
 #define DLLEXPORT __attribute__((visibility("default")))
 #define DLLPRIVATE __attribute__((visibility("hidden")))
-typedef std::string DefaultString;
 
 // MACOS
 #elif defined(__APPLE__)
@@ -72,7 +72,6 @@ typedef std::string DefaultString;
 #define DLLIMPORT
 #define DLLEXPORT __attribute__((visibility("default")))
 #define DLLPRIVATE __attribute__((visibility("hidden")))
-typedef std::string DefaultString;
 #include "TargetConditionals.h"
 #if TARGET_OS_IPHONE && TARGET_IPHONE_SIMULATOR
 #define IOS_SIMULATOR_PLATFORM 1
@@ -86,10 +85,14 @@ typedef std::string DefaultString;
 
 #endif
 
-#if defined(INSANE_EXPORTS)
-#define DLLSPEC DLLEXPORT
+#ifdef INSANE_EXPORTS
+#define INSANE_API DLLEXPORT
 #else
-#define DLLSPEC DLLIMPORT
+#define INSANE_API DLLIMPORT
+#endif
+
+#ifdef INSANE_PRIVATE_EXPORTS
+#define INSANE_API 
 #endif
 
 
@@ -4069,13 +4072,13 @@ using CharFunction = std::function<std::vector<std::string>>(char, char, char, c
 #define __INSANE_ENUM_EXPAND_2(Name, UType, count, iexp, exp, ...) __INSANE_ENUM_EXPAND_3(Name, UType, count, iexp, exp, __VA_ARGS__)
 #define __INSANE_ENUM_EXPAND_1(Name, UType, count, iexp, ...) __INSANE_ENUM_EXPAND_2(Name, UType, count, iexp, __INSANE_ENUM_REPEAT_##count, __VA_ARGS__)
 
-#define __INSANE_ENUM_DECLARATION(Name, UType, count, ...) enum class Name : UType   \
+#define __INSANE_ENUM_DECLARATION(Name, UType, count, ...) enum class INSANE_API Name : UType   \
 {                                                                                    \
     __INSANE_ENUM_EXPAND_1(Name, UType, count, __INSANE_ENUM_GET_VALUE, __VA_ARGS__) \
 };
 
 #define __INSANE_ENUM_EXTENSIONS_DECLARATION(Name, UType, count, ...)                                                                                                                                                                                                                                                                                                                           \
-    class Name##EnumExtensions                                                                                                                                                                                                                                                                                                                                                                  \
+    class INSANE_API Name##EnumExtensions                                                                                                                                                                                                                                                                                                                                                                  \
     {                                                                                                                                                                                                                                                                                                                                                                                           \
     public:                                                                                                                                                                                                                                                                                                                                                                                     \
         [[nodiscard]] static String ToIntegralString(const Name &value)                                                                                                                                                                                                                                                                                                                         \
@@ -4126,7 +4129,7 @@ using CharFunction = std::function<std::vector<std::string>>(char, char, char, c
         }                                                                                                                                                                                                                                                                                                                                                                                       \
     };
 #define __INSANE_ENUM_OUTPUT_OPERATOR_DECLARATION(Name, UType, count, ...) \
-    inline std::ostream &operator<<(std::ostream &os, const Name &value)          \
+    inline INSANE_API std::ostream &operator<<(std::ostream &os, const Name &value)          \
     {                                                                      \
         os << Name##EnumExtensions::ToString(value);                       \
         return os;                                                         \
