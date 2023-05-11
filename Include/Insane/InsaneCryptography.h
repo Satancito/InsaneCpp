@@ -9,6 +9,7 @@
 #include <Insane/InsanePreprocessor.h>
 #include <algorithm>
 #include <functional>
+#include <utility>
 
 #define USING_NS_INSANE_CRYPTO using namespace InsaneIO::Insane::Cryptography
 
@@ -215,7 +216,7 @@ namespace InsaneIO::Insane::Cryptography
 		IJsonSerialize(String name) :IBaseSerialize(name) {	}
 		[[nodiscard]] virtual String Serialize(const bool& indent = false) const = 0;
 
-		[[nodiscard]] static std::unique_ptr<T> Deserialize(const String& json, const DeserializeResolver<T> & resolver)
+		[[nodiscard]] static std::unique_ptr<T> Deserialize([[maybe_unused]] const String& json, [[maybe_unused]]const DeserializeResolver<T> & resolver)
 		{
 			USING_NS_INSANE_EXCEPTION;
 			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
@@ -329,7 +330,7 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] static String DecryptAesCbc(const String& data, const String& key, const AesCbcPadding& padding = AesCbcPadding::Pkcs7) noexcept(false);
 	private:
 		[[nodiscard]] static String GenerateNormalizedKey(const String& key);
-		[[nodiscard]] static void ValidateKey(const String& key);
+		static void ValidateKey(const String& key);
 	};
 
 	// ███ RsaExtensions ███
@@ -364,7 +365,7 @@ namespace InsaneIO::Insane::Cryptography
 	class INSANE_API ShaHasher : public IHasher
 	{
 	public:
-		ShaHasher(const HashAlgorithm& hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+		ShaHasher(const HashAlgorithm& hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder>&& encoder = Base64Encoder::DefaultInstance());
 		ShaHasher(const ShaHasher& instance);
 
 		[[nodiscard]] HashAlgorithm GetHashAlgorithm() const;
@@ -383,7 +384,7 @@ namespace InsaneIO::Insane::Cryptography
 		const std::unique_ptr<IEncoder> _Encoder;
 	};
 
-	// ███
+	// ███ RandomExtensions ███
 	class INSANE_API RandomExtensions
 	{
 	public:
@@ -399,7 +400,7 @@ namespace InsaneIO::Insane::Cryptography
 	class INSANE_API HmacHasher : public IHasher
 	{
 	public:
-		HmacHasher(const String& key = RandomExtensions::Next(HMAC_KEY_SIZE), const HashAlgorithm& hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+		HmacHasher(const String& key = RandomExtensions::Next(HMAC_KEY_SIZE), const HashAlgorithm& hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder>&& encoder = Base64Encoder::DefaultInstance());
 		HmacHasher(const HmacHasher& instance);
 
 		[[nodiscard]] HashAlgorithm GetHashAlgorithm() const;
@@ -432,7 +433,7 @@ namespace InsaneIO::Insane::Cryptography
 			const size_t& degreeOfParallelism = ARGON2_DEGREEOF_PARALLELISM,
 			const Argon2Variant argon2Variant = Argon2Variant::Argon2id,
 			const size_t& derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH,
-			std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+			std::unique_ptr<IEncoder>&& encoder = Base64Encoder::DefaultInstance());
 		Argon2Hasher(const Argon2Hasher& instance);
 
 		[[nodiscard]] String GetSalt() const;
@@ -473,7 +474,7 @@ namespace InsaneIO::Insane::Cryptography
 			const size_t& blockSize = SCRYPT_BLOCKSIZE,
 			const size_t& parallelism = SCRYPT_PARALLELISM,
 			const size_t& derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH,
-			std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+			std::unique_ptr<IEncoder>&& encoder = Base64Encoder::DefaultInstance());
 		ScryptHasher(const ScryptHasher& instance);
 
 		[[nodiscard]] String GetSalt() const;
@@ -543,7 +544,7 @@ namespace InsaneIO::Insane::Cryptography
 
 		[[nodiscard]] virtual String Serialize(const String& serializeKey, const bool& indent = false, const std::unique_ptr<ISecretProtector>& protector = AesCbcProtector::DefaultInstance()) const = 0;
 
-		[[nodiscard]] static std::unique_ptr<T> Deserialize(const String& json, const String& serializeKey, const SecureDeserializeResolver<T>& deserializeResolver)
+		[[nodiscard]] static std::unique_ptr<T> Deserialize([[maybe_unused]] const String& json, [[maybe_unused]] const String& serializeKey, [[maybe_unused]] const SecureDeserializeResolver<T>& deserializeResolver)
 		{
 			USING_NS_INSANE_EXCEPTION;
 			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
@@ -580,7 +581,7 @@ namespace InsaneIO::Insane::Cryptography
 	class INSANE_API AesCbcEncryptor : public IEncryptor
 	{
 	public:
-		AesCbcEncryptor(const String& key = RandomExtensions::Next(AES_MAX_KEY_LENGTH), const AesCbcPadding& padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+		AesCbcEncryptor(const String& key = RandomExtensions::Next(AES_MAX_KEY_LENGTH), const AesCbcPadding& padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder>&& encoder = Base64Encoder::DefaultInstance());
 		AesCbcEncryptor(const AesCbcEncryptor& instance);
 
 		[[nodiscard]] String GetKey() const;
@@ -611,7 +612,7 @@ namespace InsaneIO::Insane::Cryptography
 	class INSANE_API RsaEncryptor : public IEncryptor
 	{
 	public:
-		RsaEncryptor(const RsaKeyPair& keyPair, const RsaPadding& padding = RsaPadding::OaepSha256, std::unique_ptr<IEncoder>&& encoder = std::move(Base64Encoder::DefaultInstance()));
+		RsaEncryptor(const RsaKeyPair& keyPair, const RsaPadding& padding = RsaPadding::OaepSha256, std::unique_ptr<IEncoder>&& encoder = Base64Encoder::DefaultInstance());
 		RsaEncryptor(const RsaEncryptor& instance);
 
 		[[nodiscard]] RsaKeyPair GetKeyPair() const;

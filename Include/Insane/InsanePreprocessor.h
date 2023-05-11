@@ -122,9 +122,9 @@ static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown co
 #define EXPAND_VALUE(x) x
 #define EXPAND_EXPRESSION(x) x()
 
-#define COMMA_VALUE() ,
-#define EMPTY_VALUE()
-#define EQUALS_VALUE() =
+#define COMMA_VALUE_EXP() ,
+#define EMPTY_VALUE_EXP()
+#define EQUALS_VALUE_EXP() =
 
 #define STRINGIFY(x) #x##s
 #define CSTRINGIFY(x) #x
@@ -150,10 +150,10 @@ static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown co
 #define REMOVE_COMMA_0()
 #define REMOVE_COMMA_1() ,
 
-#define VOID_TYPE() void
-#define STRING_TYPE() String
-#define INT32_TYPE() SignedInt32
-#define Int64_TYPE() SignedInt64
+#define VOID_TYPE_EXP() void
+#define STRING_TYPE_EXP() String
+#define INT32_TYPE_EXP() SignedInt32
+#define Int64_TYPE_EXP() SignedInt64
 
 #define EMOJI_UPWARDS_BUTTON_STRING ("🔼"s)
 #define EMOJI_DOWNWARDS_BUTTON_STRING ("🔽"s)
@@ -193,7 +193,6 @@ static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown co
 #define EQUAL_SIGN_STRING ("="s)
 
 #define EMPTY_CHAR_ARRAY ("")
-#define EMPTY_CHAR ('')
 #define NULL_CHAR ('\000')
 #define CR_CHAR ('\r')
 #define CARRIAGE_RETURN_CHAR ('\r')
@@ -3330,7 +3329,7 @@ static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown co
 "cnext" : is c + 1, the next value of c.
 "se" : is a macro identifier that does not receive any parameters.When invoked, it only returns a separator such as a comma(, ), period(.), equal sign(= ), etc.
 "sae" : indicates whether to add the separator at the end.Its value must be 0 or 1. 0 means no separator at the end, and 1 means add the separator at the end.
-p1, p2, p3, p4, p5 : are parameters passed to "exp".
+p1, p2, p3, p4, p5 : are additional parameters passed to "exp".
 
 For example :
 
@@ -3350,7 +3349,7 @@ INSANE_REPEAT_SEQ(MYEXP, 10, COMMA_VALUE, 0, 0, 0, 0, 0, 0)
 The result upon expansion is :
 10, 9, 8, 7, 6, 5, 4, 3, 2, 1.
 
-3. If you want to generate a list of 10 integer parameters where the variable name starts with "params" and has the suffix of the number in incremental form (a1, a2, ..., a10), you should enter the following:
+3. If you want to generate a list of 10 integer parameters where the variable name starts with "param" and has the suffix of the number in incremental form (a1, a2, ..., a10), you should enter the following:
 
 #define MyExpresion(n, nprev, c, cnext, se, sae, p1, p2, p3, p4, p5) int p1##c
 INSANE_REPEAT_SEQ(MyExpresion,10,COMMA_VALUE,0,param,_,_,_,_)

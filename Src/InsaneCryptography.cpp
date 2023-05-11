@@ -27,7 +27,6 @@
 #include <botan/exceptn.h>
 #include <botan/pwdhash.h>
 #include <botan/argon2.h>
-//#include <botan/sym_algo.h>
 #include <botan/mode_pad.h>
 
 #include <rapidxml/rapidxml.hpp>
@@ -1266,18 +1265,18 @@ String HexEncoder::Serialize(const bool& indent) const
 
 std::unique_ptr<IEncoder> HexEncoder::DefaultInstance()
 {
-	return std::move(std::make_unique<HexEncoder>());
+	return std::make_unique<HexEncoder>();
 }
 
 std::unique_ptr<IEncoder> HexEncoder::Clone() const
 {
-	return std::move(std::make_unique<HexEncoder>(*this));
+	return std::make_unique<HexEncoder>(*this);
 }
 
 
 std::unique_ptr<IEncoder> HexEncoder::Deserialize(const String& json, const DeserializeResolver<IEncoder>& resolver)
 {
-	return std::move(resolver(json));
+	return resolver(json);
 }
 
 DeserializeResolver<IEncoder> HexEncoder::DefaultDeserializeResolver()
@@ -1291,7 +1290,7 @@ DeserializeResolver<IEncoder> HexEncoder::DefaultDeserializeResolver()
 			{
 				throw true;
 			}
-			return std::move(std::make_unique<HexEncoder>(document[CNAMEOF(ToUpper)].GetBool()));
+			return std::make_unique<HexEncoder>(document[CNAMEOF(ToUpper)].GetBool());
 		}
 		catch (...)
 		{
@@ -1361,18 +1360,18 @@ String Base32Encoder::Serialize(const bool& indent) const
 
 std::unique_ptr<IEncoder> Base32Encoder::Clone() const
 {
-	return std::move(std::make_unique<Base32Encoder>(*this));
+	return (std::make_unique<Base32Encoder>(*this));
 }
 
 
 std::unique_ptr<IEncoder> Base32Encoder::DefaultInstance()
 {
-	return std::move(std::make_unique<Base32Encoder>());
+	return std::make_unique<Base32Encoder>();
 }
 
 std::unique_ptr<IEncoder> Base32Encoder::Deserialize(const String& json, const DeserializeResolver<IEncoder>& resolver)
 {
-	return std::move(resolver(json));
+	return resolver(json);
 }
 
 DeserializeResolver<IEncoder> Base32Encoder::DefaultDeserializeResolver()
@@ -1388,8 +1387,8 @@ DeserializeResolver<IEncoder> Base32Encoder::DefaultDeserializeResolver()
 			{
 				throw true;
 			}
-			return std::move(std::make_unique<Base32Encoder>(document[CNAMEOF(RemovePadding)].GetBool(),
-				document[CNAMEOF(ToLower)].GetBool()));
+			return std::make_unique<Base32Encoder>(document[CNAMEOF(RemovePadding)].GetBool(),
+				document[CNAMEOF(ToLower)].GetBool());
 		}
 		catch (...)
 		{
@@ -1477,17 +1476,17 @@ String Base64Encoder::Serialize(const bool& indent) const {
 
 std::unique_ptr<IEncoder> Base64Encoder::Clone() const
 {
-	return std::move(std::make_unique<Base64Encoder>(*this));
+	return std::make_unique<Base64Encoder>(*this);
 }
 
 std::unique_ptr<IEncoder> Base64Encoder::Deserialize(const String& json, const DeserializeResolver<IEncoder>& resolver)
 {
-	return std::move(resolver(json));
+	return resolver(json);
 }
 
 std::unique_ptr<IEncoder> Base64Encoder::DefaultInstance()
 {
-	return std::move(std::make_unique<Base64Encoder>());
+	return std::make_unique<Base64Encoder>();
 }
 
 DeserializeResolver<IEncoder> Base64Encoder::DefaultDeserializeResolver()
@@ -1504,9 +1503,9 @@ DeserializeResolver<IEncoder> Base64Encoder::DefaultDeserializeResolver()
 			{
 				throw true;
 			}
-			return std::move(std::make_unique<Base64Encoder>(document[CNAMEOF(LineBreaksLength)].GetUint(),
+			return std::make_unique<Base64Encoder>(document[CNAMEOF(LineBreaksLength)].GetUint(),
 				document[CNAMEOF(RemovePadding)].GetBool(),
-				Base64EncodingEnumExtensions::Parse(document[CNAMEOF(EncodingType)].GetInt())));
+				Base64EncodingEnumExtensions::Parse(document[CNAMEOF(EncodingType)].GetInt()));
 		}
 		catch (...)
 		{
@@ -1520,15 +1519,15 @@ DeserializeResolver<IEncoder> Base64Encoder::DefaultDeserializeResolver()
 
 static inline const std::map<String, std::function<std::unique_ptr<IEncoder>()>> DefaultEncoderFunctions = {
 	{ HEX_ENCODER_NAME_STRING,
-		[]() { return std::move(HexEncoder::DefaultInstance()); }
+		[]() { return HexEncoder::DefaultInstance(); }
 	} ,
 
 	{ BASE32_ENCODER_NAME_STRING,
-		[]() { return std::move(Base32Encoder::DefaultInstance()); }
+		[]() { return Base32Encoder::DefaultInstance(); }
 	} ,
 
 	{ BASE64_ENCODER_NAME_STRING,
-		[]() { return std::move(Base64Encoder::DefaultInstance()); }
+		[]() { return Base64Encoder::DefaultInstance(); }
 	} ,
 };
 
@@ -1536,7 +1535,7 @@ static inline const std::map<String, std::function<std::unique_ptr<IEncoder>()>>
 static inline const std::map<String, std::function< std::unique_ptr<ISecretProtector>()>> DefaultProtectorFunctions = {
 	{
 		AES_CBC_PROTECTOR_NAME_STRING,
-		[]() { return std::move(AesCbcProtector::DefaultInstance()); }
+		[]() { return AesCbcProtector::DefaultInstance(); }
 	}
 };
 
@@ -1568,7 +1567,7 @@ static inline std::unique_ptr<IEncoder> InternalDefaultDeserializeIEncoder(const
 		String json = RapidJsonExtensions::ToJson(value);
 		String name = RapidJsonExtensions::GetStringValue(value, STRINGIFY(Name));
 		std::function<std::unique_ptr<IEncoder>()> encoderFx = DefaultEncoderFunctions.at(name);
-		return std::move(encoderFx());
+		return encoderFx();
 	}
 	catch (...)
 	{
@@ -1583,7 +1582,7 @@ ShaHasher::ShaHasher(const HashAlgorithm& hashAlgorithm, std::unique_ptr<IEncode
 {
 }
 
-ShaHasher::ShaHasher(const ShaHasher& instance) : ShaHasher(instance._HashAlgorithm, std::move(instance.GetEncoder()))
+ShaHasher::ShaHasher(const ShaHasher& instance) : ShaHasher(instance._HashAlgorithm, instance.GetEncoder())
 {
 }
 
@@ -1594,7 +1593,7 @@ HashAlgorithm ShaHasher::GetHashAlgorithm() const
 
 std::unique_ptr<IEncoder> ShaHasher::GetEncoder() const
 {
-	return std::move(_Encoder->Clone());
+	return _Encoder->Clone();
 }
 
 String ShaHasher::Compute(const String& data)
@@ -1649,12 +1648,12 @@ String ShaHasher::Serialize(const bool& indent) const
 
 std::unique_ptr<IHasher> ShaHasher::Deserialize(const String& json, const std::function<std::unique_ptr<IHasher>(String)>& resolver)
 {
-	return std::move(resolver(json));
+	return resolver(json);
 }
 
 std::unique_ptr<IHasher> ShaHasher::Clone() const
 {
-	return std::move(std::make_unique<ShaHasher>(*this));
+	return std::make_unique<ShaHasher>(*this);
 }
 
 
@@ -1677,7 +1676,7 @@ DeserializeResolver<IHasher> ShaHasher::DefaultDeserializeResolver()
 			}
 			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
 			HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
-			return std::move(std::make_unique<ShaHasher>(algorithm, std::move(encoder)));
+			return std::make_unique<ShaHasher>(algorithm, std::move(encoder));
 		}
 		catch (...)
 		{
@@ -1690,12 +1689,12 @@ DeserializeResolver<IHasher> ShaHasher::DefaultDeserializeResolver()
 // ███ HmacHasher ███
 
 HmacHasher::HmacHasher(const String& key, const HashAlgorithm& hashAlgorithm, std::unique_ptr<IEncoder>&& encoder)
-	: IHasher(HMAC_HASHER_NAME_STRING), _Key(key.empty() ? RandomExtensions::Next(SHA512_DIGEST_LENGTH) : key), _HashAlgorithm(hashAlgorithm), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+	: IHasher(HMAC_HASHER_NAME_STRING), _HashAlgorithm(hashAlgorithm), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance())), _Key(key.empty() ? RandomExtensions::Next(SHA512_DIGEST_LENGTH) : key)
 {
 }
 
 HmacHasher::HmacHasher(const HmacHasher& instance)
-	: HmacHasher(instance.GetKey(), instance.GetHashAlgorithm(), std::move(instance.GetEncoder()))
+	: HmacHasher(instance.GetKey(), instance.GetHashAlgorithm(), instance.GetEncoder())
 {
 }
 
@@ -1706,7 +1705,7 @@ HashAlgorithm HmacHasher::GetHashAlgorithm() const
 
 std::unique_ptr<IEncoder> HmacHasher::GetEncoder() const
 {
-	return std::move(_Encoder->Clone());
+	return _Encoder->Clone();
 }
 
 String HmacHasher::GetKey() const
@@ -1776,12 +1775,12 @@ String HmacHasher::Serialize(const bool& indent) const
 
 std::unique_ptr<IHasher> HmacHasher::Clone() const
 {
-	return std::move(std::make_unique<HmacHasher>(*this));
+	return std::make_unique<HmacHasher>(*this);
 }
 
 std::unique_ptr<IHasher> HmacHasher::Deserialize(const String& json, const DeserializeResolver<IHasher>& resolver)
 {
-	return std::move(resolver(json));
+	return resolver(json);
 }
 
 DeserializeResolver<IHasher> HmacHasher::DefaultDeserializeResolver()
@@ -1805,7 +1804,7 @@ DeserializeResolver<IHasher> HmacHasher::DefaultDeserializeResolver()
 			std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(document[CNAMEOF_TRIM_GET(GetEncoder)]);
 			HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
 			String key = encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
-			return std::move(std::make_unique<HmacHasher>(key, algorithm, std::move(encoder)));
+			return std::make_unique<HmacHasher>(key, algorithm, std::move(encoder));
 		}
 		catch (...)
 		{
@@ -1828,14 +1827,14 @@ Argon2Hasher::Argon2Hasher(const String& salt,
 	_Iterations(iterations),
 	_MemorySizeKiB(memorySizeKiB),
 	_DegreeOfParallelism(degreeOfParallelism),
-	_Argon2Variant(argon2Variant),
 	_DerivedKeyLength(derivedKeyLength),
+	_Argon2Variant(argon2Variant),
 	_Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
 {
 }
 
 Argon2Hasher::Argon2Hasher(const Argon2Hasher& instance)
-	:Argon2Hasher(instance.GetSalt(), instance.GetIterations(), instance.GetMemorySizeKiB(), instance.GetDegreeOfParallelism(), instance.GetArgon2Variant(), instance.GetDerivedKeyLength(), std::move(instance.GetEncoder()))
+	:Argon2Hasher(instance.GetSalt(), instance.GetIterations(), instance.GetMemorySizeKiB(), instance.GetDegreeOfParallelism(), instance.GetArgon2Variant(), instance.GetDerivedKeyLength(), instance.GetEncoder())
 {
 }
 
@@ -1876,7 +1875,7 @@ Argon2Variant Argon2Hasher::GetArgon2Variant() const
 
 std::unique_ptr<IEncoder> Argon2Hasher::GetEncoder() const
 {
-	return std::move(_Encoder->Clone());
+	return _Encoder->Clone();
 }
 
 String Argon2Hasher::Compute(const String& data)
@@ -1952,12 +1951,12 @@ String Argon2Hasher::Serialize(const bool& indent) const
 
 std::unique_ptr<IHasher> Argon2Hasher::Clone() const
 {
-	return std::move(std::make_unique<Argon2Hasher>(*this));
+	return std::make_unique<Argon2Hasher>(*this);
 }
 
 std::unique_ptr<IHasher> Argon2Hasher::Deserialize(const String& json, const DeserializeResolver<IHasher>& resolver)
 {
-	return std::move(resolver(json));
+	return resolver(json);
 }
 
 DeserializeResolver<IHasher> Argon2Hasher::DefaultDeserializeResolver()
@@ -1988,7 +1987,7 @@ DeserializeResolver<IHasher> Argon2Hasher::DefaultDeserializeResolver()
 			size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint64();
 			size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
 			Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
-			return std::move(std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder)));
+			return std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder));
 		}
 		catch (...)
 		{
@@ -2017,7 +2016,7 @@ ScryptHasher::ScryptHasher(const String& salt,
 }
 
 ScryptHasher::ScryptHasher(const ScryptHasher& instance)
-	:ScryptHasher(instance.GetSalt(), instance.GetIterations(), instance.GetBlockSize(), instance.GetParallelism(), instance.GetDerivedKeyLength(), std::move(instance.GetEncoder()))
+	:ScryptHasher(instance.GetSalt(), instance.GetIterations(), instance.GetBlockSize(), instance.GetParallelism(), instance.GetDerivedKeyLength(), instance.GetEncoder())
 {
 }
 
@@ -2053,7 +2052,7 @@ size_t ScryptHasher::GetDerivedKeyLength() const
 
 std::unique_ptr<IEncoder> ScryptHasher::GetEncoder() const
 {
-	return std::move(_Encoder->Clone());
+	return _Encoder->Clone();
 }
 
 String ScryptHasher::Compute(const String& data)
@@ -2078,7 +2077,7 @@ bool ScryptHasher::VerifyEncoded(const String& data, const String& expected)
 
 std::unique_ptr<IHasher> ScryptHasher::Clone() const
 {
-	return std::move(std::make_unique<ScryptHasher>(*this));
+	return std::make_unique<ScryptHasher>(*this);
 }
 
 DeserializeResolver<IHasher> ScryptHasher::DefaultDeserializeResolver()
@@ -2107,7 +2106,7 @@ DeserializeResolver<IHasher> ScryptHasher::DefaultDeserializeResolver()
 			size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint64();
 			size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint64();
 			size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
-			return std::move(std::make_unique<ScryptHasher>(salt, iterations, blockSize, parallelism, derivedKeyLength, std::move(encoder)));
+			return std::make_unique<ScryptHasher>(salt, iterations, blockSize, parallelism, derivedKeyLength, std::move(encoder));
 		}
 		catch (...)
 		{
@@ -2167,7 +2166,7 @@ String ScryptHasher::Serialize(const bool& indent) const
 
 std::unique_ptr<IHasher> ScryptHasher::Deserialize(const String& json, const DeserializeResolver<IHasher>& resolver)
 {
-	return std::move(resolver(json));
+	return resolver(json);
 }
 
 // ███ ISecretProtector ███
@@ -2198,7 +2197,7 @@ String AesCbcProtector::Unprotect(const String& secret, const String& key)
 
 std::unique_ptr<ISecretProtector> AesCbcProtector::DefaultInstance()
 {
-	return std::move(std::make_unique<AesCbcProtector>());
+	return std::make_unique<AesCbcProtector>();
 }
 
 // ███ IEncryptor ███
@@ -2215,7 +2214,7 @@ AesCbcEncryptor::AesCbcEncryptor(const String& key, const AesCbcPadding& padding
 }
 
 AesCbcEncryptor::AesCbcEncryptor(const AesCbcEncryptor& instance)
-	: AesCbcEncryptor(instance.GetKey(), instance.GetPadding(), std::move(instance.GetEncoder()))
+	: AesCbcEncryptor(instance.GetKey(), instance.GetPadding(), instance.GetEncoder())
 {
 }
 
@@ -2236,7 +2235,7 @@ AesCbcPadding AesCbcEncryptor::GetPadding() const
 
 std::unique_ptr<IEncoder> AesCbcEncryptor::GetEncoder() const
 {
-	return std::move(_Encoder->Clone());
+	return _Encoder->Clone();
 }
 
 String AesCbcEncryptor::Encrypt(const String& data) const
@@ -2310,7 +2309,7 @@ ProtectorResolver AesCbcEncryptor::DefaultProtectorResolver()
 		try
 		{
 			std::function<std::unique_ptr<ISecretProtector>()> protectorFx = DefaultProtectorFunctions.at(name);
-			return std::move(protectorFx());
+			return protectorFx();
 		}
 		catch (...)
 		{
@@ -2342,7 +2341,7 @@ SecureDeserializeResolver<IEncryptor> AesCbcEncryptor::DefaultDeserializeResolve
 			std::unique_ptr<ISecretProtector> protector = DefaultProtectorResolver()(protectorName);
 			String key = protector->Unprotect(encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString()), serializeKey);
 			AesCbcPadding padding = AesCbcPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
-			return std::move(std::make_unique<AesCbcEncryptor>(key, padding, std::move(encoder)));
+			return std::make_unique<AesCbcEncryptor>(key, padding, std::move(encoder));
 		}
 		catch (...)
 		{
@@ -2364,7 +2363,7 @@ RsaEncryptor::RsaEncryptor(const RsaKeyPair& keyPair, const RsaPadding& padding,
 }
 
 RsaEncryptor::RsaEncryptor(const RsaEncryptor& instance)
-	: RsaEncryptor(instance.GetKeyPair(), instance.GetPadding(), std::move(instance.GetEncoder()))
+	: RsaEncryptor(instance.GetKeyPair(), instance.GetPadding(), instance.GetEncoder())
 {
 
 }
@@ -2381,7 +2380,7 @@ RsaPadding RsaEncryptor::GetPadding() const
 
 std::unique_ptr<IEncoder> RsaEncryptor::GetEncoder() const
 {
-	return std::move(_Encoder->Clone());
+	return _Encoder->Clone();
 }
 
 String RsaEncryptor::Encrypt(const String& data) const
@@ -2456,7 +2455,7 @@ ProtectorResolver RsaEncryptor::DefaultProtectorResolver()
 		try
 		{
 			std::function<std::unique_ptr<ISecretProtector>()> protectorFx = DefaultProtectorFunctions.at(name);
-			return std::move(protectorFx());
+			return protectorFx();
 		}
 		catch (...)
 		{
@@ -2495,7 +2494,7 @@ SecureDeserializeResolver<IEncryptor> RsaEncryptor::DefaultDeserializeResolver()
 
 			RsaKeyPair keypair{ publicKey, privateKey };
 			RsaPadding padding = RsaPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
-			return std::move(std::make_unique<RsaEncryptor>(keypair, padding, std::move(encoder)));
+			return std::make_unique<RsaEncryptor>(keypair, padding, std::move(encoder));
 		}
 		catch (...)
 		{
@@ -2506,7 +2505,7 @@ SecureDeserializeResolver<IEncryptor> RsaEncryptor::DefaultDeserializeResolver()
 
 std::unique_ptr<IEncryptor> RsaEncryptor::Deserialize(const String& json, const String& serializeKey, const SecureDeserializeResolver<IEncryptor>& deserializeResolver)
 {
-	return std::move(deserializeResolver(json, serializeKey));
+	return deserializeResolver(json, serializeKey);
 }
 
 

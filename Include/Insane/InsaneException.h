@@ -19,6 +19,7 @@ namespace InsaneIO::Insane::Exception
 	class ExceptionBase : public IClone<ExceptionBase>
 	{
 	public:
+		virtual ~ExceptionBase() = default;
 		ExceptionBase(const String& name, const String& function, const String& file, const int& line, const String& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: _Name(name), _ErrorMessage(CreateExceptionMessage(name, function, file, line, message, code)), _ErrorCode(code), _InnerException(innerException ? std::move(innerException) : nullptr)
 		{
@@ -33,7 +34,7 @@ namespace InsaneIO::Insane::Exception
 			_Name(instance._Name),
 			_ErrorMessage(instance._ErrorMessage),
 			_ErrorCode(instance._ErrorCode),
-			_InnerException(instance._InnerException ? std::move(instance.GetInnerException()) : nullptr)
+			_InnerException(instance._InnerException ? instance.GetInnerException() : nullptr)
 		{
 			if (IS_DEBUG)
 			{
@@ -55,7 +56,7 @@ namespace InsaneIO::Insane::Exception
 		}
 
 		[[nodiscard]] std::unique_ptr<ExceptionBase> GetInnerException() const noexcept {
-			return _InnerException ? std::move(_InnerException->Clone()) : nullptr;
+			return _InnerException ? _InnerException->Clone() : nullptr;
 		}
 
 		[[nodiscard]] virtual const char* what() const noexcept {
@@ -69,11 +70,12 @@ namespace InsaneIO::Insane::Exception
 		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override {
 			return std::make_unique<ExceptionBase>(*this);
 		}
+
 	private:
+		const String _Name;
 		const String _ErrorMessage;
 		const int _ErrorCode;
 		const std::unique_ptr<ExceptionBase> _InnerException;
-		const String _Name;
 		String CreateExceptionMessage(const String& exceptionName, const String& function, const String& file, const int& line, const std::string& message, const int& errorCode)
 		{
 			return "Exception: \"" + exceptionName +
@@ -89,6 +91,7 @@ namespace InsaneIO::Insane::Exception
 	class  ParseException : public ExceptionBase
 	{
 	public:
+		virtual ~ParseException() = default;
 		ParseException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
@@ -101,6 +104,7 @@ namespace InsaneIO::Insane::Exception
 	class  CryptoException : public ExceptionBase
 	{
 	public:
+		virtual ~CryptoException() = default;
 		CryptoException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
@@ -113,6 +117,7 @@ namespace InsaneIO::Insane::Exception
 	class  ArgumentException : public ExceptionBase
 	{
 	public:
+		virtual ~ArgumentException() = default;
 		ArgumentException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
@@ -125,6 +130,7 @@ namespace InsaneIO::Insane::Exception
 	class  NotImplementedException : public ExceptionBase
 	{
 	public:
+		virtual ~NotImplementedException() = default;
 		NotImplementedException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
@@ -137,6 +143,7 @@ namespace InsaneIO::Insane::Exception
 	class  SerializeException : public ExceptionBase
 	{
 	public:
+		virtual ~SerializeException() = default;
 		SerializeException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
@@ -149,6 +156,7 @@ namespace InsaneIO::Insane::Exception
 	class  DeserializeException : public ExceptionBase
 	{
 	public:
+		virtual ~DeserializeException() = default;
 		DeserializeException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
@@ -161,6 +169,7 @@ namespace InsaneIO::Insane::Exception
 	class  AbstractImplementationException : public ExceptionBase
 	{
 	public:
+		virtual ~AbstractImplementationException() = default;
 		AbstractImplementationException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
@@ -173,6 +182,7 @@ namespace InsaneIO::Insane::Exception
 	class  ConvertException : public ExceptionBase
 	{
 	public:
+		virtual ~ConvertException() = default;
 		ConvertException(const String& function, const String& file, const int& line, const std::string& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException)) {}
 
