@@ -93,82 +93,28 @@ void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground
 	std::cout << format;
 }
 
-void InsaneIO::Insane::Core::Console::Write(const String& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
-{
-	USING_NS_INSANE_STR;
-#ifndef EMSCRIPTEN_PLATFORM
-	EnableVirtualTermimalProcessing();
-	SetVirtualTerminalFormat(foreground, background, styles);
-#endif
-	String str = s;
-#ifdef WINDOWS_PLATFORM
-	WString unicode = StringExtensions::StringToWideString(str);
-	WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), unicode.c_str(), static_cast<DWORD>(unicode.length()), nullptr, nullptr);
-#elif defined LINUX_PLATFORM || defined MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
-	std::cout << str;
-#else
-	static_assert(false, "Unknown Platform");
-#endif
-
-#ifndef EMSCRIPTEN_PLATFORM
-	ResetTerminalFormat();
-#endif
-}
-
-void InsaneIO::Insane::Core::Console::WriteLine(const String& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
-{
-	Write(s, foreground, background, styles);
-	std::cout << std::endl;
-}
-
-void InsaneIO::Insane::Core::Console::Write(const WString& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
-{
-	USING_NS_INSANE_STR;
-#ifndef EMSCRIPTEN_PLATFORM
-	EnableVirtualTermimalProcessing();
-	SetVirtualTerminalFormat(foreground, background, styles);
-#endif
-	WString str = s;
-
-#ifdef WINDOWS_PLATFORM
-	WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), str.c_str(), static_cast<DWORD>(str.length()), nullptr, nullptr);
-#elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
-	std::cout << StringExtensions::WideStringToString(str);
-#else
-	static_assert(false, "Unknown Platform");
-#endif
-
-#ifndef EMSCRIPTEN_PLATFORM
-	ResetTerminalFormat();
-#endif
-}
-
-void InsaneIO::Insane::Core::Console::WriteLine(const WString& s, ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
-{
-	Write(s, foreground, background, styles);
-	std::cout << std::endl;
-}
-
 void InsaneIO::Insane::Core::Console::WriteLine()
 {
 	std::cout << std::endl;
 }
 
-void InsaneIO::Insane::Core::Console::Pause()
+void InsaneIO::Insane::Core::Console::Pause(const String& message, const std::set<String>& validInputValues)
 {
-	char c;
+	std::string line; 
 	do
 	{
-		c = getchar();
-		std::cout << "Press Key " << std::endl;
-	} while (c != 64);
-	std::cout << "KeyPressed" << std::endl;
+		std::cout << message << SPACE_STRING;
+		std::getline(std::cin, line);
+	} while (!validInputValues.contains(line));
 }
 
-int InsaneIO::Insane::Core::Console::PauseAny(bool printWhenPressed)
+int InsaneIO::Insane::Core::Console::PauseAny(const bool& printWhenPressed, const String& message)
 {
+	std::cout << message << SPACE_STRING;
 	int ch;
 #ifdef WINDOWS_PLATFORM
+	while (!_kbhit()) {
+	}
 	ch = _getch();
 #elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
 	struct termios oldt, newt;
@@ -181,11 +127,8 @@ int InsaneIO::Insane::Core::Console::PauseAny(bool printWhenPressed)
 #else
 	static_assert(false, "Unknown Platform");
 #endif
-	if (printWhenPressed)
-	{
-		Console::Write(String(1, ch));
-	}
-	return ch;
+	Console::WriteLine(printWhenPressed? String(1, ch) : EMPTY_STRING); 
+	return static_cast<int>(ch);
 }
 
 // ███ RapidJsonExtensions ███
@@ -208,7 +151,6 @@ String InsaneIO::Insane::Core::RapidJsonExtensions::Prettify(const String& json)
 	doc.Parse(json.data(), json.length());
 	doc.Accept(writer);
 	return String(sb.GetString(), sb.GetSize());
-
 }
 
 String InsaneIO::Insane::Core::RapidJsonExtensions::GetStringValue(const rapidjson::Value& object, const String& propertyName)

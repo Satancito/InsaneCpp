@@ -9,6 +9,10 @@
 #include <Insane/InsaneException.h>
 #include <rapidjson/document.h>
 
+#define CONSOLE_PAUSE_STRING ("Press enter to continue...:"s)
+#define CONSOLE_PAUSE_ANY_STRING ("Press any key to continue...:"s)
+#define CONSOLE_PAUSE_VALID_LIST { EMPTY_STRING }
+
 #define USING_NS_INSANE_CORE using namespace InsaneIO::Insane::Core
 namespace InsaneIO::Insane::Core
 {
@@ -141,13 +145,24 @@ namespace InsaneIO::Insane::Core
 	{
 	public:
 		static void Clear();
-		static void WriteLine(const String& s, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {});
-		static void Write(const String& s, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {});
-		static void WriteLine(const WString& s, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {});
-		static void Write(const WString& s, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {});
+		template <typename TPrintable>
+		static void Write(const TPrintable& data, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		{
+			EnableVirtualTermimalProcessing();
+			SetVirtualTerminalFormat(foreground, background, styles);
+			std::cout << data;
+			ResetTerminalFormat();
+		}
+
+		template <typename TPrintable>
+		static void WriteLine(const TPrintable& data, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		{
+			Write(data, foreground, background, styles);
+			std::cout << std::endl;
+		}
 		static void WriteLine();
-		static void Pause();
-		static int PauseAny(bool printWhenPressed = false);
+		static void Pause(const String& message = CONSOLE_PAUSE_STRING, const std::set<String>& validInputValues = CONSOLE_PAUSE_VALID_LIST);
+		static int PauseAny(const bool& printWhenPressed = false, const String& message = CONSOLE_PAUSE_ANY_STRING);
 
 	private:
 		static void EnableVirtualTermimalProcessing();
