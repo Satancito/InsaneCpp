@@ -52,6 +52,9 @@ namespace InsaneIO::Insane
 	};
 
 	template <typename T>
+	concept IsPrintable = HasOstream<T>;
+	
+	template <typename T>
 	concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
 
 	// ███ IClone ███

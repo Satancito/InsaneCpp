@@ -215,6 +215,5 @@ String InsaneIO::Insane::Core::RapidJsonExtensions::GetStringValue(const rapidjs
 {
 	rapidjson::Document doc;
 	doc.CopyFrom(object, doc.GetAllocator());
-	auto len = doc[propertyName.data()].GetStringLength();
 	return String(doc[propertyName.data()].GetString(), doc[propertyName.data()].GetStringLength());
 }

@@ -254,7 +254,6 @@ String InsaneIO::Insane::Strings::StringExtensions::ToLower(const String &data, 
 {
 	icu::Locale loc = icu::Locale(locale.c_str());
 	icu::UnicodeString uniStr = icu::UnicodeString::fromUTF8(icu::StringPiece(data.data(), static_cast<int32_t>(data.length())));
-	auto  l = uniStr.length();
 	uniStr.toLower(loc);
 	std::string str;
 	uniStr.toUTF8String(str);

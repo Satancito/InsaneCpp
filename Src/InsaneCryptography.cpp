@@ -172,7 +172,6 @@ String AesExtensions::DecryptAesCbc(const String& data, const String& key, const
 		Botan::secure_vector<uint8_t> keyBytes(secretKey.begin(), secretKey.end());
 		Botan::secure_vector<uint8_t> ivBytes(data.end() - AES_MAX_IV_LENGTH, data.end());
 
-		size_t newSize = dataBytes.size();
 		String paddingAlgo = __AES_PADDING_MODE_NONE_STRING;
 		switch (padding)
 		{
@@ -188,13 +187,12 @@ String AesExtensions::DecryptAesCbc(const String& data, const String& key, const
 		break;
 		case AesCbcPadding::Pkcs7:
 		{
-			paddingAlgo = Botan::PKCS7_Padding().name();
-			//newSize = paddingMethod.unpad(dataBytes.data(), dataBytes.size());
+			paddingAlgo = __AES_PADDING_MODE_PKCS7_STRING;
 		}
 		break;
 		case AesCbcPadding::AnsiX923:
 		{
-			paddingAlgo = Botan::ANSI_X923_Padding().name();
+			paddingAlgo = __AES_PADDING_MODE_ANSIX923_STRING;
 			//newSize = paddingMethod.unpad(dataBytes.data(), dataBytes.size());
 		}
 		break;
