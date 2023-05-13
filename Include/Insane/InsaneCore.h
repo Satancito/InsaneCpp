@@ -192,8 +192,7 @@ Estilo de texto invisible (ocultar el texto): "\033[8m"
 			ResetVirtualTerminalFormat();
 		}
 
-		template<typename TPrintable>
-		static void Write(const TPrintable& data, RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		static void Write(const Printable auto& data, RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {}) 
 		{
 			EnableVirtualTermimalProcessing();
 			SetVirtualTerminalFormat(foreground, background, styles);
@@ -201,15 +200,13 @@ Estilo de texto invisible (ocultar el texto): "\033[8m"
 			ResetVirtualTerminalFormat();
 		}
 
-		template<typename TPrintable>
-		static void WriteLine(const TPrintable& data, RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		static void WriteLine(const Printable auto& data, RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {})
 		{
 			Write(data, foreground, background, styles);
 			std::cout << std::endl;
 		}
 
-		template <typename TPrintable>
-		static void WriteLine(const TPrintable& data, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		static void WriteLine(const Printable auto& data, ConsoleForeground foreground = ConsoleForeground::DEFAULT, ConsoleBackground background = ConsoleBackground::DEFAULT, std::set<ConsoleTextStyle> styles = {})
 		{
 			Write(data, foreground, background, styles);
 			std::cout << std::endl;
@@ -221,38 +218,7 @@ Estilo de texto invisible (ocultar el texto): "\033[8m"
 	private:
 		static void EnableVirtualTermimalProcessing();
 		static void SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles);
-
-		static void SetVirtualTerminalFormat(RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {}) {
-			String format = "\033[38;2;";
-			format.append(IntegralExtensions::ToString(foreground.GetR()));
-			format.append(";");
-			format.append(IntegralExtensions::ToString(foreground.GetG()));
-			format.append(";");
-			format.append(IntegralExtensions::ToString(foreground.GetB()));
-			format.append("m");
-
-			format.append("\033[48;2;");
-			format.append(IntegralExtensions::ToString(background.GetR()));
-			format.append(";");
-			format.append(IntegralExtensions::ToString(background.GetG()));
-			format.append(";");
-			format.append(IntegralExtensions::ToString(background.GetB()));
-			format.append("m");
-
-			format.append("\033[");
-			if (styles.size() > 0)
-			{
-				for (auto it = styles.begin(); it != styles.end(); ++it)
-				{
-					format.append(ConsoleTextStyleEnumExtensions::ToIntegralString(*it));
-					format.append(";");
-				}
-			}
-			format.resize(format.size() - 1);
-			format.append("m");
-			std::cout << format;
-		}
-
+		static void SetVirtualTerminalFormat(RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {});
 		static void ResetVirtualTerminalFormat();
 	};
 

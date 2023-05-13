@@ -93,6 +93,38 @@ void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground
 	std::cout << format;
 }
 
+void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles)
+{
+	String format = "\033[38;2;";
+	format.append(IntegralExtensions::ToString(foreground.GetR()));
+	format.append(";");
+	format.append(IntegralExtensions::ToString(foreground.GetG()));
+	format.append(";");
+	format.append(IntegralExtensions::ToString(foreground.GetB()));
+	format.append("m");
+
+	format.append("\033[48;2;");
+	format.append(IntegralExtensions::ToString(background.GetR()));
+	format.append(";");
+	format.append(IntegralExtensions::ToString(background.GetG()));
+	format.append(";");
+	format.append(IntegralExtensions::ToString(background.GetB()));
+	format.append("m");
+
+	format.append("\033[");
+	if (styles.size() > 0)
+	{
+		for (auto it = styles.begin(); it != styles.end(); ++it)
+		{
+			format.append(ConsoleTextStyleEnumExtensions::ToIntegralString(*it));
+			format.append(";");
+		}
+	}
+	format.resize(format.size() - 1);
+	format.append("m");
+	std::cout << format;
+}
+
 void InsaneIO::Insane::Core::Console::WriteLine()
 {
 	std::cout << std::endl;
