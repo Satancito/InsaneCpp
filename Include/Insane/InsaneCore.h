@@ -158,25 +158,24 @@ Estilo de texto invisible (ocultar el texto): "\033[8m"
 	concept ValidColorComponent = CheckRange<int, Value, COLOR_COMPONENT_MIN_VALUE, COLOR_COMPONENT_MAX_VALUE>;
 
 	// ███ RgbColor ███
-	template <int r = 0, int g = 0, int b = 0> requires ValidColorComponent<r>&& ValidColorComponent<g>&& ValidColorComponent<b>
 	class RgbColor {
 	public:
-		RgbColor() : _Red(r), _Green(g), _Blue(b) {
+		template <int r , int g, int b> requires ValidColorComponent<r>&& ValidColorComponent<g>&& ValidColorComponent<b>
+		static RgbColor Create()
+		{
+			return RgbColor(r, g, b);
+		}
 
-		}
-		int GetR() const {
-			return _Red;
-		}
-		int GetG() const {
-			return _Green;
-		}
-		int GetB() const {
-			return _Blue;
-		}
+		static RgbColor Create(const int& r, const int& g, const int& b);
+		int GetR() const;
+		int GetG() const;
+		int GetB() const;
 	private:
-		int _Red;
-		int _Green;
-		int _Blue;
+		RgbColor(const int& r, const int& g, const int& b);
+		static int ValidateColorComponent(const int& value);
+		const int _Red;
+		const int _Green;
+		const int _Blue;
 	};
 
 	// ███ Console ███
@@ -193,8 +192,8 @@ Estilo de texto invisible (ocultar el texto): "\033[8m"
 			ResetVirtualTerminalFormat();
 		}
 
-		template<int rf = 0, int gf = 0, int bf = 0, int rb = 0, int gb = 0, int bb = 0, typename TPrintable>
-		static void Write(const TPrintable& data, RgbColor<rf, gf, bf> foreground, RgbColor<rb, gb, bb> background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		template<typename TPrintable>
+		static void Write(const TPrintable& data, RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
 		{
 			EnableVirtualTermimalProcessing();
 			SetVirtualTerminalFormat(foreground, background, styles);
@@ -202,8 +201,8 @@ Estilo de texto invisible (ocultar el texto): "\033[8m"
 			ResetVirtualTerminalFormat();
 		}
 
-		template<int rf = 0, int gf = 0, int bf = 0, int rb = 0, int gb = 0, int bb = 0, typename TPrintable>
-		static void WriteLine(const TPrintable& data, RgbColor<rf, gf, bf> foreground, RgbColor<rb, gb, bb> background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		template<typename TPrintable>
+		static void WriteLine(const TPrintable& data, RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
 		{
 			Write(data, foreground, background, styles);
 			std::cout << std::endl;
@@ -223,8 +222,7 @@ Estilo de texto invisible (ocultar el texto): "\033[8m"
 		static void EnableVirtualTermimalProcessing();
 		static void SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles);
 
-		template<int rf = 0, int gf = 0, int bf = 0, int rb = 0, int gb = 0, int bb = 0>
-		static void SetVirtualTerminalFormat(RgbColor<rf, gf, bf> foreground, RgbColor<rb, gb, bb> background, std::set<ConsoleTextStyle> styles = {}) {
+		static void SetVirtualTerminalFormat(RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles = {}) {
 			String format = "\033[38;2;";
 			format.append(IntegralExtensions::ToString(foreground.GetR()));
 			format.append(";");

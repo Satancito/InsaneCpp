@@ -159,3 +159,41 @@ String InsaneIO::Insane::Core::RapidJsonExtensions::GetStringValue(const rapidjs
 	doc.CopyFrom(object, doc.GetAllocator());
 	return String(doc[propertyName.data()].GetString(), doc[propertyName.data()].GetStringLength());
 }
+
+// ███ RgbColor ███
+
+InsaneIO::Insane::Core::RgbColor InsaneIO::Insane::Core::RgbColor::Create(const int& r, const int& g, const int& b)
+{
+	return RgbColor(r, g, b);
+}
+
+int InsaneIO::Insane::Core::RgbColor::GetR() const
+{
+	return _Red;
+}
+
+int InsaneIO::Insane::Core::RgbColor::GetG() const
+{
+	return _Green;
+}
+
+int InsaneIO::Insane::Core::RgbColor::GetB() const
+{
+	return _Blue;
+}
+
+InsaneIO::Insane::Core::RgbColor::RgbColor(const int& r, const int& g, const int& b) : _Red(ValidateColorComponent(r)), _Green(ValidateColorComponent(g)), _Blue(ValidateColorComponent(b)) {
+
+}
+
+int InsaneIO::Insane::Core::RgbColor::ValidateColorComponent(const int& value)
+{
+	USING_NS_INSANE_EXCEPTION;
+	if (!(value >= COLOR_COMPONENT_MIN_VALUE && value <= COLOR_COMPONENT_MAX_VALUE))
+	{
+		throw ArgumentException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Invalid color component range 0 - 255, value = <" + IntegralExtensions::ToString(value) + ">.");
+	}
+	return value;
+}
+
+
