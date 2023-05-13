@@ -57,6 +57,9 @@ namespace InsaneIO::Insane
 	template <typename T>
 	concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
 
+	template <typename T, T value, T min, T max>
+	concept CheckRange = (value >= min && value <= max);
+
 	// ███ IClone ███
 
 	template <typename T>

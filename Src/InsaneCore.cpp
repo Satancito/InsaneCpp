@@ -7,7 +7,7 @@
 #include <rapidjson/prettywriter.h>
 
 
-String InsaneIO::Insane::Core::DateTimeManager::CurrentISO8601DateTime(bool toUTC)
+String InsaneIO::Insane::Core::DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
 {
 	using namespace std::chrono;
 	system_clock::time_point now = system_clock::now();
@@ -70,7 +70,7 @@ void InsaneIO::Insane::Core::Console::EnableVirtualTermimalProcessing()
 #endif
 }
 
-void InsaneIO::Insane::Core::Console::ResetTerminalFormat()
+void InsaneIO::Insane::Core::Console::ResetVirtualTerminalFormat()
 {
 	std::cout << "\033[0m";
 }

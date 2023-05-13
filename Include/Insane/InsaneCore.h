@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef INSANE_CORE_H
 #define INSANE_CORE_H
 #include <charconv>
@@ -12,6 +12,8 @@
 #define CONSOLE_PAUSE_STRING ("Press enter to continue...:"s)
 #define CONSOLE_PAUSE_ANY_STRING ("Press any key to continue...:"s)
 #define CONSOLE_PAUSE_VALID_LIST { EMPTY_STRING }
+#define COLOR_COMPONENT_MIN_VALUE 0
+#define COLOR_COMPONENT_MAX_VALUE 255
 
 #define USING_NS_INSANE_CORE using namespace InsaneIO::Insane::Core
 namespace InsaneIO::Insane::Core
@@ -101,8 +103,19 @@ namespace InsaneIO::Insane::Core
 		UNDERLINE, EQ, 4,
 		SLOW_BLINK, EQ, 5,
 		RAPID_BLINK, EQ, 6,
-		REVERSE, EQ, 7);
+		INVERT, EQ, 7,
+		INVISIBLE, EQ, 8,
+		STRIKE, EQ, 9);
 
+	/*
+	Restablecer todos los estilos: "\033[0m"
+Estilo de texto en negrita o intenso: "\033[1m"
+Estilo de texto en modo débil o atenuado: "\033[2m"
+Estilo de texto subrayado: "\033[4m"
+Estilo de texto parpadeante (parpadeo): "\033[5m"
+Estilo de texto invertido (cambio de colores de texto y fondo): "\033[7m"
+Estilo de texto invisible (ocultar el texto): "\033[8m"
+	*/
 	INSANE_ENUM(ConsoleForeground,
 		DEFAULT, EQ, 39,
 		BLACK, EQ, 30,
@@ -141,6 +154,32 @@ namespace InsaneIO::Insane::Core
 		CYAN, EQ, 106,
 		WHITE, EQ, 107);
 
+	template <int Value>
+	concept ValidColorComponent = CheckRange<int, Value, COLOR_COMPONENT_MIN_VALUE, COLOR_COMPONENT_MAX_VALUE>;
+
+	// ███ RgbColor ███
+	template <int r = 0, int g = 0, int b = 0> requires ValidColorComponent<r>&& ValidColorComponent<g>&& ValidColorComponent<b>
+	class RgbColor {
+	public:
+		RgbColor() : _Red(r), _Green(g), _Blue(b) {
+
+		}
+		int GetR() const {
+			return _Red;
+		}
+		int GetG() const {
+			return _Green;
+		}
+		int GetB() const {
+			return _Blue;
+		}
+	private:
+		int _Red;
+		int _Green;
+		int _Blue;
+	};
+
+	// ███ Console ███
 	class INSANE_API Console
 	{
 	public:
@@ -151,7 +190,23 @@ namespace InsaneIO::Insane::Core
 			EnableVirtualTermimalProcessing();
 			SetVirtualTerminalFormat(foreground, background, styles);
 			std::cout << data;
-			ResetTerminalFormat();
+			ResetVirtualTerminalFormat();
+		}
+
+		template<int rf = 0, int gf = 0, int bf = 0, int rb = 0, int gb = 0, int bb = 0, typename TPrintable>
+		static void Write(const TPrintable& data, RgbColor<rf, gf, bf> foreground, RgbColor<rb, gb, bb> background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		{
+			EnableVirtualTermimalProcessing();
+			SetVirtualTerminalFormat(foreground, background, styles);
+			std::cout << data;
+			ResetVirtualTerminalFormat();
+		}
+
+		template<int rf = 0, int gf = 0, int bf = 0, int rb = 0, int gb = 0, int bb = 0, typename TPrintable>
+		static void WriteLine(const TPrintable& data, RgbColor<rf, gf, bf> foreground, RgbColor<rb, gb, bb> background, std::set<ConsoleTextStyle> styles = {}) requires IsPrintable<TPrintable>
+		{
+			Write(data, foreground, background, styles);
+			std::cout << std::endl;
 		}
 
 		template <typename TPrintable>
@@ -167,10 +222,44 @@ namespace InsaneIO::Insane::Core
 	private:
 		static void EnableVirtualTermimalProcessing();
 		static void SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles);
-		static void ResetTerminalFormat();
+
+		template<int rf = 0, int gf = 0, int bf = 0, int rb = 0, int gb = 0, int bb = 0>
+		static void SetVirtualTerminalFormat(RgbColor<rf, gf, bf> foreground, RgbColor<rb, gb, bb> background, std::set<ConsoleTextStyle> styles = {}) {
+			String format = "\033[38;2;";
+			format.append(IntegralExtensions::ToString(foreground.GetR()));
+			format.append(";");
+			format.append(IntegralExtensions::ToString(foreground.GetG()));
+			format.append(";");
+			format.append(IntegralExtensions::ToString(foreground.GetB()));
+			format.append("m");
+
+			format.append("\033[48;2;");
+			format.append(IntegralExtensions::ToString(background.GetR()));
+			format.append(";");
+			format.append(IntegralExtensions::ToString(background.GetG()));
+			format.append(";");
+			format.append(IntegralExtensions::ToString(background.GetB()));
+			format.append("m");
+
+			format.append("\033[");
+			if (styles.size() > 0)
+			{
+				for (auto it = styles.begin(); it != styles.end(); ++it)
+				{
+					format.append(ConsoleTextStyleEnumExtensions::ToIntegralString(*it));
+					format.append(";");
+				}
+			}
+			format.resize(format.size() - 1);
+			format.append("m");
+			std::cout << format;
+		}
+
+		static void ResetVirtualTerminalFormat();
 	};
 
-	class INSANE_API DateTimeManager
+
+	class INSANE_API DateTimeExtensions
 	{
 	public:
 		[[nodiscard]] static String CurrentISO8601DateTime(bool toUTC = true);
