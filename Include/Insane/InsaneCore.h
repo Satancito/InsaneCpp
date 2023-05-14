@@ -7,7 +7,6 @@
 #include <Insane/Insane.h>
 #include <Insane/InsanePreprocessor.h>
 #include <Insane/InsaneException.h>
-#include <rapidjson/document.h>
 
 #define CONSOLE_PAUSE_STRING ("Press enter to continue...:"s)
 #define CONSOLE_PAUSE_ANY_STRING ("Press any key to continue...:"s)
@@ -18,12 +17,6 @@
 #define USING_NS_INSANE_CORE using namespace InsaneIO::Insane::Core
 namespace InsaneIO::Insane::Core
 {
-	class INSANE_API RapidJsonExtensions {
-	public:
-		[[nodiscard]] static String ToJson(const rapidjson::Value& value);
-		[[nodiscard]] static String Prettify(const String& json);
-		[[nodiscard]] static String GetStringValue(const rapidjson::Value& object, const String& propertyName);
-	};
 
 	class INSANE_API IntegralExtensions
 	{

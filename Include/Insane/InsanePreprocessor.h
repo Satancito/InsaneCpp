@@ -86,15 +86,19 @@ namespace InsaneIO::Insane::Preprocessor
 #endif
 
 #ifdef INSANE_EXPORTS
+#ifdef INSANE_PRIVATE_EXPORTS
+#define INSANE_API 
+#else
 #define INSANE_API DLLEXPORT
+#endif
+
+#else
+#ifdef INSANE_PRIVATE_EXPORTS
+#define INSANE_API 
 #else
 #define INSANE_API DLLIMPORT
 #endif
-
-#ifdef INSANE_PRIVATE_EXPORTS
-#define INSANE_API 
 #endif
-
 
 #if defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
 #define INSANE_FUNCTION_SIGNATURE __PRETTY_FUNCTION__

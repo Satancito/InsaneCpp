@@ -9,6 +9,7 @@
 #include <Insane/InsanePreprocessor.h>
 #include <Insane/InsaneCore.h>
 #include <Insane/InsaneTest.h>
+#include <Insane/__InsaneCore.h>
 
 #include <botan/auto_rng.h>
 #include <botan/hex.h>
@@ -256,6 +257,7 @@ String RsaKeyPair::Serialize(const bool& indent) const noexcept(false)
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -1236,6 +1238,7 @@ String HexEncoder::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -1329,6 +1332,7 @@ String Base32Encoder::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -1441,6 +1445,7 @@ String Base64Encoder::Decode(const String& data) const
 String Base64Encoder::Serialize(const bool& indent) const {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		using namespace rapidjson;
@@ -1560,6 +1565,7 @@ static inline std::unique_ptr<IEncoder> InternalDefaultDeserializeIEncoder(const
 
 	USING_NS_INSANE_CORE;
 	USING_NS_INSANE_EXCEPTION;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		String json = RapidJsonExtensions::ToJson(value);
@@ -1618,6 +1624,7 @@ String ShaHasher::Serialize(const bool& indent) const
 {
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -1741,6 +1748,7 @@ String HmacHasher::Serialize(const bool& indent) const
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_STR;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -1901,6 +1909,7 @@ String Argon2Hasher::Serialize(const bool& indent) const
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_STR;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -2118,6 +2127,7 @@ String ScryptHasher::Serialize(const bool& indent) const
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_STR;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -2266,6 +2276,7 @@ String AesCbcEncryptor::Serialize(const String& serializeKey, const bool& indent
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_STR;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -2411,6 +2422,7 @@ String RsaEncryptor::Serialize(const String& serializeKey, const bool& indent, c
 	USING_NS_INSANE_EXCEPTION;
 	USING_NS_INSANE_STR;
 	USING_NS_INSANE_CORE;
+	USING_NS_INSANE_INTERNAL_CORE;
 	try
 	{
 		rapidjson::StringBuffer sb;
@@ -2467,6 +2479,7 @@ SecureDeserializeResolver<IEncryptor> RsaEncryptor::DefaultDeserializeResolver()
 	return [](const String& json, const String& serializeKey) ->std::unique_ptr<IEncryptor> {
 		USING_NS_INSANE_EXCEPTION;
 		USING_NS_INSANE_CORE;
+		USING_NS_INSANE_INTERNAL_CORE;
 		try
 		{
 			rapidjson::Document document;
