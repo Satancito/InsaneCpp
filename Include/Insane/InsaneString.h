@@ -18,9 +18,6 @@
 #define NAMEOF_TRIM_GET(name) InsaneIO::Insane::Strings::StringExtensions::NameofTrimGet(#name##s)
 #define CNAMEOF_TRIM_GET(name) InsaneIO::Insane::Strings::StringExtensions::NameofTrimGet(#name##s).c_str()
 
-#define StringsWideStringToString(data) Insane InsaneIO::Insane::Strings::StringExtensions::WideStringToString(data)
-#define StringsStringToWideString(data) InsaneIO::Insane::Strings::StringExtensions::StringToWideString(data)
-
 namespace InsaneIO::Insane::Strings
 {
 
@@ -104,8 +101,6 @@ namespace InsaneIO::Insane::Strings
 		[[nodiscard]] static String TrimStart(const String& data, const String& value);
 		[[nodiscard]] static String Nameof(const String& name);
 		[[nodiscard]] static String NameofTrimGet(const String& name);
-		[[nodiscard]] static String WideStringToString(const WString& wstr);
-		[[nodiscard]] static WString StringToWideString(const String& str);
 
 	private:
 		StringExtensions() = default;

@@ -23,10 +23,8 @@ namespace InsaneIO::Insane::Exception
 		ExceptionBase(const String& name, const String& function, const String& file, const int& line, const String& message = EMPTY_STRING, const int& code = 0, std::unique_ptr<ExceptionBase>&& innerException = nullptr)
 			: _Name(name), _ErrorMessage(CreateExceptionMessage(name, function, file, line, message, code)), _ErrorCode(code), _InnerException(innerException ? std::move(innerException) : nullptr)
 		{
-			if (IS_DEBUG)
-			{
 				std::cout << _ErrorMessage << std::endl;
-			}
+			
 		}
 
 		ExceptionBase(const ExceptionBase& instance)
@@ -36,10 +34,10 @@ namespace InsaneIO::Insane::Exception
 			_ErrorCode(instance._ErrorCode),
 			_InnerException(instance._InnerException ? instance.GetInnerException() : nullptr)
 		{
-			if (IS_DEBUG)
-			{
+			// if (IS_DEBUG)
+			// {
 				std::cout << _ErrorMessage << std::endl;
-			}
+			// }
 		}
 
 		[[nodiscard]] virtual String GetErrorMessage() const noexcept

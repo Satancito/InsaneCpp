@@ -1,14 +1,15 @@
 ﻿#include <Insane/InsaneCore.h>
 #include <Insane/InsaneString.h>
+USING_NS_INSANE_CORE;
+USING_NS_INSANE_INTERFACES;
 
-
-String InsaneIO::Insane::Core::DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
+String DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
 {
 	using namespace std::chrono;
 	system_clock::time_point now = system_clock::now();
 	time_t timet = system_clock::to_time_t(now);
 	std::tm tm{};
-	String format = String("%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<SignedInt64>(1000)));
+	String format = String("%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<int64_t>(1000)));
 	if (toUTC)
 	{
 #ifdef WINDOWS_PLATFORM
@@ -37,7 +38,7 @@ String InsaneIO::Insane::Core::DateTimeExtensions::CurrentISO8601DateTime(bool t
 	return result;
 }
 
-void InsaneIO::Insane::Core::Console::Clear()
+void Console::Clear()
 {
 
 #ifdef WINDOWS_PLATFORM
@@ -51,7 +52,7 @@ void InsaneIO::Insane::Core::Console::Clear()
 #endif
 }
 
-void InsaneIO::Insane::Core::Console::EnableVirtualTermimalProcessing()
+void Console::EnableVirtualTermimalProcessing()
 {
 #if defined WINDOWS_PLATFORM
 	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -65,12 +66,12 @@ void InsaneIO::Insane::Core::Console::EnableVirtualTermimalProcessing()
 #endif
 }
 
-void InsaneIO::Insane::Core::Console::ResetVirtualTerminalFormat()
+void Console::ResetVirtualTerminalFormat()
 {
 	std::cout << "\033[0m";
 }
 
-void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
+void Console::SetVirtualTerminalFormat(ConsoleForeground foreground, ConsoleBackground background, std::set<ConsoleTextStyle> styles)
 {
 	String format = "\033[";
 	format.append(std::to_string(static_cast<int>(foreground)));
@@ -88,7 +89,7 @@ void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(ConsoleForeground
 	std::cout << format;
 }
 
-void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles)
+void Console::SetVirtualTerminalFormat(RgbColor foreground, RgbColor background, std::set<ConsoleTextStyle> styles)
 {
 	String format = "\033[38;2;";
 	format.append(IntegralExtensions::ToString(foreground.GetR()));
@@ -120,12 +121,12 @@ void InsaneIO::Insane::Core::Console::SetVirtualTerminalFormat(RgbColor foregrou
 	std::cout << format;
 }
 
-void InsaneIO::Insane::Core::Console::WriteLine()
+void Console::WriteLine()
 {
 	std::cout << std::endl;
 }
 
-void InsaneIO::Insane::Core::Console::Pause(const String& message, const std::set<String>& validInputValues)
+void Console::Pause(const String& message, const std::set<String>& validInputValues)
 {
 	std::string line; 
 	do
@@ -135,7 +136,7 @@ void InsaneIO::Insane::Core::Console::Pause(const String& message, const std::se
 	} while (!validInputValues.contains(line));
 }
 
-int InsaneIO::Insane::Core::Console::PauseAny(const bool& printWhenPressed, const String& message)
+int Console::PauseAny(const bool& printWhenPressed, const String& message)
 {
 	std::cout << message << SPACE_STRING;
 	int ch;
@@ -160,31 +161,31 @@ int InsaneIO::Insane::Core::Console::PauseAny(const bool& printWhenPressed, cons
 
 // ███ RgbColor ███
 
-InsaneIO::Insane::Core::RgbColor InsaneIO::Insane::Core::RgbColor::Create(const int& r, const int& g, const int& b)
+RgbColor RgbColor::Create(const int& r, const int& g, const int& b)
 {
 	return RgbColor(r, g, b);
 }
 
-int InsaneIO::Insane::Core::RgbColor::GetR() const
+int RgbColor::GetR() const
 {
 	return _Red;
 }
 
-int InsaneIO::Insane::Core::RgbColor::GetG() const
+int RgbColor::GetG() const
 {
 	return _Green;
 }
 
-int InsaneIO::Insane::Core::RgbColor::GetB() const
+int RgbColor::GetB() const
 {
 	return _Blue;
 }
 
-InsaneIO::Insane::Core::RgbColor::RgbColor(const int& r, const int& g, const int& b) : _Red(ValidateColorComponent(r)), _Green(ValidateColorComponent(g)), _Blue(ValidateColorComponent(b)) {
+RgbColor::RgbColor(const int& r, const int& g, const int& b) : _Red(ValidateColorComponent(r)), _Green(ValidateColorComponent(g)), _Blue(ValidateColorComponent(b)) {
 
 }
 
-int InsaneIO::Insane::Core::RgbColor::ValidateColorComponent(const int& value)
+int RgbColor::ValidateColorComponent(const int& value)
 {
 	USING_NS_INSANE_EXCEPTION;
 	if (!(value >= COLOR_COMPONENT_MIN_VALUE && value <= COLOR_COMPONENT_MAX_VALUE))
@@ -194,4 +195,13 @@ int InsaneIO::Insane::Core::RgbColor::ValidateColorComponent(const int& value)
 	return value;
 }
 
+// ███ IBaseSerialize ███
 
+IBaseSerialize::IBaseSerialize(const String& name) : _Name(name)
+{
+}
+
+String IBaseSerialize::GetName() const
+{
+	return _Name;
+}

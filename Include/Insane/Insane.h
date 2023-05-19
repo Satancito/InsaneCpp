@@ -1,7 +1,7 @@
 #pragma once
 #ifndef INSANE_BASE_H
 #define INSANE_BASE_H
-#define INSANE_STRING "Insane"s
+#define INSANE_STRING ("Insane"s)
 
 #include <iomanip>
 #include <sstream>
@@ -21,33 +21,41 @@
 #include <set>
 #include <cstdlib>
 #include <regex>
+#include <cstdint>
 
 #include <Insane/InsanePreprocessor.h>
 
-typedef uint8_t UnsignedInt8;
-typedef int8_t SignedInt8;
-typedef uint16_t UnsignedInt16;
-typedef int16_t SignedInt16;
-typedef uint32_t UnsignedInt32;
-typedef int32_t SignedInt32;
-typedef uint64_t UnsignedInt64;
-typedef int64_t SignedInt64;
+// typedef uint8_t UnsignedInt8; //TODO
+// typedef int8_t SignedInt8;
+// typedef uint16_t UnsignedInt16;
+// typedef int16_t SignedInt16;
+// typedef uint32_t UnsignedInt32;
+// typedef int32_t SignedInt32;
+// typedef uint64_t UnsignedInt64;
+// typedef int64_t SignedInt64;
 
 typedef unsigned char UnsignedChar;
 typedef char SignedChar;
-typedef std::string String;
-typedef std::wstring WString;
+using String = std::string;
+using StdString = std::string;
+template <typename T>
+using StdVector = std::vector<T>;
+using StdVectorUint8 = StdVector<uint8_t>;
+//using StdVectorInt8 = StdVector<int8_t>;
 
 #define thisvalue (*this)
 #define USING_NS_INSANE using namespace Insane
 #define IS_DEBUG InsaneIO::Insane::UtilityExtensions::IsDebug()
+//#define VECTOR_CHAR_TO_STRING(vector) String(vector.begin(), vector.end()) //TODO
+//#define STRING_TO_VECTOR_CHAR(str) std::vector<char>(str.begin(), str.end()) //TODO
 using namespace std::string_literals;
 using namespace std::chrono_literals;
 namespace InsaneIO::Insane
 {
+
 	// ███ Concepts ███
 	template <typename T>
-	concept HasOstream = requires(std::ostream & os, T t) {
+	concept HasOstream = requires(std::ostream &os, T t) {
 		os << t;
 	};
 
@@ -56,24 +64,17 @@ namespace InsaneIO::Insane
 
 	template <typename T>
 	concept Printable = IsPrintable<T>;
-	
+
 	template <typename T>
 	concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
 
 	template <typename T, T value, T min, T max>
 	concept CheckRange = (value >= min && value <= max);
 
-	// ███ IClone ███
-
-	template <typename T>
-	class INSANE_API IClone {
-	public:
-		virtual std::unique_ptr<T> Clone() const = 0;
-	};
-
 	// ███ UtilityExtensions ███
 
-	class INSANE_API UtilityExtensions {
+	class INSANE_API UtilityExtensions
+	{
 	public:
 		[[nodiscard]] static bool IsDebug()
 		{
