@@ -94,9 +94,11 @@ String InsaneIO::Insane::Strings::StringExtensions::TrimStart(const String& data
 	}
 	return data.substr(start);
 }
-
+#include <chrono>
+#include <thread>
 String InsaneIO::Insane::Strings::StringExtensions::Nameof(const String& name)
 {
+	std::this_thread::sleep_for(std::chrono::milliseconds(200));
 	std::smatch groups;
 	String str = InsaneIO::Insane::Strings::StringExtensions::Trim(name);
 	if (std::regex_match(str, groups, std::regex(R"(^&?([_a-zA-Z]\w*(->|\.|::))*([_a-zA-Z]\w*)$)")))

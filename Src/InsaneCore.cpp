@@ -1,8 +1,9 @@
 ﻿#include <Insane/InsaneCore.h>
 #include <Insane/InsaneString.h>
+#include <iostream>
 USING_NS_INSANE_CORE;
 USING_NS_INSANE_INTERFACES;
-
+// ███ DateTimeExtensions ███
 String DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
 {
 	using namespace std::chrono;
@@ -38,6 +39,7 @@ String DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
 	return result;
 }
 
+// ███ Console ███
 void Console::Clear()
 {
 
@@ -126,9 +128,9 @@ void Console::WriteLine()
 	std::cout << std::endl;
 }
 
-void Console::Pause(const String& message, const std::set<String>& validInputValues)
+void Console::Pause(const String &message, const std::set<String> &validInputValues)
 {
-	std::string line; 
+	std::string line;
 	do
 	{
 		std::cout << message << SPACE_STRING;
@@ -136,12 +138,13 @@ void Console::Pause(const String& message, const std::set<String>& validInputVal
 	} while (!validInputValues.contains(line));
 }
 
-int Console::PauseAny(const bool& printWhenPressed, const String& message)
+int Console::PauseAny(const bool &printWhenPressed, const String &message)
 {
 	std::cout << message << SPACE_STRING;
 	int ch;
 #ifdef WINDOWS_PLATFORM
-	while (!_kbhit()) {
+	while (!_kbhit())
+	{
 	}
 	ch = _getch();
 #elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
@@ -155,13 +158,13 @@ int Console::PauseAny(const bool& printWhenPressed, const String& message)
 #else
 	static_assert(false, "Unknown Platform");
 #endif
-	Console::WriteLine(printWhenPressed? String(1, ch) : EMPTY_STRING); 
+	Console::WriteLine(printWhenPressed ? String(1, ch) : EMPTY_STRING);
 	return static_cast<int>(ch);
 }
 
 // ███ RgbColor ███
 
-RgbColor RgbColor::Create(const int& r, const int& g, const int& b)
+RgbColor RgbColor::Create(const int &r, const int &g, const int &b)
 {
 	return RgbColor(r, g, b);
 }
@@ -181,11 +184,11 @@ int RgbColor::GetB() const
 	return _Blue;
 }
 
-RgbColor::RgbColor(const int& r, const int& g, const int& b) : _Red(ValidateColorComponent(r)), _Green(ValidateColorComponent(g)), _Blue(ValidateColorComponent(b)) {
-
+RgbColor::RgbColor(const int &r, const int &g, const int &b) : _Red(ValidateColorComponent(r)), _Green(ValidateColorComponent(g)), _Blue(ValidateColorComponent(b))
+{
 }
 
-int RgbColor::ValidateColorComponent(const int& value)
+int RgbColor::ValidateColorComponent(const int &value)
 {
 	USING_NS_INSANE_EXCEPTION;
 	if (!(value >= COLOR_COMPONENT_MIN_VALUE && value <= COLOR_COMPONENT_MAX_VALUE))
@@ -195,9 +198,39 @@ int RgbColor::ValidateColorComponent(const int& value)
 	return value;
 }
 
+// ███ ConverterExtensions ███
+StdVectorUint8 ConverterExtensions::StringToStdVectorUint8(const String &str)
+{
+	return StdVectorUint8(str.begin(), str.end());
+}
+
+String ConverterExtensions::StdVectorUint8ToString(const StdVectorUint8 &vector)
+{
+	return String(vector.begin(), vector.end());
+}
+
+// ███ LambdaFunctions ███
+OutFunction<StdVectorUint8> LambdaExtensions::GetStdVectorUint8OutFunction()
+{
+	return [](const StdVectorUint8 &v, std::ostream &out) -> std::ostream&
+	{
+		out << "["s;
+		for (size_t i = 0; i < v.size(); ++i)
+		{
+			out << v[i];
+			if (i != v.size() - 1)
+			{
+				out << ", ";
+			}
+		}
+		out << "]"s;
+		return out;
+	};
+}
+
 // ███ IBaseSerialize ███
 
-IBaseSerialize::IBaseSerialize(const String& name) : _Name(name)
+IBaseSerialize::IBaseSerialize(const String &name) : _Name(name)
 {
 }
 

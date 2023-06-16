@@ -221,17 +221,34 @@ namespace InsaneIO::Insane::Core
 	private:
 	};
 
+	class ConverterExtensions{
+		public:
+		[[nodiscard]] static StdVectorUint8 StringToStdVectorUint8(const String& str);
+		[[nodiscard]] static String StdVectorUint8ToString(const StdVectorUint8& vector);
+	};
+
+	class LambdaExtensions{
+		public:
+		[[nodiscard]] static OutFunction<StdVectorUint8> GetStdVectorUint8OutFunction();
+
+		public:
+		template <typename T>
+		[[nodiscard]]static OutFunction<T> GetDefaultOutFunction() requires InsaneIO::Insane::Printable<T> {
+			return [](const T &value, std::ostream &out) -> std::ostream&
+			{
+				out << value;
+				return out;
+			};
+		}
+	};
+
 } // namespace InsaneIO::Insane::Core
 
 namespace InsaneIO::Insane::Interfaces
 {
-	// ███ IClone ███
+	// ███ DeserializeResolver ███
 	template <typename T>
-	class INSANE_API IClone
-	{
-	public:
-		virtual std::unique_ptr<T> Clone() const = 0;
-	};
+	using DeserializeResolver = std::function<std::unique_ptr<T>(const String &json)>;
 
 	// ███ IBaseSerialize ███
 	class INSANE_API IBaseSerialize

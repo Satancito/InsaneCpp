@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <regex>
 #include <cstdint>
+#include <memory>
 
 #include <Insane/InsanePreprocessor.h>
 
@@ -38,16 +39,28 @@ typedef unsigned char UnsignedChar;
 typedef char SignedChar;
 using String = std::string;
 using StdString = std::string;
+
 template <typename T>
 using StdVector = std::vector<T>;
 using StdVectorUint8 = StdVector<uint8_t>;
-//using StdVectorInt8 = StdVector<int8_t>;
+using StdVectorInt8 = StdVector<int8_t>;
+using StdVectorChar = StdVector<char>;
+
+template<typename T>
+struct __UniquePtr {
+    using Type = std::unique_ptr<T>;
+};
+
+template <typename T>
+using StdUniquePtr = __UniquePtr<T>::Type;
+
+template <typename T>
+using OutFunction = std::function<std::ostream &(const T &, std::ostream &)>;
 
 #define thisvalue (*this)
-#define USING_NS_INSANE using namespace Insane
+#define USING_NS_INSANE using namespace InsaneIO::Insane
 #define IS_DEBUG InsaneIO::Insane::UtilityExtensions::IsDebug()
-//#define VECTOR_CHAR_TO_STRING(vector) String(vector.begin(), vector.end()) //TODO
-//#define STRING_TO_VECTOR_CHAR(str) std::vector<char>(str.begin(), str.end()) //TODO
+
 using namespace std::string_literals;
 using namespace std::chrono_literals;
 namespace InsaneIO::Insane
@@ -68,6 +81,9 @@ namespace InsaneIO::Insane
 	template <typename T>
 	concept PrintableAndEqualityComparable = HasOstream<T> && std::equality_comparable<T>;
 
+	template <typename T>
+	concept EqualityComparable = std::equality_comparable<T>;
+
 	template <typename T, T value, T min, T max>
 	concept CheckRange = (value >= min && value <= max);
 
@@ -86,6 +102,16 @@ namespace InsaneIO::Insane
 		}
 	};
 
+	namespace Interfaces
+	{
+		// ███ IClone ███
+		template <typename T>
+		class INSANE_API IClone
+		{
+		public:
+			virtual std::unique_ptr<T> Clone() const = 0;
+		};
+	}
 }
 
 #endif // !INSANE_BASE_H

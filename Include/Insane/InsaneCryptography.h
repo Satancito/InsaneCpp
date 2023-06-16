@@ -61,8 +61,8 @@
 #define __AES_MODE_CBC_STRING ("CBC")
 #define __AES_256_ALGORITHM_STRING ("AES-256")
 
-#define HMAC_INNER_PADDING (static_cast<SignedChar>(0x36))
-#define HMAC_OUTER_PADDING (static_cast<SignedChar>(0x5c))
+#define HMAC_INNER_PADDING (static_cast<uint8_t>(0x36))
+#define HMAC_OUTER_PADDING (static_cast<uint8_t>(0x5c))
 #define HMAC_64_BYTES_BLOCK_SIZE (static_cast<size_t>(64))
 #define HMAC_128_BYTES_BLOCK_SIZE (static_cast<size_t>(128))
 
@@ -105,6 +105,7 @@
 
 USING_NS_INSANE_EXCEPTION;
 USING_NS_INSANE_INTERFACES;
+USING_NS_INSANE_CORE;
 namespace InsaneIO::Insane::Cryptography
 {
 
@@ -145,13 +146,23 @@ namespace InsaneIO::Insane::Cryptography
 				OaepSha384, _, _,
 				OaepSha512, _, _);
 
+	// ███ RandomExtensions ███
+	class INSANE_API RandomExtensions
+	{
+	public:
+		[[nodiscard]] static StdVectorUint8 Next(size_t sz);
+		[[nodiscard]] static int Next(int min, int max);
+		[[nodiscard]] static int Next();
+	private:
+	};
+
 	// ███ HexEncodingExtensions ███
 	class INSANE_API HexEncodingExtensions
 	{
 	public:
 		[[nodiscard]] static StdVectorUint8 DecodeFromHex(const String &data);
-		[[nodiscard]] static String EncodeToHex(const String &data, const bool &toUpper = false);
 		[[nodiscard]] static String EncodeToHex(const StdVectorUint8 &data, const bool &toUpper = false);
+		[[nodiscard]] static String EncodeToHex(const String &data, const bool &toUpper = false);
 	private:
 	};
 
@@ -160,9 +171,8 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		[[nodiscard]] static StdVectorUint8 DecodeFromBase32(const String &data);
-		[[nodiscard]] static String EncodeToBase32(const String &data, const bool &removePadding = false, const bool &toLower = false);
 		[[nodiscard]] static String EncodeToBase32(const StdVectorUint8 &data, const bool &removePadding = false, const bool &toLower = false);
-
+		[[nodiscard]] static String EncodeToBase32(const String &data, const bool &removePadding = false, const bool &toLower = false);
 	private:
 	};
 
@@ -171,41 +181,36 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		[[nodiscard]] static StdVectorUint8 DecodeFromBase64(const String &data);
-		[[nodiscard]] static String EncodeToBase64(const String &data, const size_t &lineBreaksLength = NO_LINE_BREAKS, const bool &removePadding = false);
 		[[nodiscard]] static String EncodeToBase64(const StdVectorUint8 &data, const size_t &lineBreaksLength = NO_LINE_BREAKS, const bool &removePadding = false);
-		[[nodiscard]] static String EncodeToUrlSafeBase64(const String &data);
+		[[nodiscard]] static String EncodeToBase64(const String &data, const size_t &lineBreaksLength = NO_LINE_BREAKS, const bool &removePadding = false);
 		[[nodiscard]] static String EncodeToUrlSafeBase64(const StdVectorUint8 &data);
-		[[nodiscard]] static String EncodeToFilenameSafeBase64(const String &data);
+		[[nodiscard]] static String EncodeToUrlSafeBase64(const String &data);
 		[[nodiscard]] static String EncodeToFilenameSafeBase64(const StdVectorUint8 &data);
-		[[nodiscard]] static String EncodeToUrlEncodedBase64(const String &data);
+		[[nodiscard]] static String EncodeToFilenameSafeBase64(const String &data);
 		[[nodiscard]] static String EncodeToUrlEncodedBase64(const StdVectorUint8 &data);
+		[[nodiscard]] static String EncodeToUrlEncodedBase64(const String &data);
 		[[nodiscard]] static String EncodeBase64ToUrlSafeBase64(const String &base64);
-		[[nodiscard]] static String EncodeBase64ToFilenameSafeBase64(const String &base64); 
+		[[nodiscard]] static String EncodeBase64ToFilenameSafeBase64(const String &base64);
 		[[nodiscard]] static String EncodeBase64ToUrlEncodedBase64(const String &base64);
 	private:
 	};
-
-	// ███ DeserializeResolver ███
-	template <typename T>
-	using DeserializeResolver = std::function<std::unique_ptr<T>(const String &json)>;
-
 
 	// ███ IEncoder ███
 	class INSANE_API IEncoder : public IJsonSerialize<IEncoder>, public IClone<IEncoder>
 	{
 	public:
 		virtual ~IEncoder() = default;
-		IEncoder(const String& name);
+		IEncoder(const String &name);
 		[[nodiscard]] virtual String Encode(const StdVectorUint8 &data) const = 0;
 		[[nodiscard]] virtual String Encode(const String &data) const = 0;
 		[[nodiscard]] virtual StdVectorUint8 Decode(const String &data) const = 0;
 		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String &json, const DeserializeResolver<IEncoder> &resolver);
 		[[nodiscard]] static const std::unique_ptr<IEncoder> DefaultInstance();
 		[[nodiscard]] static std::function<std::unique_ptr<IEncoder>(const String &)> DefaultDeserializeResolver();
-
 	private:
 	};
 
+	using UniquePtrIEncoder = StdUniquePtr<IEncoder>;
 	// ███ HexEncoder ███
 	class INSANE_API HexEncoder : public IEncoder
 	{
@@ -223,7 +228,7 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String &json, const DeserializeResolver<IEncoder> &resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static std::unique_ptr<IEncoder> DefaultInstance();
 		[[nodiscard]] static DeserializeResolver<IEncoder> DefaultDeserializeResolver();
-
+		[[nodiscard]] static UniquePtrIEncoder CreateInstance(const bool &toUpper = false);
 	private:
 		const bool ToUpper;
 	};
@@ -246,7 +251,7 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] static std::unique_ptr<IEncoder> DefaultInstance();
 		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String &json, const DeserializeResolver<IEncoder> &resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static DeserializeResolver<IEncoder> DefaultDeserializeResolver();
-
+		[[nodiscard]] static UniquePtrIEncoder CreateInstance(const bool &removePadding = false, const bool &toLower = false);
 	private:
 		const bool RemovePadding;
 		const bool ToLower;
@@ -271,7 +276,7 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] static std::unique_ptr<IEncoder> Deserialize(const String &json, const DeserializeResolver<IEncoder> &resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static std::unique_ptr<IEncoder> DefaultInstance();
 		[[nodiscard]] static DeserializeResolver<IEncoder> DefaultDeserializeResolver();
-
+		[[nodiscard]] static UniquePtrIEncoder CreateInstance(const size_t &lineBreaksLength = NO_LINE_BREAKS, const bool &removePadding = false, const Base64Encoding &encodingType = Base64Encoding::Base64);
 	private:
 		const size_t LineBreaksLength;
 		const bool RemovePadding;
@@ -282,12 +287,58 @@ namespace InsaneIO::Insane::Cryptography
 	class INSANE_API HashExtensions
 	{
 	public:
-		[[nodiscard]] static String ToHash(const String &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ToHmac(const String &data, const String &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ToScrypt(const String &data, const String &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static String ToArgon2(const String &data, const String &salt, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static StdVectorUint8 ComputeHash(const StdVectorUint8 &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static StdVectorUint8 ComputeHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static StdVectorUint8 ComputeArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static StdVectorUint8 ComputeScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 
+		[[nodiscard]] static StdVectorUint8 ComputeHash(const String &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static StdVectorUint8 ComputeHmac(const String &data, const String &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static StdVectorUint8 ComputeArgon2(const String &data, const String &salt, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static StdVectorUint8 ComputeScrypt(const String &data, const String &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+
+		[[nodiscard]] static String ComputeEncodedHash(const StdVectorUint8 &data, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+
+		[[nodiscard]] static String ComputeEncodedHash(const String &data, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedHmac(const String &data, const String &key, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedArgon2(const String &data, const String &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const String &data, const String &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+
+		[[nodiscard]] static String ComputeEncodedHash(const StdVectorUint8 &data, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const IEncoder *encoder, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const IEncoder *encoder, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+
+		[[nodiscard]] static String ComputeEncodedHash(const String &data, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedHmac(const String &data, const String &key, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
+		[[nodiscard]] static String ComputeEncodedArgon2(const String &data, const String &salt, const IEncoder *encoder, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const String &data, const String &salt, const IEncoder *encoder, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 	private:
+	};
+
+	// ███ AesExtensions ███
+	class INSANE_API AesExtensions
+	{
+	public:
+		[[nodiscard]] static StdVectorUint8 EncryptAesCbc(const StdVectorUint8 &data, const StdVectorUint8 &key, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static StdVectorUint8 EncryptAesCbc(const String &data, const String &key, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static String EncryptEncodedAesCbc(const StdVectorUint8 &data, const StdVectorUint8 &key, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static String EncryptEncodedAesCbc(const String &data, const String &key, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static String EncryptEncodedAesCbc(const StdVectorUint8 &data, const StdVectorUint8 &key, const IEncoder *encoder, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static String EncryptEncodedAesCbc(const String &data, const String &key, const IEncoder *encoder, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+
+		[[nodiscard]] static StdVectorUint8 DecryptAesCbc(const StdVectorUint8 &data, const StdVectorUint8 &key, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static StdVectorUint8 DecryptAesCbc(const StdVectorUint8 &data, const String &key, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static StdVectorUint8 DecryptEncodedAesCbc(const String &data, const StdVectorUint8 &key, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static StdVectorUint8 DecryptEncodedAesCbc(const String &data, const String &key, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static StdVectorUint8 DecryptEncodedAesCbc(const String &data, const StdVectorUint8 &key, const IEncoder *encoder, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+		[[nodiscard]] static StdVectorUint8 DecryptEncodedAesCbc(const String &data, const String &key, const IEncoder *encoder, const AesCbcPadding &padding = AesCbcPadding::Pkcs7);
+	private:
+		[[nodiscard]] static StdVectorUint8 GenerateNormalizedKey(const StdVectorUint8 &key);
+		static void ValidateKey(const StdVectorUint8 &key);
 	};
 
 	// ███ RsaKeyPair ███
@@ -299,21 +350,10 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] String GetPrivateKey() const;
 		[[nodiscard]] virtual String Serialize(const bool &indent = false) const override;
 		[[nodiscard]] static RsaKeyPair Deserialize(const String &json);
-
 	private:
 		const String PublicKey;
 		const String PrivateKey;
-	};
-
-	// ███ AesExtensions ███
-	class INSANE_API AesExtensions
-	{
-	public:
-		[[nodiscard]] static String EncryptAesCbc(const String &data, const String &key, const AesCbcPadding &padding = AesCbcPadding::Pkcs7) noexcept(false);
-		[[nodiscard]] static String DecryptAesCbc(const String &data, const String &key, const AesCbcPadding &padding = AesCbcPadding::Pkcs7) noexcept(false);
-	private:
-		[[nodiscard]] static String GenerateNormalizedKey(const String &key);
-		static void ValidateKey(const String &key);
+		const String Provider;
 	};
 
 	// ███ RsaExtensions ███
@@ -321,12 +361,19 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		[[nodiscard]] static RsaKeyPair CreateRsaKeyPair(const size_t &keySize = 4096, const RsaKeyEncoding &encoding = RsaKeyEncoding::Ber);
-		[[nodiscard]] static String EncryptRsa(const String &data, const String &publicKey, const RsaPadding &padding = RsaPadding::OaepSha256);
-		[[nodiscard]] static String DecryptRsa(const String &data, const String &privateKey, const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static StdVectorUint8 EncryptRsa(const StdVectorUint8 &data, const String &publicKey, const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static StdVectorUint8 EncryptRsa(const String &data, const String &publicKey, const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static String EncryptEncodedRsa(const StdVectorUint8 &data, const String &publicKey, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static String EncryptEncodedRsa(const String &data, const String &publicKey, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static String EncryptEncodedRsa(const StdVectorUint8 &data, const String &publicKey, const IEncoder *encoder, const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static String EncryptEncodedRsa(const String &data, const String &publicKey, const IEncoder *encoder, const RsaPadding &padding = RsaPadding::OaepSha256);
+
+		[[nodiscard]] static StdVectorUint8 DecryptRsa(const StdVectorUint8 &data, const String &privateKey, const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static StdVectorUint8 DecryptEncodedRsa(const String &data, const String &privateKey, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const RsaPadding &padding = RsaPadding::OaepSha256);
+		[[nodiscard]] static StdVectorUint8 DecryptEncodedRsa(const String &data, const String &privateKey, const IEncoder *encoder, const RsaPadding &padding = RsaPadding::OaepSha256);
 		[[nodiscard]] static RsaKeyEncoding GetRsaKeyEncoding(const String &key);
 		[[nodiscard]] static bool ValidateRsaPublicKey(const String &publicKey);
 		[[nodiscard]] static bool ValidateRsaPrivateKey(const String &privateKey);
-
 	private:
 	};
 
@@ -336,9 +383,13 @@ namespace InsaneIO::Insane::Cryptography
 	public:
 		virtual ~IHasher() = default;
 		IHasher(const String &name);
-		[[nodiscard]] virtual String Compute(const String &data) = 0;
-		[[nodiscard]] virtual bool Verify(const String &data, const String &expected) = 0;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const StdVectorUint8 &data) = 0;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const String &data) = 0;
+		[[nodiscard]] virtual String ComputeEncoded(const StdVectorUint8 &data) = 0;
 		[[nodiscard]] virtual String ComputeEncoded(const String &data) = 0;
+		[[nodiscard]] virtual bool Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected) = 0;
+		[[nodiscard]] virtual bool VerifyEncoded(const StdVectorUint8 &data, const String &expected) = 0;
+		[[nodiscard]] virtual bool Verify(const String &data, const StdVectorUint8 &expected) = 0;
 		[[nodiscard]] virtual bool VerifyEncoded(const String &data, const String &expected) = 0;
 		[[nodiscard]] virtual String Serialize(const bool &indent = false) const override = 0;
 		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String &json, const DeserializeResolver<IHasher> &resolver = DefaultDeserializeResolver());
@@ -358,29 +409,23 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] HashAlgorithm GetHashAlgorithm() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
-		[[nodiscard]] virtual String Compute(const String &data) override;
-		[[nodiscard]] virtual bool Verify(const String &data, const String &expected) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual String ComputeEncoded(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const String &data) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String &data) override;
+		
+		[[nodiscard]] virtual bool Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected) override;
+		[[nodiscard]] virtual bool VerifyEncoded(const StdVectorUint8 &data, const String &expected) override;
+		[[nodiscard]] virtual bool Verify(const String &data, const StdVectorUint8 &expected) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String &data, const String &expected) override;
+		
 		[[nodiscard]] virtual String Serialize(const bool &indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
 		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String &json, const std::function<std::unique_ptr<IHasher>(String)> &resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static DeserializeResolver<IHasher> DefaultDeserializeResolver();
-
 	private:
 		const HashAlgorithm _HashAlgorithm;
 		const std::unique_ptr<IEncoder> _Encoder;
-	};
-
-	// ███ RandomExtensions ███
-	class INSANE_API RandomExtensions
-	{
-	public:
-		[[nodiscard]] static String Next(size_t sz);
-		[[nodiscard]] static int Next(int min, int max);
-		[[nodiscard]] static int Next();
-
-	private:
 	};
 
 	// ███ HmacHasher ███
@@ -388,28 +433,32 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~HmacHasher() = default;
-		HmacHasher(const String &key = RandomExtensions::Next(HMAC_KEY_SIZE), const HashAlgorithm &hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
+		HmacHasher(const StdVectorUint8 &key = RandomExtensions::Next(HMAC_KEY_SIZE), const HashAlgorithm &hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		HmacHasher(const HmacHasher &instance);
 
 		[[nodiscard]] HashAlgorithm GetHashAlgorithm() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
-		[[nodiscard]] String GetKey() const;
+		[[nodiscard]] StdVectorUint8 GetKey() const;
 		[[nodiscard]] String GetKeyEncoded() const;
 
-		[[nodiscard]] virtual String Compute(const String &data) override;
-		[[nodiscard]] virtual bool Verify(const String &data, const String &expected) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual String ComputeEncoded(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const String &data) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String &data) override;
+		
+		[[nodiscard]] virtual bool Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected) override;
+		[[nodiscard]] virtual bool VerifyEncoded(const StdVectorUint8 &data, const String &expected) override;
+		[[nodiscard]] virtual bool Verify(const String &data, const StdVectorUint8 &expected) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String &data, const String &expected) override;
-
+		
 		[[nodiscard]] virtual String Serialize(const bool &indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
 		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String &json, const DeserializeResolver<IHasher> &resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static DeserializeResolver<IHasher> DefaultDeserializeResolver();
-
 	private:
 		const HashAlgorithm _HashAlgorithm;
 		const std::unique_ptr<IEncoder> _Encoder;
-		const String _Key;
+		const StdVectorUint8 _Key;
 	};
 
 	// ███ Argon2Hasher ███
@@ -417,7 +466,7 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~Argon2Hasher() = default;
-		Argon2Hasher(const String &salt = RandomExtensions::Next(ARGON2_SALTSIZE),
+		Argon2Hasher(const StdVectorUint8 &salt = RandomExtensions::Next(ARGON2_SALTSIZE),
 					 const size_t &iterations = ARGON2_ITERATIONS,
 					 const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB,
 					 const size_t &degreeOfParallelism = ARGON2_DEGREEOF_PARALLELISM,
@@ -426,7 +475,7 @@ namespace InsaneIO::Insane::Cryptography
 					 std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		Argon2Hasher(const Argon2Hasher &instance);
 
-		[[nodiscard]] String GetSalt() const;
+		[[nodiscard]] StdVectorUint8 GetSalt() const;
 		[[nodiscard]] String GetSaltEncoded() const;
 		[[nodiscard]] size_t GetIterations() const;
 		[[nodiscard]] size_t GetMemorySizeKiB() const;
@@ -435,18 +484,22 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] Argon2Variant GetArgon2Variant() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
-		[[nodiscard]] virtual String Compute(const String &data) override;
-		[[nodiscard]] virtual bool Verify(const String &data, const String &expected) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual String ComputeEncoded(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const String &data) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String &data) override;
+		
+		[[nodiscard]] virtual bool Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected) override;
+		[[nodiscard]] virtual bool VerifyEncoded(const StdVectorUint8 &data, const String &expected) override;
+		[[nodiscard]] virtual bool Verify(const String &data, const StdVectorUint8 &expected) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String &data, const String &expected) override;
 
 		[[nodiscard]] virtual String Serialize(const bool &indent = false) const override;
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
 		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String &json, const DeserializeResolver<IHasher> &resolver = DefaultDeserializeResolver());
 		[[nodiscard]] static DeserializeResolver<IHasher> DefaultDeserializeResolver();
-
 	private:
-		const String _Salt;
+		const StdVectorUint8 _Salt;
 		const size_t _Iterations;
 		const size_t _MemorySizeKiB;
 		const size_t _DegreeOfParallelism;
@@ -460,7 +513,7 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~ScryptHasher() = default;
-		ScryptHasher(const String &salt = RandomExtensions::Next(SCRYPT_SALT_SIZE),
+		ScryptHasher(const StdVectorUint8 &salt = RandomExtensions::Next(SCRYPT_SALT_SIZE),
 					 const size_t &iterations = SCRYPT_ITERATIONS,
 					 const size_t &blockSize = SCRYPT_BLOCKSIZE,
 					 const size_t &parallelism = SCRYPT_PARALLELISM,
@@ -468,7 +521,7 @@ namespace InsaneIO::Insane::Cryptography
 					 std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		ScryptHasher(const ScryptHasher &instance);
 
-		[[nodiscard]] String GetSalt() const;
+		[[nodiscard]] StdVectorUint8 GetSalt() const;
 		[[nodiscard]] String GetSaltEncoded() const;
 		[[nodiscard]] size_t GetIterations() const;
 		[[nodiscard]] size_t GetBlockSize() const;
@@ -476,18 +529,22 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] size_t GetDerivedKeyLength() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
-		[[nodiscard]] virtual String Compute(const String &data) override;
-		[[nodiscard]] virtual bool Verify(const String &data, const String &expected) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual String ComputeEncoded(const StdVectorUint8 &data) override;
+		[[nodiscard]] virtual StdVectorUint8 Compute(const String &data) override;
 		[[nodiscard]] virtual String ComputeEncoded(const String &data) override;
+		
+		[[nodiscard]] virtual bool Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected) override;
+		[[nodiscard]] virtual bool VerifyEncoded(const StdVectorUint8 &data, const String &expected) override;
+		[[nodiscard]] virtual bool Verify(const String &data, const StdVectorUint8 &expected) override;
 		[[nodiscard]] virtual bool VerifyEncoded(const String &data, const String &expected) override;
 
 		[[nodiscard]] std::unique_ptr<IHasher> Clone() const override;
 		[[nodiscard]] static DeserializeResolver<IHasher> DefaultDeserializeResolver();
 		[[nodiscard]] virtual String Serialize(const bool &indent = false) const override;
 		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String &json, const DeserializeResolver<IHasher> &resolver = DefaultDeserializeResolver());
-
 	private:
-		const String _Salt;
+		const StdVectorUint8 _Salt;
 		const size_t _Iterations;
 		const size_t _BlockSize;
 		const size_t _Parallelism;
@@ -502,13 +559,12 @@ namespace InsaneIO::Insane::Cryptography
 		virtual ~ISecretProtector() = default;
 		ISecretProtector(const String &name);
 		[[nodiscard]] String GetName();
-		[[nodiscard]] virtual String Protect(const String &secret, const String &key) = 0;
-		[[nodiscard]] virtual String Unprotect(const String &secret, const String &key) = 0;
+		[[nodiscard]] virtual StdVectorUint8 Protect(const StdVectorUint8 &secret, const StdVectorUint8 &key) = 0;
+		[[nodiscard]] virtual StdVectorUint8 Unprotect(const StdVectorUint8 &secret, const StdVectorUint8 &key) = 0;
 		[[nodiscard]] static std::unique_ptr<ISecretProtector> DefaultInstance()
 		{
 			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 		}
-
 	private:
 		const String _Name;
 	};
@@ -519,8 +575,8 @@ namespace InsaneIO::Insane::Cryptography
 	public:
 		virtual ~AesCbcProtector() = default;
 		AesCbcProtector();
-		[[nodiscard]] virtual String Protect(const String &secret, const String &key) override;
-		[[nodiscard]] virtual String Unprotect(const String &secret, const String &key) override;
+		[[nodiscard]] virtual StdVectorUint8 Protect(const StdVectorUint8 &secret, const StdVectorUint8 &key) override;
+		[[nodiscard]] virtual StdVectorUint8 Unprotect(const StdVectorUint8 &secret, const StdVectorUint8 &key) override;
 		[[nodiscard]] static std::unique_ptr<ISecretProtector> DefaultInstance();
 
 	private:
@@ -531,7 +587,7 @@ namespace InsaneIO::Insane::Cryptography
 
 	// ███ SecureDeserializeResolver ███
 	template <typename T>
-	using SecureDeserializeResolver = std::function<std::unique_ptr<T>(const String &json, const String &serializeKey)>;
+	using SecureDeserializeResolver = std::function<std::unique_ptr<T>(const String &json, const StdVectorUint8 &serializeKey)>;
 
 	// ███ ISecureJsonSerialize ███
 	template <typename T>
@@ -541,9 +597,9 @@ namespace InsaneIO::Insane::Cryptography
 		virtual ~ISecureJsonSerialize() = default;
 		ISecureJsonSerialize(String name) : IBaseSerialize(name) {}
 
-		[[nodiscard]] virtual String Serialize(const String &serializeKey, const bool &indent = false, const std::unique_ptr<ISecretProtector> &protector = AesCbcProtector::DefaultInstance()) const = 0;
+		[[nodiscard]] virtual String Serialize(const StdVectorUint8 &serializeKey, const bool &indent = false, const std::unique_ptr<ISecretProtector> &protector = AesCbcProtector::DefaultInstance()) const = 0;
 
-		[[nodiscard]] static std::unique_ptr<T> Deserialize([[maybe_unused]] const String &json, [[maybe_unused]] const String &serializeKey, [[maybe_unused]] const SecureDeserializeResolver<T> &deserializeResolver)
+		[[nodiscard]] static std::unique_ptr<T> Deserialize([[maybe_unused]] const String &json, [[maybe_unused]] const StdVectorUint8 &serializeKey, [[maybe_unused]] const SecureDeserializeResolver<T> &deserializeResolver)
 		{
 			throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 		}
@@ -567,11 +623,13 @@ namespace InsaneIO::Insane::Cryptography
 	public:
 		virtual ~IEncryptor() = default;
 		IEncryptor(const String &name);
-		[[nodiscard]] virtual String Encrypt(const String &data) const = 0;
+		[[nodiscard]] virtual StdVectorUint8 Encrypt(const StdVectorUint8 &data) const = 0;
+		[[nodiscard]] virtual String EncryptEncoded(const StdVectorUint8 &data) const = 0;
+		[[nodiscard]] virtual StdVectorUint8 Encrypt(const String &data) const = 0;
 		[[nodiscard]] virtual String EncryptEncoded(const String &data) const = 0;
-		[[nodiscard]] virtual String Decrypt(const String &data) const = 0;
-		[[nodiscard]] virtual String DecryptEncoded(const String &data) const = 0;
-
+		
+		[[nodiscard]] virtual StdVectorUint8 Decrypt(const StdVectorUint8 &data) const = 0;
+		[[nodiscard]] virtual StdVectorUint8 DecryptEncoded(const String &data) const = 0;
 	private:
 	};
 
@@ -580,28 +638,29 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~AesCbcEncryptor() = default;
-		AesCbcEncryptor(const String &key = RandomExtensions::Next(AES_MAX_KEY_LENGTH), const AesCbcPadding &padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
+		AesCbcEncryptor(const StdVectorUint8 &key = RandomExtensions::Next(AES_MAX_KEY_LENGTH), const AesCbcPadding &padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		AesCbcEncryptor(const AesCbcEncryptor &instance);
 
-		[[nodiscard]] String GetKey() const;
+		[[nodiscard]] StdVectorUint8 GetKey() const;
 		[[nodiscard]] String GetKeyEncoded() const;
 		[[nodiscard]] AesCbcPadding GetPadding() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
-		[[nodiscard]] virtual String Encrypt(const String &data) const override;
+		[[nodiscard]] virtual StdVectorUint8 Encrypt(const StdVectorUint8 &data) const override;
+		[[nodiscard]] virtual String EncryptEncoded(const StdVectorUint8 &data) const override;
+		[[nodiscard]] virtual StdVectorUint8 Encrypt(const String &data) const override;
 		[[nodiscard]] virtual String EncryptEncoded(const String &data) const override;
-		[[nodiscard]] virtual String Decrypt(const String &data) const override;
-		[[nodiscard]] virtual String DecryptEncoded(const String &data) const override;
+		
+		[[nodiscard]] virtual StdVectorUint8 Decrypt(const StdVectorUint8 &data) const override;
+		[[nodiscard]] virtual StdVectorUint8 DecryptEncoded(const String &data) const override;
 
 		[[nodiscard]] std::unique_ptr<IEncryptor> Clone() const override;
-		[[nodiscard]] virtual String Serialize(const String &serializeKey, const bool &indent = false, const std::unique_ptr<ISecretProtector> &protector = AesCbcProtector::DefaultInstance()) const override;
-
+		[[nodiscard]] virtual String Serialize(const StdVectorUint8 &serializeKey, const bool &indent = false, const std::unique_ptr<ISecretProtector> &protector = AesCbcProtector::DefaultInstance()) const override;
 		[[nodiscard]] static ProtectorResolver DefaultProtectorResolver();
 		[[nodiscard]] static SecureDeserializeResolver<IEncryptor> DefaultDeserializeResolver();
-		[[nodiscard]] static std::unique_ptr<IEncryptor> Deserialize(const String &json, const String &serializeKey, const SecureDeserializeResolver<IEncryptor> &deserializeResolver = DefaultDeserializeResolver());
-
+		[[nodiscard]] static std::unique_ptr<IEncryptor> Deserialize(const String &json, const StdVectorUint8 &serializeKey, const SecureDeserializeResolver<IEncryptor> &deserializeResolver = DefaultDeserializeResolver());
 	private:
-		const String _Key;
+		const StdVectorUint8 _Key;
 		const AesCbcPadding _Padding;
 		const std::unique_ptr<IEncoder> _Encoder;
 	};
@@ -618,18 +677,20 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] RsaPadding GetPadding() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
-		[[nodiscard]] virtual String Encrypt(const String &data) const override;
+		[[nodiscard]] virtual StdVectorUint8 Encrypt(const StdVectorUint8 &data) const override;
+		[[nodiscard]] virtual String EncryptEncoded(const StdVectorUint8 &data) const override;
+		[[nodiscard]] virtual StdVectorUint8 Encrypt(const String &data) const override;
 		[[nodiscard]] virtual String EncryptEncoded(const String &data) const override;
-		[[nodiscard]] virtual String Decrypt(const String &data) const override;
-		[[nodiscard]] virtual String DecryptEncoded(const String &data) const override;
+		
+		[[nodiscard]] virtual StdVectorUint8 Decrypt(const StdVectorUint8 &data) const override;
+		[[nodiscard]] virtual StdVectorUint8 DecryptEncoded(const String &data) const override;
 
 		[[nodiscard]] std::unique_ptr<IEncryptor> Clone() const override;
-		[[nodiscard]] virtual String Serialize(const String &serializeKey, const bool &indent = false, const std::unique_ptr<ISecretProtector> &protector = AesCbcProtector::DefaultInstance()) const override;
+		[[nodiscard]] virtual String Serialize(const StdVectorUint8 &serializeKey, const bool &indent = false, const std::unique_ptr<ISecretProtector> &protector = AesCbcProtector::DefaultInstance()) const override;
 
 		[[nodiscard]] static ProtectorResolver DefaultProtectorResolver();
 		[[nodiscard]] static SecureDeserializeResolver<IEncryptor> DefaultDeserializeResolver();
-		[[nodiscard]] static std::unique_ptr<IEncryptor> Deserialize(const String &json, const String &serializeKey, const SecureDeserializeResolver<IEncryptor> &deserializeResolver = DefaultDeserializeResolver());
-
+		[[nodiscard]] static std::unique_ptr<IEncryptor> Deserialize(const String &json, const StdVectorUint8 &serializeKey, const SecureDeserializeResolver<IEncryptor> &deserializeResolver = DefaultDeserializeResolver());
 	private:
 		const RsaKeyPair _KeyPair;
 		const RsaPadding _Padding;
@@ -642,7 +703,6 @@ namespace InsaneIO::Insane::Cryptography
 		static void HexEncodingExtensionsTests(const bool &showValues = true);
 		static void Base32EncodingExtensionsTests(const bool &showValues = true);
 		static void Base64EncodingExtensionsTests(const bool &showValues = true);
-
 	private:
 	};
 } // namespace InsaneIO::Insane::Crypto
@@ -650,5 +710,5 @@ namespace InsaneIO::Insane::Cryptography
 #endif // !INSANE_CRYPOGRAPHY_H
 
 /* TODO
- Converter de claves
- */
+	Converter de claves.
+*/
