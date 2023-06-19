@@ -89,17 +89,12 @@ namespace InsaneIO::Insane
 
 	// ███ UtilityExtensions ███
 
-	class INSANE_API UtilityExtensions
+	class INSANE_API DebugExtensions
 	{
 	public:
-		[[nodiscard]] static bool IsDebug()
-		{
-#if defined(_DEBUG)
-			return true;
-#else
-			return false;
-#endif // !
-		}
+		[[nodiscard]] static bool Debug(bool);
+		[[nodiscard]] static bool IsDebug();
+	private:
 	};
 
 	namespace Interfaces

@@ -1072,8 +1072,6 @@ RsaKeyPair RsaKeyPair::Deserialize(const String &json)
 
 RsaKeyEncoding RsaExtensions::GetRsaKeyEncoding(const String &key)
 {
-	USING_NS_INSANE_STR;
-	USING_NS_INSANE_EXCEPTION;
 	String rsaKey = StringExtensions::Trim(key);
 	if (StringExtensions::IsMatch(rsaKey, RSA_XML_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING))
 	{
@@ -1085,25 +1083,21 @@ RsaKeyEncoding RsaExtensions::GetRsaKeyEncoding(const String &key)
 		return RsaKeyEncoding::Pem;
 	}
 
-	if (StringExtensions::IsMatch(rsaKey, BASE64_VALUE_REGEX_CHAR_STRING))
+	if (StringExtensions::IsMatch(rsaKey, BASE64_VALUE_REGEX_CHAR_STRING) && !rsaKey.empty())
 	{
 		return RsaKeyEncoding::Ber;
 	}
-	Console::WriteLine("Exception lanzada: "s + INSANE_FUNCTION_SIGNATURE);
-	throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Invalid key encoding.");
+	throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Invalid RSA key encoding. The provided RSA key does not have a valid format.");
 }
 
 static inline std::unique_ptr<Botan::Public_Key> InternalParsePublicKey(const String &key)
 {
 
-	USING_NS_INSANE_EXCEPTION;
-	USING_NS_INSANE_STR;
-	std::unique_ptr<Botan::BigInt> modulus;
-	std::unique_ptr<Botan::BigInt> exponent;
-	std::unique_ptr<Botan::Public_Key> pbk;
-
 	try
 	{
+		std::unique_ptr<Botan::BigInt> modulus;
+		std::unique_ptr<Botan::BigInt> exponent;
+		std::unique_ptr<Botan::Public_Key> pbk;
 
 		String publicKey = StringExtensions::Trim(key);
 		RsaKeyEncoding encoding = RsaExtensions::GetRsaKeyEncoding(publicKey);
@@ -1133,33 +1127,32 @@ static inline std::unique_ptr<Botan::Public_Key> InternalParsePublicKey(const St
 		default:
 			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaKeyEncodingEnumExtensions::ToString(encoding, true));
 		}
+		return pbk;
+	}
+	catch (const Botan::Exception &e)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.error_code());
 	}
 	catch (const ExceptionBase &ex)
 	{
-		Console::WriteLine("Exception lanzada: "s + INSANE_FUNCTION_SIGNATURE);
-		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unable to parse public key.", 0, ex.Clone());
 	}
 	catch (...)
 	{
-		Console::WriteLine("Exception lanzada: "s + INSANE_FUNCTION_SIGNATURE);
-		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unknown error.", 0);
 	}
-	return pbk;
 }
 
 static inline std::unique_ptr<Botan::Private_Key> InternalParsePrivateKey(const String &key)
 {
-
-	USING_NS_INSANE_EXCEPTION;
-	USING_NS_INSANE_STR;
-	std::unique_ptr<Botan::BigInt> modulus;
-	std::unique_ptr<Botan::BigInt> exponent;
-	std::unique_ptr<Botan::BigInt> P;
-	std::unique_ptr<Botan::BigInt> Q;
-	std::unique_ptr<Botan::BigInt> D;
-	std::unique_ptr<Botan::Private_Key> pvk;
 	try
 	{
+		std::unique_ptr<Botan::BigInt> modulus;
+		std::unique_ptr<Botan::BigInt> exponent;
+		std::unique_ptr<Botan::BigInt> P;
+		std::unique_ptr<Botan::BigInt> Q;
+		std::unique_ptr<Botan::BigInt> D;
+		std::unique_ptr<Botan::Private_Key> pvk;
 		String privateKey = StringExtensions::Trim(key);
 		RsaKeyEncoding encoding = RsaExtensions::GetRsaKeyEncoding(privateKey);
 		switch (encoding)
@@ -1194,16 +1187,20 @@ static inline std::unique_ptr<Botan::Private_Key> InternalParsePrivateKey(const 
 		default:
 			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaKeyEncodingEnumExtensions::ToString(encoding, true));
 		}
+		return pvk;
+	}
+	catch (const Botan::Exception &e)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.error_code());
 	}
 	catch (const ExceptionBase &ex)
 	{
-		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unable to parse private key.", 0, ex.Clone());
 	}
 	catch (...)
 	{
-		throw ParseException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unknown error.", 0);
 	}
-	return pvk;
 }
 
 bool RsaExtensions::ValidateRsaPublicKey(const String &publicKey)
@@ -1211,13 +1208,22 @@ bool RsaExtensions::ValidateRsaPublicKey(const String &publicKey)
 	try
 	{
 		if (StringExtensions::Trim(publicKey).empty())
+		{
 			return false;
+		}
 		InternalParsePublicKey(publicKey);
 		return true;
 	}
+	catch (const Botan::Exception &e)
+	{
+		return false;
+	}
+	catch (const ExceptionBase &ex)
+	{
+		return false;
+	}
 	catch (...)
 	{
-		Console::WriteLine("Catch fx: "s + INSANE_FUNCTION_SIGNATURE);
 		return false;
 	}
 }
@@ -1227,13 +1233,22 @@ bool RsaExtensions::ValidateRsaPrivateKey(const String &privateKey)
 	try
 	{
 		if (StringExtensions::Trim(privateKey).empty())
+		{
 			return false;
+		}
 		InternalParsePrivateKey(privateKey);
 		return true;
 	}
+	catch (const Botan::Exception &e)
+	{
+		return false;
+	}
+	catch (const ExceptionBase &ex)
+	{
+		return false;
+	}
 	catch (...)
 	{
-		Console::WriteLine("Catch fx: "s + INSANE_FUNCTION_SIGNATURE);
 		return false;
 	}
 }
@@ -1320,13 +1335,17 @@ RsaKeyPair RsaExtensions::CreateRsaKeyPair(const size_t &keySize, const RsaKeyEn
 			throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaKeyEncodingEnumExtensions::ToString(encoding, true));
 		}
 	}
-	catch (const NotImplementedException &ex)
+	catch (const Botan::Exception &e)
 	{
-		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.error_code());
+	}
+	catch (const ExceptionBase &ex)
+	{
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unable to create keypair.", 0, ex.Clone());
 	}
 	catch (...)
 	{
-		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unknown error.", 0);
 	}
 }
 
@@ -1368,13 +1387,13 @@ StdVectorUint8 RsaExtensions::EncryptRsa(const StdVectorUint8 &data, const Strin
 	{
 		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.error_code());
 	}
-	catch (const NotImplementedException &ex)
+	catch (const ExceptionBase &ex)
 	{
-		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unable to encrypt data, check the parameters.", 0, ex.Clone());
 	}
 	catch (...)
 	{
-		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unknown error.", 0);
 	}
 }
 
@@ -1441,13 +1460,13 @@ StdVectorUint8 RsaExtensions::DecryptRsa(const StdVectorUint8 &data, const Strin
 	{
 		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, e.what(), e.error_code());
 	}
-	catch (const NotImplementedException &ex)
+	catch (const ExceptionBase &ex)
 	{
-		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, ex.GetErrorMessage());
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unable to decrypt data, check the parameters."s, 0, ex.Clone());
 	}
 	catch (...)
 	{
-		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+		throw CryptoException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Unknown error.");
 	}
 }
 

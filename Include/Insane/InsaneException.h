@@ -15,28 +15,32 @@
 namespace InsaneIO::Insane::Exception
 {
 
-	class ExceptionBase : public InsaneIO::Insane::Interfaces::IClone<ExceptionBase>
+	class ExceptionBase : public InsaneIO::Insane::Interfaces::IClone<ExceptionBase>, public std::exception
 	{
 	public:
 		virtual ~ExceptionBase() = default;
 		ExceptionBase(const String &name, const String &function, const String &file, const int &line, const String &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr)
-			: _Name(name),
-			  _ErrorMessage(CreateExceptionMessage(name, function, file, line, message, code)),
-			  _ErrorCode(code), _InnerException(innerException ? std::move(innerException) : nullptr)
+			: _ErrorName(name),
+			  _ErrorFunction(function),
+			  _ErrorFile(file),
+			  _ErrorLine(line),
+			  _ErrorMessage(message),
+			  _ErrorCode(code), 
+			  _InnerException(innerException ? std::move(innerException) : nullptr)
 		{
-			std::cout << _ErrorMessage << std::endl;
+			//std::cout << GetStackTrace() << std::endl;
 		}
 
 		ExceptionBase(const ExceptionBase &instance)
-			: _Name(instance._Name),
+			: _ErrorName(instance._ErrorName),
+			  _ErrorFunction(instance._ErrorFunction),
+			  _ErrorFile(instance._ErrorFile),
+			  _ErrorLine(instance._ErrorLine),
 			  _ErrorMessage(instance._ErrorMessage),
-			  _ErrorCode(instance._ErrorCode),
+			  _ErrorCode(instance._ErrorCode), 
 			  _InnerException(instance._InnerException ? instance.GetInnerException() : nullptr)
 		{
-			// if (IS_DEBUG)
-			// {
-			std::cout << _ErrorMessage << std::endl;
-			// }
+			//std::cout << GetStackTrace() << std::endl;
 		}
 
 		[[nodiscard]] virtual String GetErrorMessage() const noexcept
@@ -46,7 +50,22 @@ namespace InsaneIO::Insane::Exception
 
 		[[nodiscard]] String GetName() const
 		{
-			return _Name;
+			return _ErrorName;
+		}
+
+		[[nodiscard]] String GetFunction() const noexcept
+		{
+			return _ErrorFunction;
+		}
+
+		[[nodiscard]] String GetFile() const noexcept
+		{
+			return _ErrorFile;
+		}
+
+		[[nodiscard]] int GetLine() const noexcept
+		{
+			return _ErrorLine;
 		}
 
 		[[nodiscard]] int GetErrorCode() const noexcept
@@ -59,14 +78,14 @@ namespace InsaneIO::Insane::Exception
 			return _InnerException ? _InnerException->Clone() : nullptr;
 		}
 
-		[[nodiscard]] virtual const char *what() const noexcept
+		[[nodiscard]] virtual const char *what() const noexcept override
 		{
 			return _ErrorMessage.c_str();
 		}
 
-		[[nodiscard]] String GetStackTrace(const String &tag = EMPTY_STRING, const String &header = DEFAULT_HEADER_PREFIX_STRING, const String &footer = DEFAULT_FOOTER_PREFIX_STRING) const
+		[[nodiscard]] String GetStackTrace(const String &tag, const String &header = DEFAULT_HEADER_PREFIX_STRING, const String &footer = DEFAULT_FOOTER_PREFIX_STRING) const
 		{
-			return (tag.empty() ? tag : header + " \"" + tag + "\"" + LINE_FEED_STRING) + _ErrorMessage + (_InnerException ? _InnerException->GetStackTrace(EMPTY_STRING) : EMPTY_STRING) + (tag.empty() ? tag : footer);
+			return (tag.empty() ? tag : header + " \"" + tag + "\"" + LINE_FEED_STRING) + CreateExceptionMessage()  + (_InnerException ? LINE_FEED_STRING + LINE_FEED_STRING + _InnerException->GetStackTrace(EMPTY_STRING) : EMPTY_STRING) + (tag.empty() ? tag  :  LINE_FEED_STRING + footer);
 		}
 
 		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
@@ -75,19 +94,21 @@ namespace InsaneIO::Insane::Exception
 		}
 
 	private:
-		const String _Name;
+		const String _ErrorName;
+		const String _ErrorFunction;
+		const String _ErrorFile;
+		const int _ErrorLine;
 		const String _ErrorMessage;
 		const int _ErrorCode;
 		const std::unique_ptr<ExceptionBase> _InnerException;
-		String CreateExceptionMessage(const String &exceptionName, const String &function, const String &file, const int &line, const std::string &message, const int &errorCode)
+		String CreateExceptionMessage() const
 		{
-			return "Exception: \"" + exceptionName +
-				   "\" in the function: \""s + function +
-				   "\", line: \""s + std::to_string(line) +
-				   "\", file: \""s + file + "\". " +
-				   (message.empty() ? EMPTY_STRING : ("Message: \"" + message + "\". ")) +
-				   "ErrorCode: " + std::to_string(errorCode) +
-				   LINE_FEED_STRING + LINE_FEED_STRING;
+			return "Exception: \"" + _ErrorName +
+				   "\" in the function: \""s + _ErrorFunction +
+				   "\", line: \""s + std::to_string(_ErrorLine) +
+				   "\", file: \""s + _ErrorFile + "\". " +
+				   (_ErrorMessage.empty() ? EMPTY_STRING : ("Message: \"" + _ErrorMessage + "\". ")) +
+				   "ErrorCode: " + std::to_string(_ErrorCode);
 		}
 	};
 
