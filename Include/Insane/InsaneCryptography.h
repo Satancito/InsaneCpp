@@ -37,19 +37,19 @@
 #define SHA384_HASH_SIZE_IN_BYTES (static_cast<size_t>(48))
 #define SHA512_HASH_SIZE_IN_BYTES (static_cast<size_t>(64))
 
-#define SCRYPT_ITERATIONS_FORINTERACTIVE_LOGIN (static_cast<size_t>(2048))
+#define SCRYPT_ITERATIONS_FOR_INTERACTIVE_LOGIN (static_cast<size_t>(2048))
 #define SCRYPT_ITERATIONS_FOR_ENCRYPTION (static_cast<size_t>(1048576))
 #define SCRYPT_ITERATIONS (static_cast<size_t>(16384))
 #define SCRYPT_SALT_SIZE (static_cast<size_t>(16))
-#define SCRYPT_BLOCKSIZE (static_cast<size_t>(8))
+#define SCRYPT_BLOCK_SIZE (static_cast<size_t>(8))
 #define SCRYPT_PARALLELISM (static_cast<size_t>(1))
 #define SCRYPT_DERIVED_KEY_LENGTH (static_cast<size_t>(64))
 
 #define ARGON2_DERIVED_KEY_LENGTH (static_cast<size_t>(64))
-#define ARGON2_SALTSIZE (static_cast<size_t>(16))
+#define ARGON2_SALT_SIZE (static_cast<size_t>(16))
 #define ARGON2_ITERATIONS (static_cast<size_t>(2))
 #define ARGON2_MEMORY_SIZE_IN_KIB (static_cast<size_t>(16384))
-#define ARGON2_DEGREEOF_PARALLELISM (static_cast<size_t>(4))
+#define ARGON2_DEGREE_OF_PARALLELISM (static_cast<size_t>(4))
 
 #define AES_MAX_IV_LENGTH ((size_t)16)
 #define AES_BLOCK_SIZE_LENGTH ((size_t)16)
@@ -66,6 +66,7 @@
 #define HMAC_64_BYTES_BLOCK_SIZE (static_cast<size_t>(64))
 #define HMAC_128_BYTES_BLOCK_SIZE (static_cast<size_t>(128))
 
+#define RSA_XML_KEY_MAIN_TAG_STRING ("<RSAKeyValue>"s)
 #define RSA_XML_KEY_MAIN_NODE_STRING ("RSAKeyValue"s)
 #define RSA_XML_KEY_P_NODE_STRING ("P"s)
 #define RSA_XML_KEY_Q_NODE_STRING ("Q"s)
@@ -80,12 +81,19 @@
 #define __RSA_PADDING_OAEP_256_ALGORITHM_STRING ("EME-OAEP(SHA-256)"s)
 #define __RSA_PADDING_OAEP_384_ALGORITHM_STRING ("EME-OAEP(SHA-384)"s)
 #define __RSA_PADDING_OAEP_512_ALGORITHM_STRING ("EME-OAEP(SHA-512)"s)
+
+#define RSA_PEM_INITIAL_TEXT_HEADER_STRING ("-----BEGIN "s)
 #define RSA_PEM_PRIVATE_KEY_INITIAL_STRING ("-----BEGIN PRIVATE KEY-----"s)
 #define RSA_PEM_PUBLIC_KEY_INITIAL_STRING ("-----BEGIN PUBLIC KEY-----"s)
 #define RSA_PEM_PRIVATE_KEY_FINAL_STRING ("-----END PRIVATE KEY-----"s)
 #define RSA_PEM_PUBLIC_KEY_FINAL_STRING ("-----END PUBLIC KEY-----"s)
-#define RSA_PEM_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING (R"(^(?:(-----BEGIN PUBLIC KEY-----)(?:\r|\n|\r\n)((?:(?:(?:[A-Za-z0-9+\/]{4}){16}(?:\r|\n|\r\n))+)(?:(?:[A-Za-z0-9+\/]{4}){0,15})(?:(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)))(?:\r|\n|\r\n)(-----END PUBLIC KEY-----)|(-----BEGIN PRIVATE KEY-----)(?:\r|\n|\r\n)((?:(?:(?:[A-Za-z0-9+\/]{4}){16}(?:\r|\n|\r\n))+)(?:(?:[A-Za-z0-9+\/]{4}){0,15})(?:(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)))(?:\r|\n|\r\n)(-----END PRIVATE KEY-----))$)"s)
-#define RSA_XML_PUBLIC_AND_PRIVATE_KEY_REGEX_PATTERN_STRING (R"((\s*<\s*RSAKeyValue\s*>\s*(?:\s*<\s*Modulus\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Modulus\s*>()|\s*<\s*Exponent\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Exponent\s*>()|\s*<\s*P\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*P\s*>()|\s*<\s*Q\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Q\s*>()|\s*<\s*DP\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*DP\s*>()|\s*<\s*DQ\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*DQ\s*>()|\s*<\s*InverseQ\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*InverseQ\s*>()|\s*<\s*D\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*D\s*>()){8}\s*<\/\s*RSAKeyValue\s*>\s*\2\3\4\5\6\7\8\9)|(\s*<\s*RSAKeyValue\s*>\s*(?:\s*<\s*Modulus\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Modulus\s*>()|\s*<\s*Exponent\s*>\s*[a-zA-Z0-9\+\/]+={0,2}\s*<\/\s*Exponent\s*>()){2}\s*<\/\s*RSAKeyValue\s*>\s*\11\12))"s)
+
+#define RSA_PEM_PUBLIC_KEY_REGEX_PATTERN (R"RAW(^(?:(-----BEGIN PUBLIC KEY-----)(?:\r|\n|\r\n)((?:(?:(?:[A-Za-z0-9+\/]{4}){16}(?:\r|\n|\r\n))+)(?:(?:[A-Za-z0-9+\/]{4}){0,15})(?:(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)))(?:\r|\n|\r\n)(-----END PUBLIC KEY-----))$)RAW"s)
+#define RSA_PEM_PRIVATE_KEY_REGEX_PATTERN (R"RAW(^(?:(-----BEGIN PRIVATE KEY-----)(?:\r|\n|\r\n)((?:(?:(?:[A-Za-z0-9+\/]{4}){16}(?:\r|\n|\r\n))+)(?:(?:[A-Za-z0-9+\/]{4}){0,15})(?:(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)))(?:\r|\n|\r\n)(-----END PRIVATE KEY-----))$)RAW"s)
+#define RSA_PEM_RSA_PUBLIC_KEY_REGEX_PATTERN (R"RAW(^(?:(-----BEGIN RSA PUBLIC KEY-----)(?:\r|\n|\r\n)((?:(?:(?:[A-Za-z0-9+\/]{4}){16}(?:\r|\n|\r\n))+)(?:(?:[A-Za-z0-9+\/]{4}){0,15})(?:(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)))(?:\r|\n|\r\n)(-----END RSA PUBLIC KEY-----))$)RAW"s)
+#define RSA_PEM_RSA_PRIVATE_KEY_REGEX_PATTERN (R"RAW(^(?:(-----BEGIN RSA PRIVATE KEY-----)(?:\r|\n|\r\n)((?:(?:(?:[A-Za-z0-9+\/]{4}){16}(?:\r|\n|\r\n))+)(?:(?:[A-Za-z0-9+\/]{4}){0,15})(?:(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)))(?:\r|\n|\r\n)(-----END RSA PRIVATE KEY-----))$)RAW"s)
+#define RSA_XML_PUBLIC_KEY_REGEX_PATTERN (R"RAW(^(\s*<RSAKeyValue>\s*(?:\s*<Modulus>[a-zA-Z0-9\+\/]+={0,2}<\/Modulus>()|\s*<Exponent>[a-zA-Z0-9\+\/]+={0,2}<\/Exponent>()){2}\s*<\/\s*RSAKeyValue\s*>\s*\2\3)$)RAW"s)
+#define RSA_XML_PRIVATE_KEY_REGEX_PATTERN (R"RAW(^\s*<RSAKeyValue>\s*(?:\s*<Modulus>[a-zA-Z0-9\+\/]+={0,2}<\/Modulus>()|\s*<Exponent>[a-zA-Z0-9\+\/]+={0,2}<\/Exponent>()|\s*<P>[a-zA-Z0-9\+\/]+={0,2}<\/P>()|\s*<Q>[a-zA-Z0-9\+\/]+={0,2}<\/Q>()|\s*<DP>[a-zA-Z0-9\+\/]+={0,2}<\/DP>()|\s*<DQ>[a-zA-Z0-9\+\/]+={0,2}<\/DQ>()|\s*<InverseQ>[a-zA-Z0-9\+\/]+={0,2}<\/InverseQ>()|\s*<D>[a-zA-Z0-9\+\/]+={0,2}<\/D>()){8}\s*<\/\s*RSAKeyValue\s*>\2\3\4\5\6\7\8\9)$)RAW"s)
 
 #define HEX_ENCODER_NAME_STRING ("InsaneIO.Insane.Cryptography.HexEncoder, InsaneIO.Insane"s)
 #define BASE32_ENCODER_NAME_STRING ("InsaneIO.Insane.Cryptography.Base32Encoder, InsaneIO.Insane"s)
@@ -101,7 +109,7 @@
 
 #define AES_CBC_PROTECTOR_NAME_STRING ("InsaneIO.Insane.Cryptography.AesCbcProtector, InsaneIO.Insane"s)
 
-#define BASE64_VALUE_REGEX_CHAR_STRING (R"(^(?:(?:[A-Za-z0-9+\/]{4})*)(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$)"s)
+#define BASE64_VALUE_REGEX_PATTERN_STRING (R"(^(?:(?:[A-Za-z0-9+\/]{4})*)(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$)"s)
 
 USING_NS_INSANE_EXCEPTION;
 USING_NS_INSANE_INTERFACES;
@@ -134,10 +142,19 @@ namespace InsaneIO::Insane::Cryptography
 				Sha384, _, _,
 				Sha512, _, _);
 
-	INSANE_ENUM(RsaKeyEncoding,
+	INSANE_ENUM(RsaKeyPairEncoding,
 				Ber, _, _,
 				Pem, _, _,
 				Xml, _, _);
+
+	INSANE_ENUM(RsaKeyEncoding,
+		Unknown,_,_,
+        BerPublic,_,_,
+        BerPrivate,_,_,
+        PemPublic,_,_,
+        PemPrivate,_,_,
+        XmlPublic,_,_,
+        XmlPrivate,_,_);
 
 	INSANE_ENUM(RsaPadding,
 				Pkcs1, _, _,
@@ -150,9 +167,9 @@ namespace InsaneIO::Insane::Cryptography
 	class INSANE_API RandomExtensions
 	{
 	public:
-		[[nodiscard]] static StdVectorUint8 Next(size_t sz);
-		[[nodiscard]] static int Next(int min, int max);
-		[[nodiscard]] static int Next();
+		[[nodiscard]] static int NextValue();
+		[[nodiscard]] static int NextValue(int min, int max);
+		[[nodiscard]] static StdVectorUint8 NextBytes(size_t sz);
 	private:
 	};
 
@@ -289,33 +306,33 @@ namespace InsaneIO::Insane::Cryptography
 	public:
 		[[nodiscard]] static StdVectorUint8 ComputeHash(const StdVectorUint8 &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
 		[[nodiscard]] static StdVectorUint8 ComputeHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static StdVectorUint8 ComputeArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static StdVectorUint8 ComputeScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static StdVectorUint8 ComputeArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREE_OF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static StdVectorUint8 ComputeScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCK_SIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 
 		[[nodiscard]] static StdVectorUint8 ComputeHash(const String &data, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
 		[[nodiscard]] static StdVectorUint8 ComputeHmac(const String &data, const String &key, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static StdVectorUint8 ComputeArgon2(const String &data, const String &salt, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static StdVectorUint8 ComputeScrypt(const String &data, const String &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static StdVectorUint8 ComputeArgon2(const String &data, const String &salt, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREE_OF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static StdVectorUint8 ComputeScrypt(const String &data, const String &salt, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCK_SIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 
 		[[nodiscard]] static String ComputeEncodedHash(const StdVectorUint8 &data, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
 		[[nodiscard]] static String ComputeEncodedHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ComputeEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static String ComputeEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREE_OF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCK_SIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 
 		[[nodiscard]] static String ComputeEncodedHash(const String &data, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
 		[[nodiscard]] static String ComputeEncodedHmac(const String &data, const String &key, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ComputeEncodedArgon2(const String &data, const String &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static String ComputeEncodedScrypt(const String &data, const String &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedArgon2(const String &data, const String &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREE_OF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const String &data, const String &salt, UniquePtrIEncoder &&encoder = Base64Encoder::DefaultInstance(), const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCK_SIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 
 		[[nodiscard]] static String ComputeEncodedHash(const StdVectorUint8 &data, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
 		[[nodiscard]] static String ComputeEncodedHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ComputeEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const IEncoder *encoder, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static String ComputeEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const IEncoder *encoder, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const IEncoder *encoder, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREE_OF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const IEncoder *encoder, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCK_SIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 
 		[[nodiscard]] static String ComputeEncodedHash(const String &data, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
 		[[nodiscard]] static String ComputeEncodedHmac(const String &data, const String &key, const IEncoder *encoder, const HashAlgorithm &algorithm = HashAlgorithm::Sha512);
-		[[nodiscard]] static String ComputeEncodedArgon2(const String &data, const String &salt, const IEncoder *encoder, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREEOF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
-		[[nodiscard]] static String ComputeEncodedScrypt(const String &data, const String &salt, const IEncoder *encoder, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCKSIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedArgon2(const String &data, const String &salt, const IEncoder *encoder, const size_t &iterations = ARGON2_ITERATIONS, const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB, const size_t &parallelism = ARGON2_DEGREE_OF_PARALLELISM, const Argon2Variant &variant = Argon2Variant::Argon2id, const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH);
+		[[nodiscard]] static String ComputeEncodedScrypt(const String &data, const String &salt, const IEncoder *encoder, const size_t &iterations = SCRYPT_ITERATIONS, const size_t &blockSize = SCRYPT_BLOCK_SIZE, const size_t &parallelism = SCRYPT_PARALLELISM, const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH);
 	private:
 	};
 
@@ -360,7 +377,7 @@ namespace InsaneIO::Insane::Cryptography
 	class INSANE_API RsaExtensions
 	{
 	public:
-		[[nodiscard]] static RsaKeyPair CreateRsaKeyPair(const size_t &keySize = 4096, const RsaKeyEncoding &encoding = RsaKeyEncoding::Ber);
+		[[nodiscard]] static RsaKeyPair CreateRsaKeyPair(const size_t &keySize = 4096, const RsaKeyPairEncoding &encoding = RsaKeyPairEncoding::Ber);
 		[[nodiscard]] static StdVectorUint8 EncryptRsa(const StdVectorUint8 &data, const String &publicKey, const RsaPadding &padding = RsaPadding::OaepSha256);
 		[[nodiscard]] static StdVectorUint8 EncryptRsa(const String &data, const String &publicKey, const RsaPadding &padding = RsaPadding::OaepSha256);
 		[[nodiscard]] static String EncryptEncodedRsa(const StdVectorUint8 &data, const String &publicKey, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance(), const RsaPadding &padding = RsaPadding::OaepSha256);
@@ -433,7 +450,7 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~HmacHasher() = default;
-		HmacHasher(const StdVectorUint8 &key = RandomExtensions::Next(HMAC_KEY_SIZE), const HashAlgorithm &hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
+		HmacHasher(const StdVectorUint8 &key = RandomExtensions::NextBytes(HMAC_KEY_SIZE), const HashAlgorithm &hashAlgorithm = HashAlgorithm::Sha512, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		HmacHasher(const HmacHasher &instance);
 
 		[[nodiscard]] HashAlgorithm GetHashAlgorithm() const;
@@ -466,10 +483,10 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~Argon2Hasher() = default;
-		Argon2Hasher(const StdVectorUint8 &salt = RandomExtensions::Next(ARGON2_SALTSIZE),
+		Argon2Hasher(const StdVectorUint8 &salt = RandomExtensions::NextBytes(ARGON2_SALT_SIZE),
 					 const size_t &iterations = ARGON2_ITERATIONS,
 					 const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB,
-					 const size_t &degreeOfParallelism = ARGON2_DEGREEOF_PARALLELISM,
+					 const size_t &degreeOfParallelism = ARGON2_DEGREE_OF_PARALLELISM,
 					 const Argon2Variant argon2Variant = Argon2Variant::Argon2id,
 					 const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH,
 					 std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
@@ -513,9 +530,9 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~ScryptHasher() = default;
-		ScryptHasher(const StdVectorUint8 &salt = RandomExtensions::Next(SCRYPT_SALT_SIZE),
+		ScryptHasher(const StdVectorUint8 &salt = RandomExtensions::NextBytes(SCRYPT_SALT_SIZE),
 					 const size_t &iterations = SCRYPT_ITERATIONS,
-					 const size_t &blockSize = SCRYPT_BLOCKSIZE,
+					 const size_t &blockSize = SCRYPT_BLOCK_SIZE,
 					 const size_t &parallelism = SCRYPT_PARALLELISM,
 					 const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH,
 					 std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
@@ -638,7 +655,7 @@ namespace InsaneIO::Insane::Cryptography
 	{
 	public:
 		virtual ~AesCbcEncryptor() = default;
-		AesCbcEncryptor(const StdVectorUint8 &key = RandomExtensions::Next(AES_MAX_KEY_LENGTH), const AesCbcPadding &padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
+		AesCbcEncryptor(const StdVectorUint8 &key = RandomExtensions::NextBytes(AES_MAX_KEY_LENGTH), const AesCbcPadding &padding = AesCbcPadding::Pkcs7, std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		AesCbcEncryptor(const AesCbcEncryptor &instance);
 
 		[[nodiscard]] StdVectorUint8 GetKey() const;
