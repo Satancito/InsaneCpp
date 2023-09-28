@@ -1075,7 +1075,7 @@ static inline std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>> Inte
 	{
 		try
 		{
-			Botan::SecureVector<uint8_t> keyBytes(rsaKeyString.begin(), rsaKeyString.end());
+			Botan::SecureVector<uint8_t> keyBytes = Botan::base64_decode(rsaKeyString);
 			std::unique_ptr<Botan::DataSource_Memory> source = std::make_unique<Botan::DataSource_Memory>(keyBytes);
 			return {RsaKeyEncoding::BerPrivate, Botan::PKCS8::load_key(*source)};
 		}
@@ -1118,7 +1118,7 @@ static inline std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>> Inte
 				doc->parse<0>(rsaKeyString.data());
 				std::unique_ptr<Botan::BigInt> modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_MODULUS_NODE_STRING.c_str())->value()));
 				std::unique_ptr<Botan::BigInt> exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_EXPONENT_NODE_STRING.c_str())->value()));
-				return {RsaKeyEncoding::XmlPrivate, std::make_unique<Botan::RSA_PublicKey>(*modulus, *exponent)};
+				return {RsaKeyEncoding::XmlPublic, std::make_unique<Botan::RSA_PublicKey>(*modulus, *exponent)};
 			}
 
 			return {RsaKeyEncoding::Unknown, nullptr};
@@ -1130,15 +1130,14 @@ static inline std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>> Inte
 			{
 				Botan::SecureVector<uint8_t> keyBytes(rsaKeyString.begin(), rsaKeyString.end());
 				std::unique_ptr<Botan::DataSource_Memory> source = std::make_unique<Botan::DataSource_Memory>(keyBytes);
-				return {RsaKeyEncoding::BerPrivate, Botan::PKCS8::load_key(*source)};
+				return {RsaKeyEncoding::PemPrivate, Botan::PKCS8::load_key(*source)};
 			}
 
 			if (StringExtensions::IsMatch(rsaKeyString, RSA_PEM_PUBLIC_KEY_REGEX_PATTERN))
 			{
-				Botan::SecureVector<uint8_t> keyBytes = Botan::base64_decode(rsaKeyString);
-				auto publicKey = Botan::X509::load_key(StdVectorUint8(keyBytes.begin(), keyBytes.end()));
+				Botan::Public_Key * publicKey = Botan::X509::load_key(StdVectorUint8(rsaKeyString.begin(), rsaKeyString.end()));
 				rsaKey.reset(publicKey);
-				return {RsaKeyEncoding::BerPublic, std::move(rsaKey)};
+				return {RsaKeyEncoding::PemPublic, std::move(rsaKey)};
 			}
 			return {RsaKeyEncoding::Unknown, nullptr};
 		}
@@ -1186,7 +1185,7 @@ static inline std::unique_ptr<Botan::Public_Key> InternalParsePublicKey(const St
 
 static inline std::unique_ptr<Botan::Private_Key> InternalParsePrivateKey(const String &key)
 {
-	auto validation = InternalValidateRsaPublicKeyWithKey(key);
+	auto validation = InternalValidateRsaPrivateKeyWithKey(key);
 	if (validation.first)
 	{
 		Botan::Private_Key * privateKey =  dynamic_cast<Botan::Private_Key*>(validation.second.release()); 
