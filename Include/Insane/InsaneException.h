@@ -289,5 +289,20 @@ namespace InsaneIO::Insane::Exception
 
 	private:
 	};
+
+	class JsException  : public ExceptionBase
+	{
+	public:
+		virtual ~JsException ()  = default;
+		JsException (const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
+
+		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		{
+			return std::make_unique<JsException >(*this);
+		}
+
+	private:
+	};
 }
 #endif //! INSANE_EXCEPTION_H
