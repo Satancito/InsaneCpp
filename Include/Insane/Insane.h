@@ -92,7 +92,7 @@ namespace InsaneIO::Insane
 	class INSANE_API DebugExtensions
 	{
 	public:
-		[[nodiscard]] static bool Debug(bool);
+		static bool Debug(bool);
 		[[nodiscard]] static bool IsDebug();
 	private:
 	};
