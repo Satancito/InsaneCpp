@@ -38,6 +38,9 @@ namespace InsaneIO::Insane::Preprocessor
 #define DLLIMPORT
 #define DLLEXPORT __attribute__((visibility("default")))
 #define DLLPRIVATE __attribute__((visibility("hidden")))
+#define NODISCARD_ATTRIB [[nodiscard]]
+#define MAYBE_UNUSED_ATTRIB [[maybe_unused]]
+
 
 // LINUX - Ubuntu, Fedora, , Centos, Debian, RedHat
 #elif (__LINUX__ || __gnu_linux__ || __linux__ || __linux || linux)
@@ -3375,7 +3378,8 @@ The result upon expansion is :
 using CharFunction = std::function<std::vector<std::string>>(char, char, char, char, char, int, size_t);
 */
 
-#define __INSANE_REPEAT_1(value, se, sae) EXPAND_VALUE(value)ADD_EXPRESSION_##sae(se)
+#define __INSANE_REPEAT_0() 
+#define __INSANE_REPEAT_1(value, se, sae) EXPAND_VALUE(value)ADD_EXPRESSION_##sae(se) __INSANE_REPEAT_0()
 #define __INSANE_REPEAT_2(value, se, sae) EXPAND_VALUE(value)se()__INSANE_REPEAT_1(value, se, sae)
 #define __INSANE_REPEAT_3(value, se, sae) EXPAND_VALUE(value)se()__INSANE_REPEAT_2(value, se, sae)
 #define __INSANE_REPEAT_4(value, se, sae) EXPAND_VALUE(value)se()__INSANE_REPEAT_3(value, se, sae)
