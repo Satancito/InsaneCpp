@@ -12,13 +12,15 @@
     "X-PowerShellCoreFxs-Update.ps1",
     "Z-CoreFxs.ps1",
     "Z-Config.json",
-    "Z-Config.Last.json"
+    "Z-Config.Last.json",
+    "X-UPDATE.ps1",
+    "X-PsCoreUpdate.ps1"
   ],
   "CoreFiles": [
     "Z-PsCoreFxs.ps1",
     "Z-PsCoreFxsConfig.json"
   ],
-  "Build": 75,
+  "Build": 112,
   "LastSupportedFiles": [
     "X-PsCoreFxs-PublishProjectPackage.ps1",
     "X-PsCoreFxs-PushProjectToRemote.ps1",
