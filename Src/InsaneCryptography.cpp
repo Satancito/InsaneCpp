@@ -807,6 +807,7 @@ public:
 
 class ZeroPadding : public PaddingBase {
 public:
+  virtual ~ZeroPadding() = default;
   void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes,
            size_t block_size) const override {
     const size_t pad_bytes = block_size - final_block_bytes;
@@ -830,6 +831,7 @@ public:
 
 class Pkcs7Padding : public PaddingBase {
 public:
+  virtual ~Pkcs7Padding() = default;
   void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes,
            size_t block_size) const override {
     const size_t pad_bytes = block_size - final_block_bytes;
@@ -863,6 +865,7 @@ public:
 
 class X923Padding : public PaddingBase {
 public:
+  virtual ~X923Padding() = default;
   void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes,
            size_t block_size) const override {
     const size_t pad_bytes = block_size - final_block_bytes;
