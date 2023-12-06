@@ -802,7 +802,7 @@ public:
                    size_t final_block_bytes, size_t block_size) const = 0;
   virtual size_t unpad(const uint8_t block[], size_t len) const = 0;
   virtual bool valid_blocksize(size_t block_size) const = 0;
-  virtual std::string name() const;
+  virtual std::string name() const = 0;
 };
 
 class ZeroPadding : public PaddingBase {
