@@ -797,6 +797,7 @@ static inline const std::map<String, std::function<std::unique_ptr<IEncoder>()>>
 // ███ AesExtensions ███
 class PaddingBase {
 public:
+  virtual ~PaddingBase() = default;
   virtual void pad(Botan::secure_vector<uint8_t> &buffer,
                    size_t final_block_bytes, size_t block_size) const = 0;
   virtual size_t unpad(const uint8_t block[], size_t len) const = 0;
