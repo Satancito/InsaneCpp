@@ -484,20 +484,20 @@ namespace InsaneIO::Insane::Cryptography
 	public:
 		virtual ~Argon2Hasher() = default;
 		Argon2Hasher(const StdVectorUint8 &salt = RandomExtensions::NextBytes(ARGON2_SALT_SIZE),
-					 const size_t &iterations = ARGON2_ITERATIONS,
-					 const size_t &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB,
-					 const size_t &degreeOfParallelism = ARGON2_DEGREE_OF_PARALLELISM,
+					 const unsigned int &iterations = ARGON2_ITERATIONS,
+					 const unsigned int &memorySizeKiB = ARGON2_MEMORY_SIZE_IN_KIB,
+					 const unsigned int &degreeOfParallelism = ARGON2_DEGREE_OF_PARALLELISM,
 					 const Argon2Variant argon2Variant = Argon2Variant::Argon2id,
-					 const size_t &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH,
+					 const unsigned int &derivedKeyLength = ARGON2_DERIVED_KEY_LENGTH,
 					 std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		Argon2Hasher(const Argon2Hasher &instance);
 
 		[[nodiscard]] StdVectorUint8 GetSalt() const;
 		[[nodiscard]] String GetSaltEncoded() const;
-		[[nodiscard]] size_t GetIterations() const;
-		[[nodiscard]] size_t GetMemorySizeKiB() const;
-		[[nodiscard]] size_t GetDegreeOfParallelism() const;
-		[[nodiscard]] size_t GetDerivedKeyLength() const;
+		[[nodiscard]] unsigned int GetIterations() const;
+		[[nodiscard]] unsigned int GetMemorySizeKiB() const;
+		[[nodiscard]] unsigned int GetDegreeOfParallelism() const;
+		[[nodiscard]] unsigned int GetDerivedKeyLength() const;
 		[[nodiscard]] Argon2Variant GetArgon2Variant() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
@@ -517,10 +517,10 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] static DeserializeResolver<IHasher> DefaultDeserializeResolver();
 	private:
 		const StdVectorUint8 _Salt;
-		const size_t _Iterations;
-		const size_t _MemorySizeKiB;
-		const size_t _DegreeOfParallelism;
-		const size_t _DerivedKeyLength;
+		const unsigned int _Iterations;
+		const unsigned int _MemorySizeKiB;
+		const unsigned int _DegreeOfParallelism;
+		const unsigned int _DerivedKeyLength;
 		const Argon2Variant _Argon2Variant;
 		const std::unique_ptr<IEncoder> _Encoder;
 	};
@@ -531,19 +531,19 @@ namespace InsaneIO::Insane::Cryptography
 	public:
 		virtual ~ScryptHasher() = default;
 		ScryptHasher(const StdVectorUint8 &salt = RandomExtensions::NextBytes(SCRYPT_SALT_SIZE),
-					 const size_t &iterations = SCRYPT_ITERATIONS,
-					 const size_t &blockSize = SCRYPT_BLOCK_SIZE,
-					 const size_t &parallelism = SCRYPT_PARALLELISM,
-					 const size_t &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH,
+					 const unsigned int &iterations = SCRYPT_ITERATIONS,
+					 const unsigned int &blockSize = SCRYPT_BLOCK_SIZE,
+					 const unsigned int &parallelism = SCRYPT_PARALLELISM,
+					 const unsigned int &derivedKeyLength = SCRYPT_DERIVED_KEY_LENGTH,
 					 std::unique_ptr<IEncoder> &&encoder = Base64Encoder::DefaultInstance());
 		ScryptHasher(const ScryptHasher &instance);
 
 		[[nodiscard]] StdVectorUint8 GetSalt() const;
 		[[nodiscard]] String GetSaltEncoded() const;
-		[[nodiscard]] size_t GetIterations() const;
-		[[nodiscard]] size_t GetBlockSize() const;
-		[[nodiscard]] size_t GetParallelism() const;
-		[[nodiscard]] size_t GetDerivedKeyLength() const;
+		[[nodiscard]] unsigned int GetIterations() const;
+		[[nodiscard]] unsigned int GetBlockSize() const;
+		[[nodiscard]] unsigned int GetParallelism() const;
+		[[nodiscard]] unsigned int GetDerivedKeyLength() const;
 		[[nodiscard]] std::unique_ptr<IEncoder> GetEncoder() const;
 
 		[[nodiscard]] virtual StdVectorUint8 Compute(const StdVectorUint8 &data) override;
@@ -562,10 +562,10 @@ namespace InsaneIO::Insane::Cryptography
 		[[nodiscard]] static std::unique_ptr<IHasher> Deserialize(const String &json, const DeserializeResolver<IHasher> &resolver = DefaultDeserializeResolver());
 	private:
 		const StdVectorUint8 _Salt;
-		const size_t _Iterations;
-		const size_t _BlockSize;
-		const size_t _Parallelism;
-		const size_t _DerivedKeyLength;
+		const unsigned int _Iterations;
+		const unsigned int _BlockSize;
+		const unsigned int _Parallelism;
+		const unsigned int _DerivedKeyLength;
 		const std::unique_ptr<IEncoder> _Encoder;
 	};
 

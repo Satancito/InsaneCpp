@@ -1892,11 +1892,11 @@ DeserializeResolver<IHasher> HmacHasher::DefaultDeserializeResolver() {
 
 // ███ Argon2Hasher ███
 
-Argon2Hasher::Argon2Hasher(const StdVectorUint8 &salt, const size_t &iterations,
-                           const size_t &memorySizeKiB,
-                           const size_t &degreeOfParallelism,
+Argon2Hasher::Argon2Hasher(const StdVectorUint8 &salt, const unsigned int &iterations,
+                           const unsigned int &memorySizeKiB,
+                           const unsigned int &degreeOfParallelism,
                            const Argon2Variant argon2Variant,
-                           const size_t &derivedKeyLength,
+                           const unsigned int &derivedKeyLength,
                            std::unique_ptr<IEncoder> &&encoder)
     : IHasher(ARGON2_HASHER_NAME_STRING), _Salt(salt), _Iterations(iterations),
       _MemorySizeKiB(memorySizeKiB), _DegreeOfParallelism(degreeOfParallelism),
@@ -1915,15 +1915,15 @@ StdVectorUint8 Argon2Hasher::GetSalt() const { return _Salt; }
 
 String Argon2Hasher::GetSaltEncoded() const { return _Encoder->Encode(_Salt); }
 
-size_t Argon2Hasher::GetIterations() const { return _Iterations; }
+unsigned int Argon2Hasher::GetIterations() const { return _Iterations; }
 
-size_t Argon2Hasher::GetMemorySizeKiB() const { return _MemorySizeKiB; }
+unsigned int Argon2Hasher::GetMemorySizeKiB() const { return _MemorySizeKiB; }
 
-size_t Argon2Hasher::GetDegreeOfParallelism() const {
+unsigned int Argon2Hasher::GetDegreeOfParallelism() const {
   return _DegreeOfParallelism;
 }
 
-size_t Argon2Hasher::GetDerivedKeyLength() const { return _DerivedKeyLength; }
+unsigned int Argon2Hasher::GetDerivedKeyLength() const { return _DerivedKeyLength; }
 
 Argon2Variant Argon2Hasher::GetArgon2Variant() const { return _Argon2Variant; }
 
@@ -2054,13 +2054,13 @@ DeserializeResolver<IHasher> Argon2Hasher::DefaultDeserializeResolver() {
           document[CNAMEOF_TRIM_GET(GetEncoder)]);
       StdVectorUint8 salt =
           encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-      size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
+      size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
       size_t memorySizeKiB =
-          document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint64();
+          document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint();
       size_t degreeOfParallelism =
-          document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint64();
+          document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint();
       size_t derivedKeyLength =
-          document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
+          document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
       Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(
           document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
       return std::make_unique<Argon2Hasher>(
@@ -2074,9 +2074,9 @@ DeserializeResolver<IHasher> Argon2Hasher::DefaultDeserializeResolver() {
 
 // ███ ScryptHasher ███
 
-ScryptHasher::ScryptHasher(const StdVectorUint8 &salt, const size_t &iterations,
-                           const size_t &blocksize, const size_t &parallelism,
-                           const size_t &derivedKeyLength,
+ScryptHasher::ScryptHasher(const StdVectorUint8 &salt, const unsigned int &iterations,
+                           const unsigned int &blocksize, const unsigned int &parallelism,
+                           const unsigned int &derivedKeyLength,
                            std::unique_ptr<IEncoder> &&encoder)
     : IHasher(SCRYPT_HASHER_NAME_STRING), _Salt(salt), _Iterations(iterations),
       _BlockSize(blocksize), _Parallelism(parallelism),
@@ -2093,13 +2093,13 @@ StdVectorUint8 ScryptHasher::GetSalt() const { return _Salt; }
 
 String ScryptHasher::GetSaltEncoded() const { return _Encoder->Encode(_Salt); }
 
-size_t ScryptHasher::GetIterations() const { return _Iterations; }
+unsigned int ScryptHasher::GetIterations() const { return _Iterations; }
 
-size_t ScryptHasher::GetBlockSize() const { return _BlockSize; }
+unsigned int ScryptHasher::GetBlockSize() const { return _BlockSize; }
 
-size_t ScryptHasher::GetParallelism() const { return _Parallelism; }
+unsigned int ScryptHasher::GetParallelism() const { return _Parallelism; }
 
-size_t ScryptHasher::GetDerivedKeyLength() const { return _DerivedKeyLength; }
+unsigned int ScryptHasher::GetDerivedKeyLength() const { return _DerivedKeyLength; }
 
 std::unique_ptr<IEncoder> ScryptHasher::GetEncoder() const {
   return _Encoder->Clone();
@@ -2166,12 +2166,12 @@ DeserializeResolver<IHasher> ScryptHasher::DefaultDeserializeResolver() {
           document[CNAMEOF_TRIM_GET(GetEncoder)]);
       StdVectorUint8 salt =
           encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-      size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint64();
-      size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint64();
+      size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
+      size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint();
       size_t parallelism =
-          document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint64();
+          document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint();
       size_t derivedKeyLength =
-          document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint64();
+          document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
       return std::make_unique<ScryptHasher>(salt, iterations, blockSize,
                                             parallelism, derivedKeyLength,
                                             std::move(encoder));
