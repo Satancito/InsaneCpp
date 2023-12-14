@@ -3333,7 +3333,7 @@ static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown co
 /*
 █ INSANE_REPEAT_SEQ - Help
 
-"Exp" is a MACRO identifier that will be invoked and receives the following parameters(n, nprev, c, cnext, se, sae, p1, p2, p3, p4, p5).This macro must meet the following specifications for proper operation :
+"exp" is a MACRO identifier that will be invoked and receives the following parameters(n, nprev, c, cnext, se, sae, p1, p2, p3, p4, p5).This macro must meet the following specifications for proper operation :
 
 "n" : is the current number of the iteration, and it is the number in countdown.It goes from n down to 0.
 "nprev" : is n - 1, the previous value of n.

@@ -1217,7 +1217,12 @@ function Set-LocalEnvironmentVariable {
         WWrite-Host "Local Environment variable " -ForegroundColor DarkYellow -NoNewline
         Write-Host "`"$VarName`"" -NoNewline -ForegroundColor Yellow
         Write-Host "  ➡  " -ForegroundColor DarkYellow -NoNewline
-        Write-Host "`"$((Get-Item env:$VarName).Value)`"" -ForegroundColor Yellow
+        try {
+            Write-Host "`"$((Get-Item env:$VarName).Value)`"" -ForegroundColor Yellow
+        }
+        catch {
+            Write-Host """""" -ForegroundColor Yellow
+        }
     }
 
     if ($Append.IsPresent) {
@@ -1225,7 +1230,7 @@ function Set-LocalEnvironmentVariable {
             $Value = (Get-Item "env:$Name").Value + $Value
         }
     }
-    Set-Item env:$Name -Value "$value" | Out-Null
+    New-Item env:$Name -Value "$value" -Force | Out-Null
     if ($PSBoundParameters.Verbose.IsPresent) {
         Write-MyMessage -VarName $Name
     }
@@ -1254,7 +1259,12 @@ function Set-PersistentEnvironmentVariable {
         Write-Host "Persistent Environment variable " -NoNewline -ForegroundColor DarkYellow
         Write-Host "`"$VarName`"" -NoNewline -ForegroundColor Yellow
         Write-Host "  ➡  " -NoNewline -ForegroundColor DarkYellow
-        Write-Host "`"$((Get-Item env:$VarName).Value)`"" -ForegroundColor Yellow
+        try {
+            Write-Host "`"$((Get-Item env:$VarName).Value)`"" -ForegroundColor Yellow
+        }
+        catch {
+            Write-Host """""" -ForegroundColor Yellow
+        }
     }
 
     Set-LocalEnvironmentVariable -Name $Name -Value $Value -Append:$Append
@@ -1268,29 +1278,25 @@ function Set-PersistentEnvironmentVariable {
         }
         return
     }
-    $pattern = "\s*export[ \t]+$Name=[\w]*[ \t]*>[ \t]*\/dev\/null[ \t]*;[ \t]*#[ \t]*$Name\s*"
-    if ($IsLinux) {
-        $file = "~/.bash_profile"
-        $content = (Get-Content "$file" -ErrorAction Ignore -Raw) + [System.String]::Empty
-        $content = [System.Text.RegularExpressions.Regex]::Replace($content, $pattern, [String]::Empty);
-        $content += [System.Environment]::NewLine + [System.Environment]::NewLine + "export $Name=$Value > /dev/null ;  # $Name"
-        Set-Content "$file" -Value $content -Force
+    if ($IsLinux -or $IsMacOS) {
+        $pattern = "\s*export\s+$name=[\w\W]*\w*\s+>\s*\/dev\/null\s+;\s*#\s*$Name\s*"
+        $files = @("~/.bashrc", "~/.zshrc", "~/.bash_profile", "~/.zprofile")
+        
+        $files | ForEach-Object {
+            if (Test-Path -Path $_ -PathType Leaf) {
+                $content = [System.IO.File]::ReadAllText("$(Resolve-Path $_)")
+                $content = [System.Text.RegularExpressions.Regex]::Replace($content, $pattern, [System.Environment]::NewLine);
+                $content += [System.Environment]::NewLine + "export $Name=$Value > /dev/null ;  # $Name" + [System.Environment]::NewLine
+                [System.IO.File]::WriteAllText("$(Resolve-Path $_)", $content)
+            }
+            
+        }
         if ($PSBoundParameters.Verbose.IsPresent) {
             Write-MyMessage -VarName $Name
         }
         return
     }
-    if ($IsMacOS) {
-        $file = "~/.zprofile"
-        $content = (Get-Content "$file" -ErrorAction Ignore -Raw) + [System.String]::Empty
-        $content = [System.Text.RegularExpressions.Regex]::Replace($content, $pattern, [String]::Empty);
-        $content += [System.Environment]::NewLine + [System.Environment]::NewLine + "export $Name=$Value > /dev/null ;  # $Name"
-        Set-Content "$file" -Value $content -Force
-        if ($PSBoundParameters.Verbose.IsPresent) {
-            Write-MyMessage -VarName $Name
-        }
-        return
-    }
+    
     throw "Invalid platform."
 }
 
@@ -1372,6 +1378,20 @@ function Remove-ItemTree {
     }
 }
 
+function Get-WslPath {
+    param (
+        [string]$Path
+    )
+    if ($Path -match '^([A-Za-z]):\\') {
+        $drive = $matches[1].ToLower()
+        $result = "/mnt/$drive" + ($Path -replace '^([A-Za-z]):\\', '/')
+        $result = $result.Replace("\", "/")
+        return $result 
+    } else {
+        throw "Invalid path '$Path'."
+    }
+}
+
 function Test-GitRepository {
     param (
         [Parameter()]
@@ -1383,7 +1403,7 @@ function Test-GitRepository {
     }
     try {
         Push-Location $Path
-        $result = Test-Command "git rev-parse --is-inside-work-tree --quiet"
+        $result = $(Test-ExternalCommand "git rev-parse --is-inside-work-tree --quiet" -NoOutput)
         return $result
     }
     finally {
@@ -1391,28 +1411,141 @@ function Test-GitRepository {
     }
 }
 
-function Set-GitRepository {
+function Test-GitRemoteUrl {
+    [CmdletBinding()]
     param (
-        [Parameter()]
-        [System.String]
-        $RepositoryUrl,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Url,
 
-        [Parameter()]
-        [System.String]
-        $Path = [System.String]::Empty
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Path
     )
-    $Path = ([System.String]::IsNullOrWhiteSpace($Path) ? "$X_TEMP_DIR" : $Path)
-    $folderName = ($RepositoryUrl | Split-Path -Leaf).Replace(".git", [String]::Empty)  
-    New-Item "$Path" -Force -ItemType Container | Out-Null
-    Remove-ItemTree "$Path/$folderName" -ErrorAction Ignore
     try {
         Push-Location $Path
-        git clone $RepositoryUrl
-        Test-LastExitCode
+        $remoteUrl = & git remote get-url origin
+        return ($remoteUrl -eq $Url)
+    }
+    catch
+    {
+        return $false
     }
     finally {
         Pop-Location
-    } 
+    }
+}
+
+function Add-GitSafeDirectory {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $Path, 
+
+        [Parameter()]
+        [ValidateSet("system", "global", "local", "worktree")]
+        [string]
+        $ConfigFile = "global"
+
+    )
+    if(!(Test-Path $Path -PathType Container))
+    {
+        throw "Invalid path: $Path"
+    }
+    $null = Test-ExternalCommand "git config --$ConfigFile --fixed-value --replace-all safe.directory ""$Path"" ""$Path""" -ThrowOnFailure
+    
+}
+
+function Reset-GitRepository {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $Path,
+
+        [Parameter()]
+        [string]
+        $RemoteName = "origin",
+
+        [Parameter()]
+        [string]
+        $BranchName = "main"
+    )
+    if(Test-GitRepository $Path)
+    {
+        try {
+            Push-Location "$Path"
+            $null = Test-ExternalCommand "git fetch $RemoteName $BranchName" -ThrowOnFailure
+            $null = Test-ExternalCommand "git reset --hard $RemoteName/$BranchName" -ThrowOnFailure
+            $null = Test-ExternalCommand "git checkout $BranchName" -ThrowOnFailure
+        }
+        finally {
+            Pop-Location 
+        }
+    }
+    else
+    {
+        throw "Path ""$Path"" is not a repository."
+    }
+}
+
+function Install-GitRepository {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Url,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        $Path,
+
+        [Parameter()]
+        [switch]
+        $Force,
+
+        [Parameter()]
+        [string]
+        $RemoteName = "origin",
+
+        [Parameter()]
+        [string]
+        $BranchName = "main",
+
+        [Parameter()]
+        [ValidateSet("system", "global", "local", "worktree")]
+        [string]
+        $ConfigFile = "global"
+
+    )
+    $isRepo = Test-GitRepository $Path
+
+    if ($isRepo) {
+        if(Test-GitRemoteUrl -Url $Url -Path $Path)
+        {
+            Reset-GitRepository -Path "$Path" -RemoteName "$RemoteName" -BranchName "$BranchName"
+            Add-GitSafeDirectory -ConfigFile $ConfigFile -Path $Path
+        }
+        else
+        {
+            if($Force.IsPresent)
+            {
+                Remove-Item -Path "$Path" -Force -Recurse -ErrorAction Ignore
+                New-Item -Path "$Path" -Force -ItemType Directory | Out-Null
+                git clone "$Url" "$Path"
+                Add-GitSafeDirectory -ConfigFile $ConfigFile -Path $Path
+            }
+            else
+            {
+                throw "It seems there is a different Git repository in path ""$Path"". Use -Force to replace directory."
+            }
+        }   
+    }
+    else {
+        Remove-Item -Path "$Path" -Force -Recurse -ErrorAction Ignore
+        New-Item -Path "$Path" -Force -ItemType Directory | Out-Null
+        $null =  Test-ExternalCommand "git clone ""$Url"" ""$Path""" -ThrowOnFailure
+        Add-GitSafeDirectory -ConfigFile $ConfigFile -Path $Path
+    }
 }
 
 function Get-ProjectSecretsId {
@@ -1534,33 +1667,70 @@ function Show-ProjectUserSecrets {
 
 }
 
-function Test-Command {
+function Test-ExternalCommand {
     param (
         [string]$Command,
 
         [switch]
-        $WriteOutput
+        $NoOutput, 
+
+        [switch]
+        $ThrowOnFailure,
+
+        [switch]
+        $ShowExitCode,
+
+        [int[]]
+        $AllowedExitCodes = @(0)
+
     )
     try {
-        $output = Invoke-Expression -Command $Command 2>&1
+        if ($NoOutput.IsPresent) {
+            Invoke-Expression -Command "& $Command" | Out-Null
+        }
+        else {
+            Invoke-Expression -Command "& $Command" | Out-Host
+        }
         $exitCode = $LASTEXITCODE
-
-        if ($exitCode -eq 0) {
-            if ($WriteOutput.IsPresent) {
-                Write-Output "✅ Command: $Command $([string]::IsNullOrWhiteSpace($output) ? [string]::Empty :  "$([Environment]::NewLine)Output: $output")"
-                return
+        if (!($NoOutput.IsPresent)) {
+            if($ShowExitCode.IsPresent)
+            {
+                Write-Host "ExitCode: $exitCode"
+            }
+        }
+        if ($exitCode -in $AllowedExitCodes) {
+            if (!($NoOutput.IsPresent)) {
+                Write-Host "✅ Command: $Command "
             }
             return $true
         }
         throw
     }
     catch {
-        if ($WriteOutput.IsPresent) {
-            Write-Output "❌ Command: $Command $([string]::IsNullOrWhiteSpace($output) ? [string]::Empty :  "$([Environment]::NewLine)Output: $output")"
-            return
+        if (!$NoOutput.IsPresent) {
+            Write-Host "❌ Command: $Command"
+        }
+        if ($ThrowOnFailure) {
+            throw "An error occurred while executing the command."
         }
         return $false
     }
+}
+
+function Get-HexRandomName {
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [string]
+        $Prefix = "_",
+
+        [Parameter()]
+        [int]
+        $BytesSize = 8
+    )
+    $bytes = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(16)
+    $hexString = -join ($bytes | ForEach-Object { $_.ToString("X2") })
+    return "$Prefix$hexString"
 }
 
 function Get-GitRepositoryRemoteUrl {
@@ -1569,8 +1739,7 @@ function Get-GitRepositoryRemoteUrl {
         $Path = [string]::Empty
     )
 
-    if([string]::IsNullOrWhiteSpace($Path))
-    {
+    if ([string]::IsNullOrWhiteSpace($Path)) {
         $Path = "$(Get-Location)"
     }
     $result = [string]::Empty
@@ -1578,7 +1747,7 @@ function Get-GitRepositoryRemoteUrl {
         Push-Location $Path
         return "$(Split-Path -Path (git remote get-url origin) -Leaf -ErrorAction Ignore)"
     }
-    catch{
+    catch {
         return $result
     }
     finally {
@@ -1611,6 +1780,31 @@ function Install-BotanLibrary {
     #& "$(Select-ValueByPlatform -WindowsValue "tar -xvf $filename" -LinuxValue "" -MacOSValue "")"
 }
 
+function Join-CompileCommandsJson {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $SourceDir,
+        
+        [Parameter(Mandatory = $true)]
+        [string]
+        $DestinationDir,
+
+        [Parameter()]
+        [string]
+        $FilesExtension = ".compile_commands.json"
+    )
+    $jsonFiles = Get-ChildItem "$SourceDir/*$FilesExtension"  
+    $encoding = [System.Text.Encoding]::UTF8 
+    $CompilationDatabase = "$DestinationDir/compile_commands.json"
+    [System.Text.StringBuilder]$jsonContent = [System.Text.StringBuilder]::new()
+    $jsonContent.Append("[") | Out-Null
+    $jsonFiles | ForEach-Object {
+        $jsonContent.Append([System.IO.File]::ReadAllText($_.FullName)) | Out-Null
+    }
+    $json = $jsonContent.ToString().Trim().TrimEnd(',') + "]"
+    [System.IO.File]::WriteAllText($CompilationDatabase, $json, $encoding)
+}
 
 Set-GlobalConstant -Name "X_TEMP_DIR_NAME" -Value ".PsCoreFxsTemp"
 Set-GlobalConstant -Name "X_TEMP_DIR" -Value "$(Get-UserHome)/$X_TEMP_DIR_NAME"
