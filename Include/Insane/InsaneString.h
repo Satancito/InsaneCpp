@@ -2,10 +2,10 @@
 #ifndef INSANE_STRING_H
 #define INSANE_STRING_H
 
-#include <concepts>
 #include <Insane/Insane.h>
 #include <Insane/InsanePreprocessor.h>
 #include <Insane/InsaneException.h>
+#include <sstream>
 
 #define USING_NS_INSANE_STR using namespace InsaneIO::Insane::Strings
 
@@ -107,38 +107,6 @@ namespace InsaneIO::Insane::Strings
 		~StringExtensions() = default;
 	};
 
-	class Xtring : public String
-	{
-	public:
-		using std::string::string;
-		Xtring(const String& str);
-		bool Contains(const String& content, const bool& caseSensitive = true, const String& locale = DEFAULT_LOCALE_STRING) const;
-		bool EndsWith(const String& suffix, const bool& caseSensitive = true, const String& locale = DEFAULT_LOCALE_STRING) const;
-		Xtring GetCharUTF8(size_t utf8pos) const;
-		Xtring InsertRepeat(size_t distance, const String& toRepeat, bool includeEnd = false);
-		bool IsMatch(const String& pattern) const;
-		size_t LengthUTF8() const;
-		Xtring PadLeft(const size_t& totalWidth, const Xtring& padding = SPACE_STRING);
-		Xtring PadLeftUTF8(const size_t& totalWidth, const Xtring& padding = SPACE_STRING);
-		Xtring PadRight(const size_t& totalWidth, const Xtring& padding = SPACE_STRING);
-		Xtring PadRightUTF8(const size_t& totalWidth, const Xtring& padding = SPACE_STRING);
-		Xtring Remove(const String& toRemove);
-		Xtring Remove(const std::initializer_list<String>& toRemove);
-		Xtring Replace(const String& toFind, const String& toReplace);
-		Xtring Replace(const std::initializer_list<std::pair<String, String>>& toFindToReplacePairs);
-		Xtring ReplaceLastOf(const String& toFind, const String& toReplace);
-		Xtring Reverse();
-		Xtring ReverseUTF8();
-		std::vector<String> Split(const String& toFind) const;
-		bool StartsWith(const String& preffix, const bool& caseSensitive = true, const String& locale = DEFAULT_LOCALE_STRING) const;
-		Xtring SubstringUTF8(size_t startIndex, size_t length = SIZE_MAX) const;
-		Xtring ToLower(const String& locale);
-		Xtring ToUpper(const String& locale);
-		Xtring Trim();
-		Xtring TrimEnd();
-		Xtring TrimStart();
-	};
-
 } // namespace InsaneIO::Insane::Strings
 
 namespace InsaneIO::Insane::Preprocessor
@@ -146,6 +114,5 @@ namespace InsaneIO::Insane::Preprocessor
 
 } // namespace InsaneIO::Insane::Preprocessor
 
-typedef InsaneIO::Insane::Strings::Xtring Xtring;
 
 #endif // !INSANE_STRING_H

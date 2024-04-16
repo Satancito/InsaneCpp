@@ -31,14 +31,14 @@ namespace InsaneIO::Insane::Test
 	public:
 		template <typename T>
 		static void Equals(const String &testLabel, const T &expected, const T &value, const OutFunction<T> &fx, const bool &showValues = true)
-			requires EqualityComparable<T>
+			requires IsEqualityComparable<T>
 		{
 			ShowValues(testLabel, TestType::Equals, expected, value, expected == value, __TEST_OK_STRING, __TEST_FAILED_STRING, fx, showValues);
 		}
 
 		template <typename T>
 		static void NotEquals(const String &testLabel, const T &expected, const T &value, const OutFunction<T> &fx, const bool &showValues = true)
-			requires EqualityComparable<T>
+			requires IsEqualityComparable<T>
 		{
 			ShowValues(testLabel, TestType::NotEquals, expected, value, expected != value, __TEST_OK_STRING, __TEST_FAILED_STRING, fx, showValues);
 		}
@@ -48,7 +48,7 @@ namespace InsaneIO::Insane::Test
 
 		template <typename T>
 		static void ShowValues(const String &testLabel, const TestType &testType, const T &expected, const T &value, const bool &testResult, const String &positiveMessage, const String &negativeMessage, const OutFunction<T> &fx, const bool &showValues)
-			requires InsaneIO::Insane::EqualityComparable<T>
+			requires IsEqualityComparable<T>
 		{
 			USING_NS_INSANE_STR;
 			USING_NS_INSANE_CORE;

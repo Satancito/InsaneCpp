@@ -1,4 +1,5 @@
-﻿#include <Insane/InsaneCore.h>
+﻿#include <Insane/Insane.h>
+#include <Insane/InsaneCore.h>
 #include <Insane/InsaneCryptography.h>
 #include <Insane/InsaneException.h>
 #include <Insane/InsanePreprocessor.h>
@@ -34,14 +35,14 @@
 #include <memory>
 #include <rapidxml/rapidxml.hpp>
 #include <rapidxml/rapidxml_print.hpp>
-#include <stdexcept>
 
 USING_NS_INSANE_CRYPTO;
 USING_NS_INSANE_CORE;
 USING_NS_INSANE_STR;
 USING_NS_INSANE_INTERNAL_CORE;
+USING_NS_INSANE_TEST;
 
-// ███ HexEncodingExtensions ███
+// MARK: ███ HexEncodingExtensions ███
 
 StdVectorUint8 HexEncodingExtensions::DecodeFromHex(const String &data)
 {
@@ -58,7 +59,7 @@ String HexEncodingExtensions::EncodeToHex(const String &data, const bool &toUppe
     return EncodeToHex(ConverterExtensions::StringToStdVectorUint8(data), toUpper);
 }
 
-// ███ Base32EncodingExtensions ███
+// MARK: ███ Base32EncodingExtensions ███
 
 StdVectorUint8 Base32EncodingExtensions::DecodeFromBase32(const String &data)
 {
@@ -78,11 +79,9 @@ String InsaneIO::Insane::Cryptography::Base32EncodingExtensions::EncodeToBase32(
     return EncodeToBase32(ConverterExtensions::StringToStdVectorUint8(data), removePadding, toLower);
 }
 
-// ███ Base64EncodingExtensions ███
+// MARK: ███ Base64EncodingExtensions ███
 StdVectorUint8 Base64EncodingExtensions::DecodeFromBase64(const String &data)
 {
-    USING_NS_INSANE_STR;
-    USING_NS_INSANE_CORE;
     String base64 = data;
     base64 = StringExtensions::Replace(base64, {{URL_ENCODED_PLUS_SIGN_STRING, PLUS_SIGN_STRING}, {URL_ENCODED_SLASH_STRING, SLASH_STRING}, {URL_ENCODED_EQUAL_SIGN_STRING, EQUAL_SIGN_STRING}, {MINUS_SIGN_STRING, PLUS_SIGN_STRING}, {UNDERSCORE_STRING, SLASH_STRING}});
     base64 = StringExtensions::RemoveBlankSpaces(base64);
@@ -94,7 +93,6 @@ StdVectorUint8 Base64EncodingExtensions::DecodeFromBase64(const String &data)
 
 String Base64EncodingExtensions::EncodeToBase64(const StdVectorUint8 &data, const size_t &lineBreaksLength, const bool &removePadding)
 {
-    USING_NS_INSANE_STR;
     String ret = Botan::base64_encode(data);
     if (lineBreaksLength > 0)
     {
@@ -103,16 +101,12 @@ String Base64EncodingExtensions::EncodeToBase64(const StdVectorUint8 &data, cons
     return removePadding ? StringExtensions::Remove(ret, EQUAL_SIGN_STRING) : ret;
 }
 
-String Base64EncodingExtensions::EncodeToBase64(const String &data,
-                                                const size_t &lineBreaksLength,
-                                                const bool &removePadding)
+String Base64EncodingExtensions::EncodeToBase64(const String &data, const size_t &lineBreaksLength, const bool &removePadding)
 {
-    return EncodeToBase64(ConverterExtensions::StringToStdVectorUint8(data),
-                          lineBreaksLength, removePadding);
+    return EncodeToBase64(ConverterExtensions::StringToStdVectorUint8(data), lineBreaksLength, removePadding);
 }
 
-String
-Base64EncodingExtensions::EncodeToUrlSafeBase64(const StdVectorUint8 &data)
+String Base64EncodingExtensions::EncodeToUrlSafeBase64(const StdVectorUint8 &data)
 {
     return StringExtensions::Replace(EncodeToBase64(data),
                                      {{PLUS_SIGN_STRING, MINUS_SIGN_STRING},
@@ -122,24 +116,20 @@ Base64EncodingExtensions::EncodeToUrlSafeBase64(const StdVectorUint8 &data)
 
 String Base64EncodingExtensions::EncodeToUrlSafeBase64(const String &data)
 {
-    return EncodeToUrlSafeBase64(
-        ConverterExtensions::StringToStdVectorUint8(data));
+    return EncodeToUrlSafeBase64(ConverterExtensions::StringToStdVectorUint8(data));
 }
 
-String Base64EncodingExtensions::EncodeToFilenameSafeBase64(
-    const StdVectorUint8 &data)
+String Base64EncodingExtensions::EncodeToFilenameSafeBase64(const StdVectorUint8 &data)
 {
     return EncodeToUrlSafeBase64(data);
 }
 
-String
-Base64EncodingExtensions::EncodeToFilenameSafeBase64(const String &data)
+String Base64EncodingExtensions::EncodeToFilenameSafeBase64(const String &data)
 {
     return EncodeToUrlSafeBase64(data);
 }
 
-String
-Base64EncodingExtensions::EncodeToUrlEncodedBase64(const StdVectorUint8 &data)
+String Base64EncodingExtensions::EncodeToUrlEncodedBase64(const StdVectorUint8 &data)
 {
     return StringExtensions::Replace(
         EncodeToBase64(data),
@@ -150,8 +140,7 @@ Base64EncodingExtensions::EncodeToUrlEncodedBase64(const StdVectorUint8 &data)
 
 String Base64EncodingExtensions::EncodeToUrlEncodedBase64(const String &data)
 {
-    return EncodeToUrlEncodedBase64(
-        ConverterExtensions::StringToStdVectorUint8(data));
+    return EncodeToUrlEncodedBase64(ConverterExtensions::StringToStdVectorUint8(data));
 }
 
 String
@@ -160,8 +149,7 @@ Base64EncodingExtensions::EncodeBase64ToUrlSafeBase64(const String &base64)
     return EncodeToUrlSafeBase64(DecodeFromBase64(base64));
 }
 
-String Base64EncodingExtensions::EncodeBase64ToFilenameSafeBase64(
-    const String &base64)
+String Base64EncodingExtensions::EncodeBase64ToFilenameSafeBase64(const String &base64)
 {
     return EncodeToFilenameSafeBase64(DecodeFromBase64(base64));
 }
@@ -172,35 +160,31 @@ Base64EncodingExtensions::EncodeBase64ToUrlEncodedBase64(const String &base64)
     return EncodeToUrlEncodedBase64(DecodeFromBase64(base64));
 }
 
-// ███ IEncoder ███
+// MARK: ███ IEncoder ███
 
 IEncoder::IEncoder(const String &name) : IJsonSerialize(name) {}
 
 std::unique_ptr<IEncoder>
-IEncoder::Deserialize(const String &json,
-                      const DeserializeResolver<IEncoder> &resolver = nullptr)
+IEncoder::Deserialize(const String &json)
 {
-    return IJsonSerialize::Deserialize(json, resolver);
+    return IJsonSerialize<IEncoder>::Deserialize(json);
 }
 
 const std::unique_ptr<IEncoder> IEncoder::DefaultInstance()
 {
-    USING_NS_INSANE_EXCEPTION;
-    throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__,
-                                          __LINE__);
+    throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 }
 
-DeserializeResolver<IEncoder> IEncoder::DefaultDeserializeResolver()
+// MARK: ███ HexEncoder ███
+
+HexEncoder::HexEncoder(const bool &toUpper) : IEncoder(HEX_ENCODER_NAME_STRING), ToUpper(toUpper)
 {
-    return IJsonSerialize::DefaultDeserializeResolver();
 }
 
-// ███ HexEncoder ███
-
-HexEncoder::HexEncoder(const bool &toUpper)
-    : IEncoder(HEX_ENCODER_NAME_STRING), ToUpper(toUpper) {}
-
-bool HexEncoder::GetToUpper() const { return ToUpper; }
+bool HexEncoder::GetToUpper() const
+{
+    return ToUpper;
+}
 
 String HexEncoder::Encode(const StdVectorUint8 &data) const
 {
@@ -219,9 +203,6 @@ StdVectorUint8 HexEncoder::Decode(const String &data) const
 
 String HexEncoder::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -231,8 +212,7 @@ String HexEncoder::Serialize(const bool &indent) const
         writer.StartObject();
 
         writer.Key(CNAMEOF(Name));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
         writer.Key(CNAMEOF(ToUpper));
         writer.Bool(ToUpper);
@@ -257,50 +237,47 @@ std::unique_ptr<IEncoder> HexEncoder::Clone() const
     return std::make_unique<HexEncoder>(*this);
 }
 
-std::unique_ptr<IEncoder>
-HexEncoder::Deserialize(const String &json,
-                        const DeserializeResolver<IEncoder> &resolver)
+std::unique_ptr<IEncoder> HexEncoder::Deserialize(const String &json)
 {
-    return resolver(json);
+    try
+    {
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() && document.HasMember(CSTRINGIFY(ToUpper))))
+        {
+            throw true;
+        }
+        return std::make_unique<HexEncoder>(document[CNAMEOF(ToUpper)].GetBool());
+    }
+    catch (...)
+    {
+        throw InsaneIO::Insane::Exception::DeserializeException(
+            INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
-DeserializeResolver<IEncoder> HexEncoder::DefaultDeserializeResolver()
-{
-    return [](const String &json) -> std::unique_ptr<IEncoder>
-    {
-        try
-        {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() && document.HasMember(CSTRINGIFY(ToUpper))))
-            {
-                throw true;
-            }
-            return std::make_unique<HexEncoder>(document[CNAMEOF(ToUpper)].GetBool());
-        }
-        catch (...)
-        {
-            throw InsaneIO::Insane::Exception::DeserializeException(
-                INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
-}
-UniquePtrIEncoder InsaneIO::Insane::Cryptography::HexEncoder::CreateInstance(
-    const bool &toUpper)
+UniquePtrIEncoder InsaneIO::Insane::Cryptography::HexEncoder::CreateInstance(const bool &toUpper)
 {
     return std::make_unique<HexEncoder>(toUpper);
 }
 
-// ███ Base32Encoder ███
+// MARK: ███ Base32Encoder ███
 
 Base32Encoder::Base32Encoder(const bool &removePadding, const bool &toLower)
-    : IEncoder(BASE32_ENCODER_NAME_STRING), RemovePadding(removePadding),
-      ToLower(toLower) {}
+    : IEncoder(BASE32_ENCODER_NAME_STRING), RemovePadding(removePadding), ToLower(toLower)
+{
+}
 
-size_t Base32Encoder::GetToLower() const { return ToLower; }
+size_t Base32Encoder::GetToLower() const
+{
+    return ToLower;
+}
 
-bool Base32Encoder::GetRemovePadding() const { return RemovePadding; }
+bool Base32Encoder::GetRemovePadding() const
+{
+    return RemovePadding;
+}
 
 String Base32Encoder::Encode(const StdVectorUint8 &data) const
 {
@@ -319,9 +296,6 @@ StdVectorUint8 Base32Encoder::Decode(const String &data) const
 
 String Base32Encoder::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -360,67 +334,61 @@ std::unique_ptr<IEncoder> Base32Encoder::DefaultInstance()
     return std::make_unique<Base32Encoder>();
 }
 
-std::unique_ptr<IEncoder>
-Base32Encoder::Deserialize(const String &json,
-                           const DeserializeResolver<IEncoder> &resolver)
+std::unique_ptr<IEncoder> Base32Encoder::Deserialize(const String &json)
 {
-    return resolver(json);
-}
-
-DeserializeResolver<IEncoder> Base32Encoder::DefaultDeserializeResolver()
-{
-    return [](const String &json) -> std::unique_ptr<IEncoder>
+    try
     {
-        try
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() && document.HasMember(CSTRINGIFY(ToLower)) &&
+              document.HasMember(CSTRINGIFY(RemovePadding))))
         {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() && document.HasMember(CSTRINGIFY(ToLower)) &&
-                  document.HasMember(CSTRINGIFY(RemovePadding))))
-            {
-                throw true;
-            }
-            return std::make_unique<Base32Encoder>(
-                document[CNAMEOF(RemovePadding)].GetBool(),
-                document[CNAMEOF(ToLower)].GetBool());
+            throw true;
         }
-        catch (...)
-        {
-            throw InsaneIO::Insane::Exception::DeserializeException(
-                INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
+        return std::make_unique<Base32Encoder>(
+            document[CNAMEOF(RemovePadding)].GetBool(),
+            document[CNAMEOF(ToLower)].GetBool());
+    }
+    catch (...)
+    {
+        throw InsaneIO::Insane::Exception::DeserializeException(
+            INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
-UniquePtrIEncoder InsaneIO::Insane::Cryptography::Base32Encoder::CreateInstance(
-    const bool &removePadding, const bool &toLower)
+UniquePtrIEncoder InsaneIO::Insane::Cryptography::Base32Encoder::CreateInstance(const bool &removePadding, const bool &toLower)
 {
     return std::make_unique<Base32Encoder>(removePadding, toLower);
 }
 
-// ███ Base64Encoder ███
+// MARK: ███ Base64Encoder ███
 
-Base64Encoder::Base64Encoder(const size_t &lineBreaksLength,
-                             const bool &removePadding,
-                             const Base64Encoding &encodingType)
-    : IEncoder(BASE64_ENCODER_NAME_STRING), LineBreaksLength(lineBreaksLength),
-      RemovePadding(removePadding), EncodingType(encodingType) {}
+Base64Encoder::Base64Encoder(const size_t &lineBreaksLength, const bool &removePadding, const Base64Encoding &encodingType) : IEncoder(BASE64_ENCODER_NAME_STRING), LineBreaksLength(lineBreaksLength), RemovePadding(removePadding), EncodingType(encodingType)
+{
+}
 
-size_t Base64Encoder::GetLineBreaksLength() const { return LineBreaksLength; }
+size_t Base64Encoder::GetLineBreaksLength() const
+{
+    return LineBreaksLength;
+}
 
-bool Base64Encoder::GetRemovePadding() const { return RemovePadding; }
+bool Base64Encoder::GetRemovePadding() const
+{
+    return RemovePadding;
+}
 
-Base64Encoding Base64Encoder::GetEncodingType() const { return EncodingType; }
+Base64Encoding Base64Encoder::GetEncodingType() const
+{
+    return EncodingType;
+}
 
 String Base64Encoder::Encode(const StdVectorUint8 &data) const
 {
-    USING_NS_INSANE_EXCEPTION;
     switch (EncodingType)
     {
         case Base64Encoding::Base64:
-            return Base64EncodingExtensions::EncodeToBase64(data, LineBreaksLength,
-                                                            RemovePadding);
+            return Base64EncodingExtensions::EncodeToBase64(data, LineBreaksLength, RemovePadding);
         case Base64Encoding::UrlSafeBase64:
             return Base64EncodingExtensions::EncodeToUrlSafeBase64(data);
         case Base64Encoding::FileNameSafeBase64:
@@ -428,9 +396,7 @@ String Base64Encoder::Encode(const StdVectorUint8 &data) const
         case Base64Encoding::UrlEncodedBase64:
             return Base64EncodingExtensions::EncodeToUrlEncodedBase64(data);
         default:
-            throw NotImplementedException(
-                INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                Base64EncodingEnumExtensions::ToString(EncodingType, true));
+            throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, Base64EncodingEnumExtensions::ToString(EncodingType, true));
     }
 }
 
@@ -446,9 +412,6 @@ StdVectorUint8 Base64Encoder::Decode(const String &data) const
 
 String Base64Encoder::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         using namespace rapidjson;
@@ -459,8 +422,7 @@ String Base64Encoder::Serialize(const bool &indent) const
         writer.StartObject();
 
         writer.Key(CNAMEOF(Name));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
         writer.Key(CNAMEOF(LineBreaksLength));
         writer.Uint64(LineBreaksLength);
@@ -486,11 +448,30 @@ std::unique_ptr<IEncoder> Base64Encoder::Clone() const
     return std::make_unique<Base64Encoder>(*this);
 }
 
-std::unique_ptr<IEncoder>
-Base64Encoder::Deserialize(const String &json,
-                           const DeserializeResolver<IEncoder> &resolver)
+std::unique_ptr<IEncoder> Base64Encoder::Deserialize(const String &json)
 {
-    return resolver(json);
+    try
+    {
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() &&
+              document.HasMember(CSTRINGIFY(LineBreaksLength)) &&
+              document.HasMember(CSTRINGIFY(RemovePadding)) &&
+              document.HasMember(CSTRINGIFY(EncodingType))))
+        {
+            throw true;
+        }
+        return std::make_unique<Base64Encoder>(
+            document[CNAMEOF(LineBreaksLength)].GetUint(),
+            document[CNAMEOF(RemovePadding)].GetBool(),
+            Base64EncodingEnumExtensions::Parse(
+                document[CNAMEOF(EncodingType)].GetInt()));
+    }
+    catch (...)
+    {
+        throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
 std::unique_ptr<IEncoder> Base64Encoder::DefaultInstance()
@@ -498,109 +479,93 @@ std::unique_ptr<IEncoder> Base64Encoder::DefaultInstance()
     return std::make_unique<Base64Encoder>();
 }
 
-DeserializeResolver<IEncoder> Base64Encoder::DefaultDeserializeResolver()
+UniquePtrIEncoder Base64Encoder::CreateInstance(const size_t &lineBreaksLength, const bool &removePadding, const Base64Encoding &encodingType)
 {
-    static const DeserializeResolver<IEncoder> resolver =
-        [](const String &json) -> std::unique_ptr<IEncoder>
-    {
-        try
-        {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() &&
-                  document.HasMember(CSTRINGIFY(LineBreaksLength)) &&
-                  document.HasMember(CSTRINGIFY(RemovePadding)) &&
-                  document.HasMember(CSTRINGIFY(EncodingType))))
-            {
-                throw true;
-            }
-            return std::make_unique<Base64Encoder>(
-                document[CNAMEOF(LineBreaksLength)].GetUint(),
-                document[CNAMEOF(RemovePadding)].GetBool(),
-                Base64EncodingEnumExtensions::Parse(
-                    document[CNAMEOF(EncodingType)].GetInt()));
-        }
-        catch (...)
-        {
-            throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
-    return resolver;
+    return std::make_unique<Base64Encoder>(lineBreaksLength, removePadding, encodingType);
 }
 
-UniquePtrIEncoder InsaneIO::Insane::Cryptography::Base64Encoder::CreateInstance(
-    const size_t &lineBreaksLength, const bool &removePadding,
-    const Base64Encoding &encodingType)
-{
-    return std::make_unique<Base64Encoder>(lineBreaksLength, removePadding,
-                                           encodingType);
-}
+// MARK: ███ HashExtensions ███
 
-// ███ HashExtensions ███
-
-StdVectorUint8 HashExtensions::ComputeHash(const StdVectorUint8 &data,
-                                           const HashAlgorithm &algorithm)
+StdVectorUint8 HashExtensions::ComputeHash(const StdVectorUint8 &data, const HashAlgorithm &algorithm)
 {
     switch (algorithm)
     {
         case HashAlgorithm::Md5:
         {
-            std::unique_ptr<Botan::HashFunction> hash =
-                Botan::HashFunction::create(MD5_ALGORITHM_NAME_STRING);
+            std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(MD5_ALGORITHM_NAME_STRING);
             hash->update(data);
             Botan::SecureVector<uint8_t> result = hash->final();
             return StdVectorUint8(result.begin(), result.end());
         }
         case HashAlgorithm::Sha1:
         {
-            std::unique_ptr<Botan::HashFunction> hash =
-                Botan::HashFunction::create(SHA1_ALGORITHM_NAME_STRING);
+            std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(SHA1_ALGORITHM_NAME_STRING);
             hash->update(data);
             Botan::SecureVector<uint8_t> result = hash->final();
             return StdVectorUint8(result.begin(), result.end());
         }
         case HashAlgorithm::Sha256:
         {
-            std::unique_ptr<Botan::HashFunction> hash =
-                Botan::HashFunction::create_or_throw(SHA256_ALGORITHM_NAME_STRING);
+            std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create_or_throw(SHA256_ALGORITHM_NAME_STRING);
             hash->update(data);
             Botan::SecureVector<uint8_t> result = hash->final();
             return StdVectorUint8(result.begin(), result.end());
         }
         case HashAlgorithm::Sha384:
         {
-            std::unique_ptr<Botan::HashFunction> hash =
-                Botan::HashFunction::create(SHA384_ALGORITHM_NAME_STRING);
+            std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(SHA384_ALGORITHM_NAME_STRING);
             hash->update(data);
             Botan::SecureVector<uint8_t> result = hash->final();
             return StdVectorUint8(result.begin(), result.end());
         }
         case HashAlgorithm::Sha512:
         {
-            std::unique_ptr<Botan::HashFunction> hash =
-                Botan::HashFunction::create(SHA512_ALGORITHM_NAME_STRING);
+            std::unique_ptr<Botan::HashFunction> hash = Botan::HashFunction::create(SHA512_ALGORITHM_NAME_STRING);
             hash->update(data);
             Botan::SecureVector<uint8_t> result = hash->final();
             return StdVectorUint8(result.begin(), result.end());
         }
         default:
-            throw NotImplementedException(
-                INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                HashAlgorithmEnumExtensions::ToString(algorithm));
+            throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, HashAlgorithmEnumExtensions::ToString(algorithm));
     }
 }
 
-StdVectorUint8 HashExtensions::ComputeHash(const String &data,
-                                           const HashAlgorithm &algorithm)
+StdVectorUint8 HashExtensions::ComputeHash(const String &data, const HashAlgorithm &algorithm)
 {
-    return ComputeHash(ConverterExtensions::StringToStdVectorUint8(data),
-                       algorithm);
+    return ComputeHash(ConverterExtensions::StringToStdVectorUint8(data), algorithm);
 }
 
-StdVectorUint8 HashExtensions::ComputeHmac(const StdVectorUint8 &data,
-                                           const StdVectorUint8 &key,
-                                           const HashAlgorithm &algorithm)
+String HashExtensions::ComputeEncodedHash(const StdVectorUint8 &data, std::unique_ptr<IEncoder> &&encoder, const HashAlgorithm &algorithm)
+{
+    return encoder->Encode(ComputeHash(data, algorithm));
+}
+
+String HashExtensions::ComputeEncodedHash(const String &data, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return encoder->Encode(ComputeHash(data, algorithm));
+}
+
+bool HashExtensions::VerifyHash(const StdVectorUint8 &data, const StdVectorUint8 expected, const HashAlgorithm &algorithm)
+{
+    return ComputeHash(data, algorithm) == expected;
+}
+
+bool HashExtensions::VerifyHash(const String &data, const StdVectorUint8 expected, const HashAlgorithm &algorithm)
+{
+    return ComputeHash(data, algorithm) == expected;
+}
+
+bool HashExtensions::VerifyEncodedHash(const StdVectorUint8 &data, const String expected, std::unique_ptr<IEncoder> &&encoder, const HashAlgorithm &algorithm)
+{
+    return ComputeEncodedHash(data, std::move(encoder), algorithm) == expected;
+}
+
+bool HashExtensions::VerifyEncodedHash(const String &data, const String expected, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return ComputeEncodedHash(data, std::move(encoder), algorithm) == expected;
+}
+
+StdVectorUint8 HashExtensions::ComputeHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, const HashAlgorithm &algorithm)
 {
     size_t blockSize = 0;
     StdVectorUint8 secret = key;
@@ -619,9 +584,7 @@ StdVectorUint8 HashExtensions::ComputeHmac(const StdVectorUint8 &data,
             blockSize = HMAC_128_BYTES_BLOCK_SIZE;
             break;
         default:
-            throw NotImplementedException(
-                INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                HashAlgorithmEnumExtensions::ToString(algorithm));
+            throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, HashAlgorithmEnumExtensions::ToString(algorithm));
     }
 
     if (secret.size() > blockSize)
@@ -631,13 +594,10 @@ StdVectorUint8 HashExtensions::ComputeHmac(const StdVectorUint8 &data,
 
     if (secret.size() < blockSize)
     {
-        secret.insert(secret.end(), blockSize - secret.size(),
-                      static_cast<uint8_t>(0));
+        secret.insert(secret.end(), blockSize - secret.size(), static_cast<uint8_t>(0));
     }
-    StdVectorUint8 outerKeyPadding =
-        StdVectorUint8(blockSize, HMAC_OUTER_PADDING);
-    StdVectorUint8 innerKeyPadding =
-        StdVectorUint8(blockSize, HMAC_INNER_PADDING);
+    StdVectorUint8 outerKeyPadding = StdVectorUint8(blockSize, HMAC_OUTER_PADDING);
+    StdVectorUint8 innerKeyPadding = StdVectorUint8(blockSize, HMAC_INNER_PADDING);
     for (size_t i = 0; i < blockSize; i++)
     {
         innerKeyPadding[i] = (uint8_t)(secret[i] ^ innerKeyPadding[i]);
@@ -649,32 +609,89 @@ StdVectorUint8 HashExtensions::ComputeHmac(const StdVectorUint8 &data,
     return ComputeHash(outerKeyPadding, algorithm);
 }
 
-StdVectorUint8 HashExtensions::ComputeHmac(const String &data,
-                                           const String &key,
-                                           const HashAlgorithm &algorithm)
+StdVectorUint8 HashExtensions::ComputeHmac(const String &data, const String &key, const HashAlgorithm &algorithm)
 {
-    return ComputeHmac(ConverterExtensions::StringToStdVectorUint8(data),
-                       ConverterExtensions::StringToStdVectorUint8(key),
-                       algorithm);
+    return ComputeHmac(ConverterExtensions::StringToStdVectorUint8(data), ConverterExtensions::StringToStdVectorUint8(key), algorithm);
 }
 
-StdVectorUint8 HashExtensions::ComputeScrypt(const StdVectorUint8 &data,
-                                             const StdVectorUint8 &salt,
-                                             const size_t &iterations,
-                                             const size_t &blockSize,
-                                             const size_t &parallelism,
-                                             const size_t &derivedKeyLength)
+StdVectorUint8 HashExtensions::ComputeHmac(const StdVectorUint8 &data, const String &key, const HashAlgorithm &algorithm)
+{
+    return ComputeHmac(data, ConverterExtensions::StringToStdVectorUint8(key), algorithm);
+}
+
+StdVectorUint8 HashExtensions::ComputeHmac(const String &data, const StdVectorUint8 &key, const HashAlgorithm &algorithm)
+{
+    return ComputeHmac(ConverterExtensions::StringToStdVectorUint8(data), key, algorithm);
+}
+
+String HashExtensions::ComputeEncodedHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return encoder->Encode(ComputeHmac(data, key, algorithm));
+}
+
+String HashExtensions::ComputeEncodedHmac(const String &data, const String &key, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return encoder->Encode(ComputeHmac(data, key, algorithm));
+}
+
+String HashExtensions::ComputeEncodedHmac(const StdVectorUint8 &data, const String &key, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return encoder->Encode(ComputeHmac(data, key, algorithm));
+}
+
+String HashExtensions::ComputeEncodedHmac(const String &data, const StdVectorUint8 &key, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return encoder->Encode(ComputeHmac(data, key, algorithm));
+}
+
+bool HashExtensions::VerifyHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, const StdVectorUint8 &expected, const HashAlgorithm &algorithm)
+{
+    return ComputeHmac(data, key, algorithm) == expected;
+}
+
+bool HashExtensions::VerifyHmac(const String &data, const String &key, const StdVectorUint8 &expected, const HashAlgorithm &algorithm)
+{
+    return ComputeHmac(data, key, algorithm) == expected;
+}
+
+bool HashExtensions::VerifyHmac(const StdVectorUint8 &data, const String &key, const StdVectorUint8 &expected, const HashAlgorithm &algorithm)
+{
+    return ComputeHmac(data, key, algorithm) == expected;
+}
+
+bool HashExtensions::VerifyHmac(const String &data, const StdVectorUint8 &key, const StdVectorUint8 &expected, const HashAlgorithm &algorithm)
+{
+    return ComputeHmac(data, key, algorithm) == expected;
+}
+
+bool HashExtensions::VerifyEncodedHmac(const StdVectorUint8 &data, const StdVectorUint8 &key, const String &expected, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return ComputeEncodedHmac(data, key, std::move(encoder), algorithm) == expected;
+}
+
+bool HashExtensions::VerifyEncodedHmac(const String &data, const String &key, const String &expected, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return ComputeEncodedHmac(data, key, std::move(encoder), algorithm) == expected;
+}
+
+bool HashExtensions::VerifyEncodedHmac(const StdVectorUint8 &data, const String &key, const String &expected, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return ComputeEncodedHmac(data, key, std::move(encoder), algorithm) == expected;
+}
+
+bool HashExtensions::VerifyEncodedHmac(const String &data, const StdVectorUint8 &key, const String &expected, UniquePtrIEncoder &&encoder, const HashAlgorithm &algorithm)
+{
+    return ComputeEncodedHmac(data, key, std::move(encoder), algorithm) == expected;
+}
+
+StdVectorUint8 HashExtensions::ComputeArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
 {
     try
     {
-        std::unique_ptr<Botan::PasswordHashFamily> family =
-            Botan::PasswordHashFamily::create("Scrypt");
-        std::unique_ptr<Botan::PasswordHash> hash =
-            family->from_params(iterations, blockSize, parallelism);
+        std::unique_ptr<Botan::PasswordHashFamily> family = Botan::PasswordHashFamily::create(Argon2VariantEnumExtensions::ToString(variant));
+        std::unique_ptr<Botan::PasswordHash> hash = family->from_params(memorySizeKiB, iterations, parallelism);
         std::vector<uint8_t> out(derivedKeyLength);
-        hash->derive_key(out.data(), out.size(),
-                         reinterpret_cast<const char *>(data.data()), data.size(),
-                         salt.data(), salt.size());
+        hash->derive_key(out.data(), out.size(), reinterpret_cast<const char *>(data.data()), data.size(), salt.data(), salt.size());
         return out;
     }
     catch (...)
@@ -683,37 +700,89 @@ StdVectorUint8 HashExtensions::ComputeScrypt(const StdVectorUint8 &data,
     }
 }
 
-StdVectorUint8 HashExtensions::ComputeScrypt(const String &data,
-                                             const String &salt,
-                                             const size_t &iterations,
-                                             const size_t &blockSize,
-                                             const size_t &parallelism,
-                                             const size_t &derivedKeyLength)
+StdVectorUint8 HashExtensions::ComputeArgon2(const String &data, const String &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
 {
-    return ComputeScrypt(ConverterExtensions::StringToStdVectorUint8(data),
-                         ConverterExtensions::StringToStdVectorUint8(salt),
-                         iterations, blockSize, parallelism, derivedKeyLength);
+    return ComputeArgon2(ConverterExtensions::StringToStdVectorUint8(data), ConverterExtensions::StringToStdVectorUint8(salt), iterations, memorySizeKiB, parallelism, variant, derivedKeyLength);
 }
 
-StdVectorUint8 HashExtensions::ComputeArgon2(const StdVectorUint8 &data,
-                                             const StdVectorUint8 &salt,
-                                             const size_t &iterations,
-                                             const size_t &memorySizeKiB,
-                                             const size_t &parallelism,
-                                             const Argon2Variant &variant,
-                                             const size_t &derivedKeyLength)
+StdVectorUint8 HashExtensions::ComputeArgon2(const StdVectorUint8 &data, const String &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeArgon2(data, ConverterExtensions::StringToStdVectorUint8(salt), iterations, memorySizeKiB, parallelism, variant, derivedKeyLength);
+}
+
+StdVectorUint8 HashExtensions::ComputeArgon2(const String &data, const StdVectorUint8 &salt, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeArgon2(ConverterExtensions::StringToStdVectorUint8(data), salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength);
+}
+
+String HashExtensions::ComputeEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength));
+}
+
+String HashExtensions::ComputeEncodedArgon2(const String &data, const String &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength));
+}
+
+String HashExtensions::ComputeEncodedArgon2(const StdVectorUint8 &data, const String &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength));
+}
+
+String HashExtensions::ComputeEncodedArgon2(const String &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength));
+}
+
+bool HashExtensions::VerifyArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+bool HashExtensions::VerifyArgon2(const String &data, const String &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+bool HashExtensions::VerifyArgon2(const StdVectorUint8 &data, const String &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+bool HashExtensions::VerifyArgon2(const String &data, const StdVectorUint8 &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeArgon2(data, salt, iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+bool HashExtensions::VerifyEncodedArgon2(const StdVectorUint8 &data, const StdVectorUint8 &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeEncodedArgon2(data, salt, std::move(encoder), iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+bool HashExtensions::VerifyEncodedArgon2(const String &data, const String &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeEncodedArgon2(data, salt, std::move(encoder), iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+bool HashExtensions::VerifyEncodedArgon2(const StdVectorUint8 &data, const String &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeEncodedArgon2(data, salt, std::move(encoder), iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+bool HashExtensions::VerifyEncodedArgon2(const String &data, const StdVectorUint8 &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &memorySizeKiB, const size_t &parallelism, const Argon2Variant &variant, const size_t &derivedKeyLength)
+{
+    return ComputeEncodedArgon2(data, salt, std::move(encoder), iterations, memorySizeKiB, parallelism, variant, derivedKeyLength) == expected;
+}
+
+StdVectorUint8 HashExtensions::ComputeScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
     try
     {
-        std::unique_ptr<Botan::PasswordHashFamily> family =
-            Botan::PasswordHashFamily::create(
-                Argon2VariantEnumExtensions::ToString(variant));
-        std::unique_ptr<Botan::PasswordHash> hash =
-            family->from_params(memorySizeKiB, iterations, parallelism);
+        std::unique_ptr<Botan::PasswordHashFamily> family = Botan::PasswordHashFamily::create("Scrypt");
+        std::unique_ptr<Botan::PasswordHash> hash = family->from_params(iterations, blockSize, parallelism);
         std::vector<uint8_t> out(derivedKeyLength);
-        hash->derive_key(out.data(), out.size(),
-                         reinterpret_cast<const char *>(data.data()), data.size(),
-                         salt.data(), salt.size());
+        hash->derive_key(out.data(), out.size(), reinterpret_cast<const char *>(data.data()), data.size(), salt.data(), salt.size());
         return out;
     }
     catch (...)
@@ -722,178 +791,95 @@ StdVectorUint8 HashExtensions::ComputeArgon2(const StdVectorUint8 &data,
     }
 }
 
-StdVectorUint8 HashExtensions::ComputeArgon2(
-    const String &data, const String &salt, const size_t &iterations,
-    const size_t &memorySizeKiB, const size_t &parallelism,
-    const Argon2Variant &variant, const size_t &derivedKeyLength)
+StdVectorUint8 HashExtensions::ComputeScrypt(const String &data, const String &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return ComputeArgon2(ConverterExtensions::StringToStdVectorUint8(data),
-                         ConverterExtensions::StringToStdVectorUint8(salt),
-                         iterations, memorySizeKiB, parallelism, variant,
-                         derivedKeyLength);
+    return ComputeScrypt(ConverterExtensions::StringToStdVectorUint8(data), ConverterExtensions::StringToStdVectorUint8(salt), iterations, blockSize, parallelism, derivedKeyLength);
 }
 
-String HashExtensions::ComputeEncodedHash(const StdVectorUint8 &data,
-                                          std::unique_ptr<IEncoder> &&encoder,
-                                          const HashAlgorithm &algorithm)
+StdVectorUint8 HashExtensions::ComputeScrypt(const StdVectorUint8 &data, const String &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeHash(data, algorithm));
+    return ComputeScrypt(data, ConverterExtensions::StringToStdVectorUint8(salt), iterations, blockSize, parallelism, derivedKeyLength);
 }
 
-String HashExtensions::ComputeEncodedHmac(const StdVectorUint8 &data,
-                                          const StdVectorUint8 &key,
-                                          UniquePtrIEncoder &&encoder,
-                                          const HashAlgorithm &algorithm)
+StdVectorUint8 HashExtensions::ComputeScrypt(const String &data, const StdVectorUint8 &salt, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeHmac(data, key, algorithm));
+    return ComputeScrypt(ConverterExtensions::StringToStdVectorUint8(data), salt, iterations, blockSize, parallelism, derivedKeyLength);
 }
 
-String HashExtensions::ComputeEncodedArgon2(
-    const StdVectorUint8 &data, const StdVectorUint8 &salt,
-    UniquePtrIEncoder &&encoder, const size_t &iterations,
-    const size_t &memorySizeKiB, const size_t &parallelism,
-    const Argon2Variant &variant, const size_t &derivedKeyLength)
+String HashExtensions::ComputeEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB,
-                                         parallelism, variant, derivedKeyLength));
+    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength));
 }
 
-String HashExtensions::ComputeEncodedScrypt(const StdVectorUint8 &data,
-                                            const StdVectorUint8 &salt,
-                                            UniquePtrIEncoder &&encoder,
-                                            const size_t &iterations,
-                                            const size_t &blockSize,
-                                            const size_t &parallelism,
-                                            const size_t &derivedKeyLength)
+String HashExtensions::ComputeEncodedScrypt(const String &data, const String &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize,
-                                         parallelism, derivedKeyLength));
+    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength));
 }
 
-String HashExtensions::ComputeEncodedHash(const String &data,
-                                          UniquePtrIEncoder &&encoder,
-                                          const HashAlgorithm &algorithm)
+String HashExtensions::ComputeEncodedScrypt(const StdVectorUint8 &data, const String &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeHash(data, algorithm));
+    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength));
 }
 
-String HashExtensions::ComputeEncodedHmac(const String &data, const String &key,
-                                          UniquePtrIEncoder &&encoder,
-                                          const HashAlgorithm &algorithm)
+String HashExtensions::ComputeEncodedScrypt(const String &data, const StdVectorUint8 &salt, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeHmac(data, key, algorithm));
+    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength));
 }
 
-String HashExtensions::ComputeEncodedArgon2(
-    const String &data, const String &salt, UniquePtrIEncoder &&encoder,
-    const size_t &iterations, const size_t &memorySizeKiB,
-    const size_t &parallelism, const Argon2Variant &variant,
-    const size_t &derivedKeyLength)
+bool HashExtensions::VerifyScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB,
-                                         parallelism, variant, derivedKeyLength));
+    return ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-String HashExtensions::ComputeEncodedScrypt(
-    const String &data, const String &salt, UniquePtrIEncoder &&encoder,
-    const size_t &iterations, const size_t &blockSize,
-    const size_t &parallelism, const size_t &derivedKeyLength)
+bool HashExtensions::VerifyScrypt(const String &data, const String &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize,
-                                         parallelism, derivedKeyLength));
+    return ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-String HashExtensions::ComputeEncodedHash(const StdVectorUint8 &data,
-                                          const IEncoder *encoder,
-                                          const HashAlgorithm &algorithm)
+bool HashExtensions::VerifyScrypt(const StdVectorUint8 &data, const String &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeHash(data, algorithm));
+    return ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-String HashExtensions::ComputeEncodedHmac(const StdVectorUint8 &data,
-                                          const StdVectorUint8 &key,
-                                          const IEncoder *encoder,
-                                          const HashAlgorithm &algorithm)
+bool HashExtensions::VerifyScrypt(const String &data, const StdVectorUint8 &salt, const StdVectorUint8 &expected, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeHmac(data, key, algorithm));
+    return ComputeScrypt(data, salt, iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-String HashExtensions::ComputeEncodedArgon2(
-    const StdVectorUint8 &data, const StdVectorUint8 &salt,
-    const IEncoder *encoder, const size_t &iterations,
-    const size_t &memorySizeKiB, const size_t &parallelism,
-    const Argon2Variant &variant, const size_t &derivedKeyLength)
+bool HashExtensions::VerifyEncodedScrypt(const StdVectorUint8 &data, const StdVectorUint8 &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB,
-                                         parallelism, variant, derivedKeyLength));
+    return ComputeEncodedScrypt(data, salt, std::move(encoder), iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-String HashExtensions::ComputeEncodedScrypt(
-    const StdVectorUint8 &data, const StdVectorUint8 &salt,
-    const IEncoder *encoder, const size_t &iterations, const size_t &blockSize,
-    const size_t &parallelism, const size_t &derivedKeyLength)
+bool HashExtensions::VerifyEncodedScrypt(const String &data, const String &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize,
-                                         parallelism, derivedKeyLength));
-}
-// clang-format on
-String HashExtensions::ComputeEncodedHash(const String &data,
-                                          const IEncoder *encoder,
-                                          const HashAlgorithm &algorithm)
-{
-    return encoder->Encode(ComputeHash(data, algorithm));
-}
-// clang-format on
-String HashExtensions::ComputeEncodedHmac(const String &data, const String &key,
-                                          const IEncoder *encoder,
-                                          const HashAlgorithm &algorithm)
-{
-    return encoder->Encode(ComputeHmac(data, key, algorithm));
+    return ComputeEncodedScrypt(data, salt, std::move(encoder), iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-String HashExtensions::ComputeEncodedArgon2(
-    const String &data, const String &salt, const IEncoder *encoder,
-    const size_t &iterations, const size_t &memorySizeKiB,
-    const size_t &parallelism, const Argon2Variant &variant,
-    const size_t &derivedKeyLength)
+bool HashExtensions::VerifyEncodedScrypt(const StdVectorUint8 &data, const String &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeArgon2(data, salt, iterations, memorySizeKiB,
-                                         parallelism, variant, derivedKeyLength));
+    return ComputeEncodedScrypt(data, salt, std::move(encoder), iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-String HashExtensions::ComputeEncodedScrypt(
-    const String &data, const String &salt, const IEncoder *encoder,
-    const size_t &iterations, const size_t &blockSize,
-    const size_t &parallelism, const size_t &derivedKeyLength)
+bool HashExtensions::VerifyEncodedScrypt(const String &data, const StdVectorUint8 &salt, const String &expected, UniquePtrIEncoder &&encoder, const size_t &iterations, const size_t &blockSize, const size_t &parallelism, const size_t &derivedKeyLength)
 {
-    return encoder->Encode(ComputeScrypt(data, salt, iterations, blockSize,
-                                         parallelism, derivedKeyLength));
+    return ComputeEncodedScrypt(data, salt, std::move(encoder), iterations, blockSize, parallelism, derivedKeyLength) == expected;
 }
 
-// ███ DefaultEncoderFunctions ███
+// MARK: ███ DefaultEncoderFunctions ███
 
-static inline const std::map<String, std::function<std::unique_ptr<IEncoder>()>>
-    DefaultEncoderFunctions = {
-        {HEX_ENCODER_NAME_STRING,
-         []()
-         { return HexEncoder::DefaultInstance(); }},
-
-        {BASE32_ENCODER_NAME_STRING,
-         []()
-         { return Base32Encoder::DefaultInstance(); }},
-
-        {BASE64_ENCODER_NAME_STRING,
-         []()
-         { return Base64Encoder::DefaultInstance(); }},
+static inline const std::map<String, std::unique_ptr<IEncoder>> DefaultEncoders = {
+    {HEX_ENCODER_NAME_STRING, HexEncoder::DefaultInstance()},
+    {BASE32_ENCODER_NAME_STRING, Base32Encoder::DefaultInstance()},
+    {BASE64_ENCODER_NAME_STRING, Base64Encoder::DefaultInstance()},
 };
 
-// ███ AesExtensions ███
+// MARK: ███ AesExtensions ███
 class PaddingBase
 {
 public:
     virtual ~PaddingBase() = default;
-    virtual void pad(Botan::secure_vector<uint8_t> &buffer,
-                     size_t final_block_bytes, size_t block_size) const = 0;
+    virtual void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes, size_t block_size) const = 0;
     virtual size_t unpad(const uint8_t block[], size_t len) const = 0;
     virtual bool valid_blocksize(size_t block_size) const = 0;
     virtual std::string name() const = 0;
@@ -903,8 +889,7 @@ class ZeroPadding : public PaddingBase
 {
 public:
     virtual ~ZeroPadding() = default;
-    void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes,
-             size_t block_size) const override
+    void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes, size_t block_size) const override
     {
         const size_t pad_bytes = block_size - final_block_bytes;
         buffer.resize(buffer.size() + pad_bytes, 0x00);
@@ -925,15 +910,17 @@ public:
         return (block_size > 2 && block_size < 256);
     }
 
-    std::string name() const override { return "ZeroPadding"; }
+    String name() const override
+    {
+        return "ZeroPadding";
+    }
 };
 
 class Pkcs7Padding : public PaddingBase
 {
 public:
     virtual ~Pkcs7Padding() = default;
-    void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes,
-             size_t block_size) const override
+    void pad(Botan::secure_vector<uint8_t> &buffer, size_t final_block_bytes, size_t block_size) const override
     {
         const size_t pad_bytes = block_size - final_block_bytes;
         for (size_t i = 0; i < pad_bytes; ++i)
@@ -948,19 +935,15 @@ public:
         {
             return 0;
         }
-
         const uint8_t pad_value = block[len - 1];
-        if (pad_value <= len &&
-            std::all_of(block + len - pad_value, block + len,
-                        [pad_value](uint8_t val)
-                        { return val == pad_value; }))
+        if (pad_value <= len && std::all_of(block + len - pad_value, block + len, [pad_value](uint8_t val)
+                                            { return val == pad_value; }))
         {
             return len - pad_value;
         }
         else
         {
-            __INSANE_THROW_EXCEPTION(CryptoException, "Invalid Pkcs7 padding.", 0,
-                                     nullptr, DebugType::Trace);
+            __INSANE_THROW_EXCEPTION(CryptoException, "Invalid Pkcs7 padding.", 0, nullptr, DebugType::Trace);
         }
     }
 
@@ -969,7 +952,10 @@ public:
         return (block_size > 0 && block_size <= 256);
     }
 
-    std::string name() const override { return __AES_PADDING_MODE_PKCS7_STRING; }
+    String name() const override
+    {
+        return __AES_PADDING_MODE_PKCS7_STRING;
+    }
 };
 
 class X923Padding : public PaddingBase
@@ -1023,24 +1009,17 @@ public:
     }
 };
 
-StdVectorUint8 AesExtensions::EncryptAesCbc(const StdVectorUint8 &data,
-                                            const StdVectorUint8 &key,
-                                            const AesCbcPadding &padding)
+StdVectorUint8 AesExtensions::EncryptAesCbc(const StdVectorUint8 &data, const StdVectorUint8 &key, const AesCbcPadding &padding)
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_STR;
     try
     {
         ValidateKey(key);
         StdVectorUint8 secretKey = GenerateNormalizedKey(key);
-        std::unique_ptr<Botan::RandomNumberGenerator> rng =
-            std::make_unique<Botan::AutoSeeded_RNG>();
+        std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
         Botan::secure_vector<uint8_t> ivBytes = rng->random_vec(AES_MAX_IV_LENGTH);
         Botan::secure_vector<uint8_t> dataBytes(data.begin(), data.end());
         Botan::secure_vector<uint8_t> keyBytes(secretKey.begin(), secretKey.end());
-        size_t finalBlockSize =
-            dataBytes.size() -
-            ((dataBytes.size() / AES_BLOCK_SIZE_LENGTH) * AES_BLOCK_SIZE_LENGTH);
+        size_t finalBlockSize = dataBytes.size() - ((dataBytes.size() / AES_BLOCK_SIZE_LENGTH) * AES_BLOCK_SIZE_LENGTH);
         String paddingAlgo = __AES_PADDING_MODE_NONE_STRING;
         switch (padding)
         {
@@ -1072,11 +1051,7 @@ StdVectorUint8 AesExtensions::EncryptAesCbc(const StdVectorUint8 &data,
                     AesCbcPaddingEnumExtensions::ToString(padding));
         }
 
-        std::unique_ptr<Botan::Cipher_Mode> enc = Botan::Cipher_Mode::create(
-            StringExtensions::Join(
-                {__AES_256_ALGORITHM_STRING, __AES_MODE_CBC_STRING, paddingAlgo},
-                SLASH_STRING),
-            Botan::Cipher_Dir::Encryption);
+        std::unique_ptr<Botan::Cipher_Mode> enc = Botan::Cipher_Mode::create(StringExtensions::Join({__AES_256_ALGORITHM_STRING, __AES_MODE_CBC_STRING, paddingAlgo}, SLASH_STRING), Botan::Cipher_Dir::Encryption);
         enc->set_key(keyBytes);
         enc->start(ivBytes);
         enc->finish(dataBytes);
@@ -1085,14 +1060,11 @@ StdVectorUint8 AesExtensions::EncryptAesCbc(const StdVectorUint8 &data,
     }
     catch (const Botan::Exception &e)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr,
-                                 DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr, DebugType::Debug);
     }
     catch (const ExceptionBase &ex)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException,
-                                 "Unable to encrypt data, check the parameters.",
-                                 ex.GetErrorCode(), ex.Clone(), DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, "Unable to encrypt data, check the parameters.", ex.GetErrorCode(), ex.Clone(), DebugType::Debug);
     }
     catch (...)
     {
@@ -1100,61 +1072,50 @@ StdVectorUint8 AesExtensions::EncryptAesCbc(const StdVectorUint8 &data,
     }
 }
 
-StdVectorUint8 AesExtensions::EncryptAesCbc(const String &data,
-                                            const String &key,
-                                            const AesCbcPadding &padding)
+StdVectorUint8 AesExtensions::EncryptAesCbc(const String &data, const String &key, const AesCbcPadding &padding)
 {
-    return EncryptAesCbc(ConverterExtensions::StringToStdVectorUint8(data),
-                         ConverterExtensions::StringToStdVectorUint8(key),
-                         padding);
+    return EncryptAesCbc(ConverterExtensions::StringToStdVectorUint8(data), ConverterExtensions::StringToStdVectorUint8(key), padding);
 }
 
-String AesExtensions::EncryptEncodedAesCbc(const StdVectorUint8 &data,
-                                           const StdVectorUint8 &key,
-                                           std::unique_ptr<IEncoder> &&encoder,
-                                           const AesCbcPadding &padding)
+StdVectorUint8 AesExtensions::EncryptAesCbc(const StdVectorUint8 &data, const String &key, const AesCbcPadding &padding)
 {
-    return encoder->Encode(EncryptAesCbc(data, key, padding));
+    return EncryptAesCbc(data, ConverterExtensions::StringToStdVectorUint8(key), padding);
 }
 
-String AesExtensions::EncryptEncodedAesCbc(const String &data,
-                                           const String &key,
-                                           std::unique_ptr<IEncoder> &&encoder,
-                                           const AesCbcPadding &padding)
+StdVectorUint8 AesExtensions::EncryptAesCbc(const String &data, const StdVectorUint8 &key, const AesCbcPadding &padding)
 {
-    return EncryptEncodedAesCbc(ConverterExtensions::StringToStdVectorUint8(data),
-                                ConverterExtensions::StringToStdVectorUint8(key),
-                                std::move(encoder), padding);
+    return EncryptAesCbc(ConverterExtensions::StringToStdVectorUint8(data), key, padding);
 }
 
-String InsaneIO::Insane::Cryptography::AesExtensions::EncryptEncodedAesCbc(
-    const StdVectorUint8 &data, const StdVectorUint8 &key,
-    const IEncoder *encoder, const AesCbcPadding &padding)
+String AesExtensions::EncryptEncodedAesCbc(const StdVectorUint8 &data, const StdVectorUint8 &key, std::unique_ptr<IEncoder> &&encoder, const AesCbcPadding &padding)
 {
     return encoder->Encode(EncryptAesCbc(data, key, padding));
 }
 
-String InsaneIO::Insane::Cryptography::AesExtensions::EncryptEncodedAesCbc(
-    const String &data, const String &key, const IEncoder *encoder,
-    const AesCbcPadding &padding)
+String AesExtensions::EncryptEncodedAesCbc(const String &data, const String &key, std::unique_ptr<IEncoder> &&encoder, const AesCbcPadding &padding)
 {
     return encoder->Encode(EncryptAesCbc(data, key, padding));
 }
 
-StdVectorUint8 AesExtensions::DecryptAesCbc(const StdVectorUint8 &data,
-                                            const StdVectorUint8 &key,
-                                            const AesCbcPadding &padding)
+String AesExtensions::EncryptEncodedAesCbc(const StdVectorUint8 &data, const String &key, std::unique_ptr<IEncoder> &&encoder, const AesCbcPadding &padding)
+{
+    return encoder->Encode(EncryptAesCbc(data, key, padding));
+}
+
+String AesExtensions::EncryptEncodedAesCbc(const String &data, const StdVectorUint8 &key, std::unique_ptr<IEncoder> &&encoder, const AesCbcPadding &padding)
+{
+    return encoder->Encode(EncryptAesCbc(data, key, padding));
+}
+
+StdVectorUint8 AesExtensions::DecryptAesCbc(const StdVectorUint8 &data, const StdVectorUint8 &key, const AesCbcPadding &padding)
 {
     try
     {
         ValidateKey(key);
         StdVectorUint8 secretKey = GenerateNormalizedKey(key);
-        Botan::secure_vector<uint8_t> dataBytes(data.begin(),
-                                                data.end() - AES_MAX_IV_LENGTH);
+        Botan::secure_vector<uint8_t> dataBytes(data.begin(), data.end() - AES_MAX_IV_LENGTH);
         Botan::secure_vector<uint8_t> keyBytes(secretKey.begin(), secretKey.end());
-        Botan::secure_vector<uint8_t> ivBytes(data.end() - AES_MAX_IV_LENGTH,
-                                              data.end());
-
+        Botan::secure_vector<uint8_t> ivBytes(data.end() - AES_MAX_IV_LENGTH, data.end());
         String paddingAlgo = __AES_PADDING_MODE_NONE_STRING;
         switch (padding)
         {
@@ -1179,16 +1140,10 @@ StdVectorUint8 AesExtensions::DecryptAesCbc(const StdVectorUint8 &data,
             }
             break;
             default:
-                throw NotImplementedException(
-                    INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                    AesCbcPaddingEnumExtensions::ToString(padding));
+                throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, AesCbcPaddingEnumExtensions::ToString(padding));
         }
 
-        std::unique_ptr<Botan::Cipher_Mode> dec = Botan::Cipher_Mode::create(
-            StringExtensions::Join(
-                {__AES_256_ALGORITHM_STRING, __AES_MODE_CBC_STRING, paddingAlgo},
-                SLASH_STRING),
-            Botan::Cipher_Dir::Decryption);
+        std::unique_ptr<Botan::Cipher_Mode> dec = Botan::Cipher_Mode::create(StringExtensions::Join({__AES_256_ALGORITHM_STRING, __AES_MODE_CBC_STRING, paddingAlgo}, SLASH_STRING), Botan::Cipher_Dir::Decryption);
         dec->set_key(keyBytes);
         dec->start(ivBytes);
         dec->finish(dataBytes);
@@ -1200,8 +1155,7 @@ StdVectorUint8 AesExtensions::DecryptAesCbc(const StdVectorUint8 &data,
     }
     catch (const NotImplementedException &ex)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException, ex.GetErrorMessage(),
-                                 ex.GetErrorCode(), ex.Clone(), DebugType::Debug)
+        __INSANE_THROW_EXCEPTION(CryptoException, ex.GetErrorMessage(), ex.GetErrorCode(), ex.Clone(), DebugType::Debug)
     }
     catch (...)
     {
@@ -1209,45 +1163,19 @@ StdVectorUint8 AesExtensions::DecryptAesCbc(const StdVectorUint8 &data,
     }
 }
 
-StdVectorUint8 AesExtensions::DecryptAesCbc(const StdVectorUint8 &data,
-                                            const String &key,
-                                            const AesCbcPadding &padding)
+StdVectorUint8 AesExtensions::DecryptAesCbc(const StdVectorUint8 &data, const String &key, const AesCbcPadding &padding)
 {
-    return DecryptAesCbc(data, ConverterExtensions::StringToStdVectorUint8(key),
-                         padding);
+    return DecryptAesCbc(data, ConverterExtensions::StringToStdVectorUint8(key), padding);
 }
 
-StdVectorUint8 AesExtensions::DecryptEncodedAesCbc(
-    const String &data, const StdVectorUint8 &key,
-    std::unique_ptr<IEncoder> &&encoder, const AesCbcPadding &padding)
+StdVectorUint8 AesExtensions::DecryptEncodedAesCbc(const String &data, const StdVectorUint8 &key, std::unique_ptr<IEncoder> &&encoder, const AesCbcPadding &padding)
 {
     return DecryptAesCbc(encoder->Decode(data), key, padding);
 }
 
-StdVectorUint8
-AesExtensions::DecryptEncodedAesCbc(const String &data, const String &key,
-                                    std::unique_ptr<IEncoder> &&encoder,
-                                    const AesCbcPadding &padding)
+StdVectorUint8 AesExtensions::DecryptEncodedAesCbc(const String &data, const String &key, std::unique_ptr<IEncoder> &&encoder, const AesCbcPadding &padding)
 {
-    return DecryptEncodedAesCbc(data,
-                                ConverterExtensions::StringToStdVectorUint8(key),
-                                std::move(encoder), padding);
-}
-
-StdVectorUint8
-InsaneIO::Insane::Cryptography::AesExtensions::DecryptEncodedAesCbc(
-    const String &data, const StdVectorUint8 &key, const IEncoder *encoder,
-    const AesCbcPadding &padding)
-{
-    return DecryptAesCbc(encoder->Decode(data), key, padding);
-}
-
-StdVectorUint8
-InsaneIO::Insane::Cryptography::AesExtensions::DecryptEncodedAesCbc(
-    const String &data, const String &key, const IEncoder *encoder,
-    const AesCbcPadding &padding)
-{
-    return DecryptAesCbc(encoder->Decode(data), key, padding);
+    return DecryptEncodedAesCbc(data, ConverterExtensions::StringToStdVectorUint8(key), std::move(encoder), padding);
 }
 
 StdVectorUint8 AesExtensions::GenerateNormalizedKey(const StdVectorUint8 &key)
@@ -1261,18 +1189,16 @@ void AesExtensions::ValidateKey(const StdVectorUint8 &key)
 {
     if (key.size() < 8)
     {
-        throw new ArgumentException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                                    "Key must be at least 8 bytes.");
+        throw new ArgumentException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Key must be at least 8 bytes.");
     }
 }
 
-// ███ RandomExtensions ███
+// MARK: ███ RandomExtensions ███
 
 StdVectorUint8 RandomExtensions::NextBytes(size_t sz)
 {
     String result = String(sz, 0);
-    std::unique_ptr<Botan::RandomNumberGenerator> rng =
-        std::make_unique<Botan::AutoSeeded_RNG>();
+    std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
     Botan::secure_vector<uint8_t> bytes = (*rng).random_vec(sz);
     return StdVectorUint8(bytes.begin(), bytes.end());
 }
@@ -1282,32 +1208,36 @@ int RandomExtensions::NextValue(int min, int max)
     Botan::AutoSeeded_RNG rng;
     if (min >= max)
     {
-        throw ArgumentException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                                "Min value is greater or equals than Max value."s);
+        throw ArgumentException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, "Min value is greater or equals than Max value."s);
     }
     StdVectorUint8 intBytes = NextBytes(4);
-    int num = (intBytes[0] << 24) | (intBytes[1] << 16) | (intBytes[2] << 8) |
-              intBytes[3];
+    int num = (intBytes[0] << 24) | (intBytes[1] << 16) | (intBytes[2] << 8) | intBytes[3];
     return min + std::abs(num) % (max - min + 1);
 }
 
-int RandomExtensions::NextValue() { return NextValue(INT_MIN, INT_MAX); }
+int RandomExtensions::NextValue()
+{
+    return NextValue(INT_MIN, INT_MAX);
+}
 
-// ███ RsaKeyPair ███
+// MARK: ███ RsaKeyPair ███
 
-RsaKeyPair::RsaKeyPair(const String &publicKey, const String &privateKey)
-    : IJsonSerialize(EMPTY_STRING), PublicKey(publicKey),
-      PrivateKey(privateKey) {}
+RsaKeyPair::RsaKeyPair(const String &publicKey, const String &privateKey) : IJsonSerialize(EMPTY_STRING), PublicKey(publicKey), PrivateKey(privateKey)
+{
+}
 
-String RsaKeyPair::GetPublicKey() const { return PublicKey; }
+String RsaKeyPair::GetPublicKey() const
+{
+    return PublicKey;
+}
 
-String RsaKeyPair::GetPrivateKey() const { return PrivateKey; }
+String RsaKeyPair::GetPrivateKey() const
+{
+    return PrivateKey;
+}
 
 String RsaKeyPair::Serialize(const bool &indent) const noexcept(false)
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -1315,12 +1245,10 @@ String RsaKeyPair::Serialize(const bool &indent) const noexcept(false)
         writer.StartObject();
 
         writer.Key(CNAMEOF(PublicKey));
-        writer.String(PublicKey.data(),
-                      static_cast<rapidjson::SizeType>(PublicKey.length()));
+        writer.String(PublicKey.data(), static_cast<rapidjson::SizeType>(PublicKey.length()));
 
         writer.Key(CNAMEOF(PrivateKey));
-        writer.String(PrivateKey.data(),
-                      static_cast<rapidjson::SizeType>(PrivateKey.length()));
+        writer.String(PrivateKey.data(), static_cast<rapidjson::SizeType>(PrivateKey.length()));
 
         writer.EndObject();
         String json = String(sb.GetString(), sb.GetSize());
@@ -1334,20 +1262,15 @@ String RsaKeyPair::Serialize(const bool &indent) const noexcept(false)
 
 RsaKeyPair RsaKeyPair::Deserialize(const String &json)
 {
-    USING_NS_INSANE_EXCEPTION;
     try
     {
         rapidjson::Document document;
         document.Parse(json.c_str(), json.length());
-        if (document.HasParseError() ||
-            !(document.IsObject() &&
-              document.HasMember(CNAMEOF_TRIM_GET(PublicKey)) &&
-              document.HasMember(CNAMEOF_TRIM_GET(PrivateKey))))
+        if (document.HasParseError() || !(document.IsObject() && document.HasMember(CNAMEOF_TRIM_GET(PublicKey)) && document.HasMember(CNAMEOF_TRIM_GET(PrivateKey))))
         {
             throw 1;
         }
-        return RsaKeyPair(document[CNAMEOF(PublicKey)].GetString(),
-                          document[CNAMEOF(PrivateKey)].GetString());
+        return RsaKeyPair(document[CNAMEOF(PublicKey)].GetString(), document[CNAMEOF(PrivateKey)].GetString());
     }
     catch (...)
     {
@@ -1355,7 +1278,7 @@ RsaKeyPair RsaKeyPair::Deserialize(const String &json)
     }
 }
 
-// ███ RsaExtensions ███
+// MARK: ███ RsaExtensions ███
 
 static inline std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>>
 InternalGetRsaKeyEncodingWithKey(const String &key)
@@ -1367,25 +1290,20 @@ InternalGetRsaKeyEncodingWithKey(const String &key)
     }
 
     std::unique_ptr<Botan::Public_Key> rsaKey = nullptr;
-    if (StringExtensions::IsMatch(rsaKeyString,
-                                  BASE64_VALUE_REGEX_PATTERN_STRING))
+    if (StringExtensions::IsMatch(rsaKeyString, BASE64_VALUE_REGEX_PATTERN_STRING))
     {
         try
         {
-            Botan::SecureVector<uint8_t> keyBytes =
-                Botan::base64_decode(rsaKeyString);
-            std::unique_ptr<Botan::DataSource_Memory> source =
-                std::make_unique<Botan::DataSource_Memory>(keyBytes);
+            Botan::SecureVector<uint8_t> keyBytes = Botan::base64_decode(rsaKeyString);
+            std::unique_ptr<Botan::DataSource_Memory> source = std::make_unique<Botan::DataSource_Memory>(keyBytes);
             return {RsaKeyEncoding::BerPrivate, Botan::PKCS8::load_key(*source)};
         }
         catch (...)
         {
             try
             {
-                Botan::SecureVector<uint8_t> keyBytes =
-                    Botan::base64_decode(rsaKeyString);
-                rsaKey = Botan::X509::load_key(
-                    StdVectorUint8(keyBytes.begin(), keyBytes.end()));
+                Botan::SecureVector<uint8_t> keyBytes = Botan::base64_decode(rsaKeyString);
+                rsaKey = Botan::X509::load_key(StdVectorUint8(keyBytes.begin(), keyBytes.end()));
                 return {RsaKeyEncoding::BerPublic, std::move(rsaKey)};
             }
             catch (...)
@@ -1397,88 +1315,47 @@ InternalGetRsaKeyEncodingWithKey(const String &key)
 
     try
     {
-        if (StringExtensions::StartsWith(rsaKeyString,
-                                         RSA_XML_KEY_MAIN_TAG_STRING))
+        if (StringExtensions::StartsWith(rsaKeyString, RSA_XML_KEY_MAIN_TAG_STRING))
         {
-            if (StringExtensions::IsMatch(rsaKeyString,
-                                          RSA_XML_PRIVATE_KEY_REGEX_PATTERN))
+            if (StringExtensions::IsMatch(rsaKeyString, RSA_XML_PRIVATE_KEY_REGEX_PATTERN))
             {
-                std::unique_ptr<rapidxml::xml_document<>> doc =
-                    std::make_unique<rapidxml::xml_document<>>();
+                std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
                 doc->parse<0>(rsaKeyString.data());
-                std::unique_ptr<Botan::BigInt> modulus =
-                    std::make_unique<Botan::BigInt>(Botan::base64_decode(
-                        doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())
-                            ->first_node(RSA_XML_KEY_MODULUS_NODE_STRING.c_str())
-                            ->value()));
-                std::unique_ptr<Botan::BigInt> exponent =
-                    std::make_unique<Botan::BigInt>(Botan::base64_decode(
-                        doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())
-                            ->first_node(RSA_XML_KEY_EXPONENT_NODE_STRING.c_str())
-                            ->value()));
-                std::unique_ptr<Botan::BigInt> P =
-                    std::make_unique<Botan::BigInt>(Botan::base64_decode(
-                        doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())
-                            ->first_node(RSA_XML_KEY_P_NODE_STRING.c_str())
-                            ->value()));
-                std::unique_ptr<Botan::BigInt> Q =
-                    std::make_unique<Botan::BigInt>(Botan::base64_decode(
-                        doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())
-                            ->first_node(RSA_XML_KEY_Q_NODE_STRING.c_str())
-                            ->value()));
-                std::unique_ptr<Botan::BigInt> D =
-                    std::make_unique<Botan::BigInt>(Botan::base64_decode(
-                        doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())
-                            ->first_node(RSA_XML_KEY_D_NODE_STRING.c_str())
-                            ->value()));
-                return {RsaKeyEncoding::XmlPrivate,
-                        std::make_unique<Botan::RSA_PrivateKey>(*P, *Q, *exponent, *D,
-                                                                *modulus)};
+                std::unique_ptr<Botan::BigInt> modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_MODULUS_NODE_STRING.c_str())->value()));
+                std::unique_ptr<Botan::BigInt> exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_EXPONENT_NODE_STRING.c_str())->value()));
+                std::unique_ptr<Botan::BigInt> P = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_P_NODE_STRING.c_str())->value()));
+                std::unique_ptr<Botan::BigInt> Q = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_Q_NODE_STRING.c_str())->value()));
+                std::unique_ptr<Botan::BigInt> D = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_D_NODE_STRING.c_str())->value()));
+                return {RsaKeyEncoding::XmlPrivate, std::make_unique<Botan::RSA_PrivateKey>(*P, *Q, *exponent, *D, *modulus)};
             }
 
-            if (StringExtensions::IsMatch(rsaKeyString,
-                                          RSA_XML_PUBLIC_KEY_REGEX_PATTERN))
+            if (StringExtensions::IsMatch(rsaKeyString, RSA_XML_PUBLIC_KEY_REGEX_PATTERN))
             {
-                std::unique_ptr<rapidxml::xml_document<>> doc =
-                    std::make_unique<rapidxml::xml_document<>>();
+                std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
                 doc->parse<0>(rsaKeyString.data());
-                std::unique_ptr<Botan::BigInt> modulus =
-                    std::make_unique<Botan::BigInt>(Botan::base64_decode(
-                        doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())
-                            ->first_node(RSA_XML_KEY_MODULUS_NODE_STRING.c_str())
-                            ->value()));
-                std::unique_ptr<Botan::BigInt> exponent =
-                    std::make_unique<Botan::BigInt>(Botan::base64_decode(
-                        doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())
-                            ->first_node(RSA_XML_KEY_EXPONENT_NODE_STRING.c_str())
-                            ->value()));
-                return {RsaKeyEncoding::XmlPublic,
-                        std::make_unique<Botan::RSA_PublicKey>(*modulus, *exponent)};
+                std::unique_ptr<Botan::BigInt> modulus = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_MODULUS_NODE_STRING.c_str())->value()));
+                std::unique_ptr<Botan::BigInt> exponent = std::make_unique<Botan::BigInt>(Botan::base64_decode(doc->first_node(RSA_XML_KEY_MAIN_NODE_STRING.c_str())->first_node(RSA_XML_KEY_EXPONENT_NODE_STRING.c_str())->value()));
+                return {RsaKeyEncoding::XmlPublic, std::make_unique<Botan::RSA_PublicKey>(*modulus, *exponent)};
             }
 
             return {RsaKeyEncoding::Unknown, nullptr};
         }
 
-        if (StringExtensions::StartsWith(rsaKeyString,
-                                         RSA_PEM_INITIAL_TEXT_HEADER_STRING))
+        if (StringExtensions::StartsWith(rsaKeyString, RSA_PEM_INITIAL_TEXT_HEADER_STRING))
         {
-            if (StringExtensions::IsMatch(rsaKeyString,
-                                          RSA_PEM_PRIVATE_KEY_REGEX_PATTERN))
+            if (StringExtensions::IsMatch(rsaKeyString, RSA_PEM_PRIVATE_KEY_REGEX_PATTERN))
             {
-                Botan::SecureVector<uint8_t> keyBytes(rsaKeyString.begin(),
-                                                      rsaKeyString.end());
-                std::unique_ptr<Botan::DataSource_Memory> source =
-                    std::make_unique<Botan::DataSource_Memory>(keyBytes);
+                Botan::SecureVector<uint8_t> keyBytes(rsaKeyString.begin(), rsaKeyString.end());
+                std::unique_ptr<Botan::DataSource_Memory> source = std::make_unique<Botan::DataSource_Memory>(keyBytes);
                 return {RsaKeyEncoding::PemPrivate, Botan::PKCS8::load_key(*source)};
             }
 
-            if (StringExtensions::IsMatch(rsaKeyString,
-                                          RSA_PEM_PUBLIC_KEY_REGEX_PATTERN))
+            if (StringExtensions::IsMatch(rsaKeyString, RSA_PEM_PUBLIC_KEY_REGEX_PATTERN))
             {
-                rsaKey = Botan::X509::load_key(
-                    StdVectorUint8(rsaKeyString.begin(), rsaKeyString.end()));
+                rsaKey = Botan::X509::load_key(StdVectorUint8(rsaKeyString.begin(), rsaKeyString.end()));
                 return {RsaKeyEncoding::PemPublic, std::move(rsaKey)};
             }
+
             return {RsaKeyEncoding::Unknown, nullptr};
         }
     }
@@ -1495,53 +1372,37 @@ RsaKeyEncoding RsaExtensions::GetRsaKeyEncoding(const String &key)
     return InternalGetRsaKeyEncodingWithKey(key).first;
 }
 
-static inline std::pair<bool, std::unique_ptr<Botan::Public_Key>>
-InternalValidateRsaPublicKeyWithKey(const String &publicKey)
+static inline std::pair<bool, std::unique_ptr<Botan::Public_Key>> InternalValidateRsaPublicKeyWithKey(const String &publicKey)
 {
-    std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>> encodingResult =
-        InternalGetRsaKeyEncodingWithKey(publicKey);
-    return {encodingResult.first == RsaKeyEncoding::XmlPublic ||
-                encodingResult.first == RsaKeyEncoding::PemPublic ||
-                encodingResult.first == RsaKeyEncoding::BerPublic,
-            std::move(encodingResult.second)};
+    std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>> encodingResult = InternalGetRsaKeyEncodingWithKey(publicKey);
+    return {encodingResult.first == RsaKeyEncoding::XmlPublic || encodingResult.first == RsaKeyEncoding::PemPublic || encodingResult.first == RsaKeyEncoding::BerPublic, std::move(encodingResult.second)};
 }
 
-static inline std::pair<bool, std::unique_ptr<Botan::Public_Key>>
-InternalValidateRsaPrivateKeyWithKey(const String &privateKey)
+static inline std::pair<bool, std::unique_ptr<Botan::Public_Key>> InternalValidateRsaPrivateKeyWithKey(const String &privateKey)
 {
-    std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>> encodingResult =
-        InternalGetRsaKeyEncodingWithKey(privateKey);
-    return {encodingResult.first == RsaKeyEncoding::XmlPrivate ||
-                encodingResult.first == RsaKeyEncoding::PemPrivate ||
-                encodingResult.first == RsaKeyEncoding::BerPrivate,
-            std::move(encodingResult.second)};
+    std::pair<RsaKeyEncoding, std::unique_ptr<Botan::Public_Key>> encodingResult = InternalGetRsaKeyEncodingWithKey(privateKey);
+    return {encodingResult.first == RsaKeyEncoding::XmlPrivate || encodingResult.first == RsaKeyEncoding::PemPrivate || encodingResult.first == RsaKeyEncoding::BerPrivate, std::move(encodingResult.second)};
 }
 
-static inline std::unique_ptr<Botan::Public_Key>
-InternalParsePublicKey(const String &key)
+static inline std::unique_ptr<Botan::Public_Key> InternalParsePublicKey(const String &key)
 {
-    std::pair<bool, std::unique_ptr<Botan::Public_Key>> validationResult =
-        InternalValidateRsaPublicKeyWithKey(key);
+    std::pair<bool, std::unique_ptr<Botan::Public_Key>> validationResult = InternalValidateRsaPublicKeyWithKey(key);
     if (validationResult.first)
     {
         return std::move(validationResult.second);
     }
-    __INSANE_THROW_EXCEPTION(CryptoException, "Unable to parse public key.", 0,
-                             nullptr, DebugType::Debug);
+    __INSANE_THROW_EXCEPTION(CryptoException, "Unable to parse public key.", 0, nullptr, DebugType::Debug);
 }
 
-static inline std::unique_ptr<Botan::Private_Key>
-InternalParsePrivateKey(const String &key)
+static inline std::unique_ptr<Botan::Private_Key> InternalParsePrivateKey(const String &key)
 {
     auto validation = InternalValidateRsaPrivateKeyWithKey(key);
     if (validation.first)
     {
-        Botan::Private_Key *privateKey =
-            dynamic_cast<Botan::Private_Key *>(validation.second.release());
+        Botan::Private_Key *privateKey = dynamic_cast<Botan::Private_Key *>(validation.second.release());
         return std::unique_ptr<Botan::Private_Key>(privateKey);
     }
-    __INSANE_THROW_EXCEPTION(CryptoException, "Unable to parse private key.", 0,
-                             nullptr, DebugType::Debug);
+    __INSANE_THROW_EXCEPTION(CryptoException, "Unable to parse private key.", 0, nullptr, DebugType::Debug);
 }
 
 bool RsaExtensions::ValidateRsaPublicKey(const String &publicKey)
@@ -1554,110 +1415,80 @@ bool RsaExtensions::ValidateRsaPrivateKey(const String &privateKey)
     return InternalValidateRsaPrivateKeyWithKey(privateKey).first;
 }
 
-RsaKeyPair RsaExtensions::CreateRsaKeyPair(const size_t &keySize,
-                                           const RsaKeyPairEncoding &encoding)
+RsaKeyPair RsaExtensions::CreateRsaKeyPair(const size_t &keySize, const RsaKeyPairEncoding &encoding)
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_STR;
     try
     {
-        std::unique_ptr<Botan::RandomNumberGenerator> rng =
-            std::make_unique<Botan::AutoSeeded_RNG>();
-        std::unique_ptr<Botan::RSA_PrivateKey> keyPair =
-            std::make_unique<Botan::RSA_PrivateKey>(*rng, keySize);
+        std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
+        std::unique_ptr<Botan::RSA_PrivateKey> keyPair = std::make_unique<Botan::RSA_PrivateKey>(*rng, keySize);
         switch (encoding)
         {
             case RsaKeyPairEncoding::Ber:
             {
-                String privateKey =
-                    Botan::base64_encode(Botan::PKCS8::BER_encode(*keyPair));
-                String publicKey =
-                    Botan::base64_encode(Botan::X509::BER_encode(*keyPair));
-                return RsaKeyPair(StringExtensions::Trim(publicKey),
-                                  StringExtensions::Trim(privateKey));
+                String privateKey = Botan::base64_encode(Botan::PKCS8::BER_encode(*keyPair));
+                String publicKey = Botan::base64_encode(Botan::X509::BER_encode(*keyPair));
+                return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
             }
             case RsaKeyPairEncoding::Pem:
             {
                 String privateKey = Botan::PKCS8::PEM_encode(*keyPair);
                 String publicKey = Botan::X509::PEM_encode(*keyPair);
-                return RsaKeyPair(StringExtensions::Trim(publicKey),
-                                  StringExtensions::Trim(privateKey));
+                return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
             }
             case RsaKeyPairEncoding::Xml:
             {
-                String modulus =
-                    Botan::base64_encode(Botan::BigInt::encode(keyPair->get_n()));
-                String exponent =
-                    Botan::base64_encode(Botan::BigInt::encode(keyPair->get_e()));
+                String modulus = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_n()));
+                String exponent = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_e()));
                 String p = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_p()));
                 String q = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_q()));
-                String dp =
-                    Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d1()));
-                String dq =
-                    Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d2()));
-                String inverseq =
-                    Botan::base64_encode(Botan::BigInt::encode(keyPair->get_c()));
+                String dp = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d1()));
+                String dq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d2()));
+                String inverseq = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_c()));
                 String d = Botan::base64_encode(Botan::BigInt::encode(keyPair->get_d()));
 
-                std::unique_ptr<rapidxml::xml_document<>> doc =
-                    std::make_unique<rapidxml::xml_document<>>();
+                std::unique_ptr<rapidxml::xml_document<>> doc = std::make_unique<rapidxml::xml_document<>>();
                 String rsaValueName = RSA_XML_KEY_MAIN_NODE_STRING;
-                rapidxml::xml_node<> *mainNode = doc->allocate_node(
-                    rapidxml::node_type::node_element, rsaValueName.c_str());
+                rapidxml::xml_node<> *mainNode = doc->allocate_node(rapidxml::node_type::node_element, rsaValueName.c_str());
                 doc->append_node(mainNode);
 
                 String modulusName = RSA_XML_KEY_MODULUS_NODE_STRING;
-                rapidxml::xml_node<> *childNode = doc->allocate_node(
-                    rapidxml::node_type::node_element, modulusName.c_str(),
-                    modulus.c_str(), 0, modulus.length());
+                rapidxml::xml_node<> *childNode = doc->allocate_node(rapidxml::node_type::node_element, modulusName.c_str(), modulus.c_str(), 0, modulus.length());
                 mainNode->append_node(childNode);
 
                 String exponentName = RSA_XML_KEY_EXPONENT_NODE_STRING;
-                childNode = doc->allocate_node(rapidxml::node_type::node_element,
-                                               exponentName.c_str(), exponent.c_str(), 0,
-                                               exponent.length());
+                childNode = doc->allocate_node(rapidxml::node_type::node_element, exponentName.c_str(), exponent.c_str(), 0, exponent.length());
                 mainNode->append_node(childNode);
 
                 String publicKey;
                 rapidxml::print(std::back_inserter(publicKey), *doc, 0);
 
                 String pName = RSA_XML_KEY_P_NODE_STRING;
-                childNode = doc->allocate_node(rapidxml::node_type::node_element,
-                                               pName.c_str(), p.c_str(), 0, p.length());
+                childNode = doc->allocate_node(rapidxml::node_type::node_element, pName.c_str(), p.c_str(), 0, p.length());
                 mainNode->append_node(childNode);
 
                 String qName = RSA_XML_KEY_Q_NODE_STRING;
-                childNode = doc->allocate_node(rapidxml::node_type::node_element,
-                                               qName.c_str(), q.c_str(), 0, q.length());
+                childNode = doc->allocate_node(rapidxml::node_type::node_element, qName.c_str(), q.c_str(), 0, q.length());
                 mainNode->append_node(childNode);
 
                 String dpName = RSA_XML_KEY_DP_NODE_STRING;
-                childNode =
-                    doc->allocate_node(rapidxml::node_type::node_element, dpName.c_str(),
-                                       dp.c_str(), 0, dp.length());
+                childNode = doc->allocate_node(rapidxml::node_type::node_element, dpName.c_str(), dp.c_str(), 0, dp.length());
                 mainNode->append_node(childNode);
 
                 String dqName = RSA_XML_KEY_DQ_NODE_STRING;
-                childNode =
-                    doc->allocate_node(rapidxml::node_type::node_element, dqName.c_str(),
-                                       dq.c_str(), 0, dq.length());
+                childNode = doc->allocate_node(rapidxml::node_type::node_element, dqName.c_str(), dq.c_str(), 0, dq.length());
                 mainNode->append_node(childNode);
 
                 String inverseqName = RSA_XML_KEY_INVERSEQ_NODE_STRING;
-                childNode = doc->allocate_node(rapidxml::node_type::node_element,
-                                               inverseqName.c_str(), inverseq.c_str(), 0,
-                                               inverseq.length());
+                childNode = doc->allocate_node(rapidxml::node_type::node_element, inverseqName.c_str(), inverseq.c_str(), 0, inverseq.length());
                 mainNode->append_node(childNode);
 
                 String dName = RSA_XML_KEY_D_NODE_STRING;
-                childNode = doc->allocate_node(rapidxml::node_type::node_element,
-                                               dName.c_str(), d.c_str(), 0, d.length());
+                childNode = doc->allocate_node(rapidxml::node_type::node_element, dName.c_str(), d.c_str(), 0, d.length());
                 mainNode->append_node(childNode);
                 String privateKey;
                 rapidxml::print(std::back_inserter(privateKey), *doc, 0);
                 doc->clear();
-                return RsaKeyPair(StringExtensions::Trim(publicKey),
-                                  StringExtensions::Trim(privateKey));
+                return RsaKeyPair(StringExtensions::Trim(publicKey), StringExtensions::Trim(privateKey));
             }
             default:
                 throw NotImplementedException(
@@ -1667,13 +1498,11 @@ RsaKeyPair RsaExtensions::CreateRsaKeyPair(const size_t &keySize,
     }
     catch (const Botan::Exception &e)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr,
-                                 DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr, DebugType::Debug);
     }
     catch (const ExceptionBase &ex)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException, "Unable to create keypair.", 0,
-                                 ex.Clone(), DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, "Unable to create keypair.", 0, ex.Clone(), DebugType::Debug);
     }
     catch (...)
     {
@@ -1681,12 +1510,8 @@ RsaKeyPair RsaExtensions::CreateRsaKeyPair(const size_t &keySize,
     }
 }
 
-StdVectorUint8 RsaExtensions::EncryptRsa(const StdVectorUint8 &data,
-                                         const String &publicKey,
-                                         const RsaPadding &padding)
+StdVectorUint8 RsaExtensions::EncryptRsa(const StdVectorUint8 &data, const String &publicKey, const RsaPadding &padding)
 {
-    USING_NS_INSANE_STR;
-    USING_NS_INSANE_EXCEPTION;
     try
     {
         String paddingStr;
@@ -1708,29 +1533,22 @@ StdVectorUint8 RsaExtensions::EncryptRsa(const StdVectorUint8 &data,
                 paddingStr = __RSA_PADDING_OAEP_512_ALGORITHM_STRING;
                 break;
             default:
-                throw NotImplementedException(
-                    INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                    RsaPaddingEnumExtensions::ToString(padding, true));
+                throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaPaddingEnumExtensions::ToString(padding, true));
         }
-        std::unique_ptr<Botan::RandomNumberGenerator> rng =
-            std::make_unique<Botan::AutoSeeded_RNG>();
+        std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
         std::unique_ptr<Botan::Public_Key> pbk = InternalParsePublicKey(publicKey);
-        std::unique_ptr<Botan::PK_Encryptor_EME> enc =
-            std::make_unique<Botan::PK_Encryptor_EME>(*pbk, *rng, paddingStr);
+        std::unique_ptr<Botan::PK_Encryptor_EME> enc = std::make_unique<Botan::PK_Encryptor_EME>(*pbk, *rng, paddingStr);
         Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
         std::vector<uint8_t> encrypted = enc->encrypt(dataBytes, *rng);
         return StdVectorUint8(encrypted.begin(), encrypted.end());
     }
     catch (const Botan::Exception &e)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr,
-                                 DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr, DebugType::Debug);
     }
     catch (const ExceptionBase &ex)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException,
-                                 "Unable to encrypt data, check the parameters.", 0,
-                                 ex.Clone(), DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, "Unable to encrypt data, check the parameters.", 0, ex.Clone(), DebugType::Debug);
     }
     catch (...)
     {
@@ -1738,52 +1556,23 @@ StdVectorUint8 RsaExtensions::EncryptRsa(const StdVectorUint8 &data,
     }
 }
 
-StdVectorUint8 RsaExtensions::EncryptRsa(const String &data,
-                                         const String &publicKey,
-                                         const RsaPadding &padding)
+StdVectorUint8 RsaExtensions::EncryptRsa(const String &data, const String &publicKey, const RsaPadding &padding)
 {
-    return EncryptRsa(ConverterExtensions::StringToStdVectorUint8(data),
-                      publicKey, padding);
+    return EncryptRsa(ConverterExtensions::StringToStdVectorUint8(data), publicKey, padding);
 }
 
-String RsaExtensions::EncryptEncodedRsa(const StdVectorUint8 &data,
-                                        const String &publicKey,
-                                        std::unique_ptr<IEncoder> &&encoder,
-                                        const RsaPadding &padding)
+String RsaExtensions::EncryptEncodedRsa(const StdVectorUint8 &data, const String &publicKey, std::unique_ptr<IEncoder> &&encoder, const RsaPadding &padding)
 {
     return encoder->Encode(EncryptRsa(data, publicKey, padding));
 }
 
-String RsaExtensions::EncryptEncodedRsa(const String &data,
-                                        const String &publicKey,
-                                        std::unique_ptr<IEncoder> &&encoder,
-                                        const RsaPadding &padding)
+String RsaExtensions::EncryptEncodedRsa(const String &data, const String &publicKey, std::unique_ptr<IEncoder> &&encoder, const RsaPadding &padding)
 {
-    return EncryptEncodedRsa(ConverterExtensions::StringToStdVectorUint8(data),
-                             publicKey, std::move(encoder), padding);
+    return EncryptEncodedRsa(ConverterExtensions::StringToStdVectorUint8(data), publicKey, std::move(encoder), padding);
 }
 
-String RsaExtensions::EncryptEncodedRsa(const StdVectorUint8 &data,
-                                        const String &publicKey,
-                                        const IEncoder *encoder,
-                                        const RsaPadding &padding)
+StdVectorUint8 RsaExtensions::DecryptRsa(const StdVectorUint8 &data, const String &privateKey, const RsaPadding &padding)
 {
-    return encoder->Encode(EncryptRsa(data, publicKey, padding));
-}
-
-String RsaExtensions::EncryptEncodedRsa(const String &data,
-                                        const String &publicKey,
-                                        const IEncoder *encoder,
-                                        const RsaPadding &padding)
-{
-    return encoder->Encode(EncryptRsa(data, publicKey, padding));
-}
-
-StdVectorUint8 RsaExtensions::DecryptRsa(const StdVectorUint8 &data,
-                                         const String &privateKey,
-                                         const RsaPadding &padding)
-{
-    USING_NS_INSANE_EXCEPTION;
     try
     {
         String paddingStr;
@@ -1805,31 +1594,23 @@ StdVectorUint8 RsaExtensions::DecryptRsa(const StdVectorUint8 &data,
                 paddingStr = __RSA_PADDING_OAEP_512_ALGORITHM_STRING;
                 break;
             default:
-                throw NotImplementedException(
-                    INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__,
-                    RsaPaddingEnumExtensions::ToString(padding, true));
+                throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__, RsaPaddingEnumExtensions::ToString(padding, true));
                 break;
         }
-        std::unique_ptr<Botan::RandomNumberGenerator> rng =
-            std::make_unique<Botan::AutoSeeded_RNG>();
-        std::unique_ptr<Botan::Private_Key> pvk =
-            InternalParsePrivateKey(privateKey);
-        std::unique_ptr<Botan::PK_Decryptor_EME> dec =
-            std::make_unique<Botan::PK_Decryptor_EME>(*pvk, *rng, paddingStr);
+        std::unique_ptr<Botan::RandomNumberGenerator> rng = std::make_unique<Botan::AutoSeeded_RNG>();
+        std::unique_ptr<Botan::Private_Key> pvk = InternalParsePrivateKey(privateKey);
+        std::unique_ptr<Botan::PK_Decryptor_EME> dec = std::make_unique<Botan::PK_Decryptor_EME>(*pvk, *rng, paddingStr);
         Botan::SecureVector<uint8_t> dataBytes(data.begin(), data.end());
         Botan::SecureVector<uint8_t> decrypted = dec->decrypt(dataBytes);
         return StdVectorUint8(decrypted.begin(), decrypted.end());
     }
     catch (const Botan::Exception &e)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr,
-                                 DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, e.what(), e.error_code(), nullptr, DebugType::Debug);
     }
     catch (const ExceptionBase &ex)
     {
-        __INSANE_THROW_EXCEPTION(CryptoException,
-                                 "Unable to decrypt data, check the parameters."s,
-                                 0, ex.Clone(), DebugType::Debug);
+        __INSANE_THROW_EXCEPTION(CryptoException, "Unable to decrypt data, check the parameters."s, 0, ex.Clone(), DebugType::Debug);
     }
     catch (...)
     {
@@ -1838,67 +1619,36 @@ StdVectorUint8 RsaExtensions::DecryptRsa(const StdVectorUint8 &data,
 }
 
 StdVectorUint8
-RsaExtensions::DecryptEncodedRsa(const String &data, const String &privateKey,
-                                 std::unique_ptr<IEncoder> &&encoder,
-                                 const RsaPadding &padding)
+RsaExtensions::DecryptEncodedRsa(const String &data, const String &privateKey, std::unique_ptr<IEncoder> &&encoder, const RsaPadding &padding)
 {
     return DecryptRsa(encoder->Decode(data), privateKey, padding);
 }
 
-StdVectorUint8 RsaExtensions::DecryptEncodedRsa(const String &data,
-                                                const String &privateKey,
-                                                const IEncoder *encoder,
-                                                const RsaPadding &padding)
+// MARK: ███ IHasher ███
+
+IHasher::IHasher(const String &name) : IJsonSerialize(name)
 {
-    return DecryptRsa(encoder->Decode(data), privateKey, padding);
 }
 
-// ███ IHasher ███
-
-IHasher::IHasher(const String &name) : IJsonSerialize(name) {}
-
-std::unique_ptr<IHasher>
-IHasher::Deserialize(const String &json,
-                     const DeserializeResolver<IHasher> &resolver)
+std::unique_ptr<IHasher> IHasher::Deserialize(const String &json)
 {
-    return IJsonSerialize::Deserialize(json, resolver);
+    return IJsonSerialize<IHasher>::Deserialize(json);
 }
 
-DeserializeResolver<IHasher> IHasher::DefaultDeserializeResolver()
+// MARK: ███ ShaHasher ███
+
+ShaHasher::ShaHasher(const HashAlgorithm &hashAlgorithm, std::unique_ptr<IEncoder> &&encoder) : IHasher(SHA_HASHER_NAME_STRING), _HashAlgorithm(hashAlgorithm), _Encoder(encoder ? std::move(encoder) : Base64Encoder::DefaultInstance())
 {
-    return IJsonSerialize::DefaultDeserializeResolver();
 }
 
-static inline std::unique_ptr<IEncoder>
-InternalDefaultDeserializeIEncoder(const rapidjson::Value &value)
+ShaHasher::ShaHasher(const ShaHasher &instance) : ShaHasher(instance._HashAlgorithm, instance.GetEncoder())
 {
-    try
-    {
-        String json = RapidJsonExtensions::ToJson(value);
-        String name = RapidJsonExtensions::GetStringValue(value, STRINGIFY(Name));
-        std::function<std::unique_ptr<IEncoder>()> encoderFx =
-            DefaultEncoderFunctions.at(name);
-        return encoderFx();
-    }
-    catch (...)
-    {
-        throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__,
-                                      __LINE__);
-    }
 }
 
-// ███ ShaHasher ███
-
-ShaHasher::ShaHasher(const HashAlgorithm &hashAlgorithm,
-                     std::unique_ptr<IEncoder> &&encoder)
-    : IHasher(SHA_HASHER_NAME_STRING), _HashAlgorithm(hashAlgorithm),
-      _Encoder(encoder ? std::move(encoder)
-                       : Base64Encoder::DefaultInstance()) {}
-
-ShaHasher::ShaHasher(const ShaHasher &instance)
-    : ShaHasher(instance._HashAlgorithm, instance.GetEncoder()) {}
-
-HashAlgorithm ShaHasher::GetHashAlgorithm() const { return _HashAlgorithm; }
+HashAlgorithm ShaHasher::GetHashAlgorithm() const
+{
+    return _HashAlgorithm;
+}
 
 std::unique_ptr<IEncoder> ShaHasher::GetEncoder() const
 {
@@ -1912,47 +1662,41 @@ StdVectorUint8 ShaHasher::Compute(const StdVectorUint8 &data)
 
 StdVectorUint8 ShaHasher::Compute(const String &data)
 {
-    return Compute(ConverterExtensions::StringToStdVectorUint8(data));
+    return HashExtensions::ComputeHash(data, _HashAlgorithm);
 }
 
 String ShaHasher::ComputeEncoded(const StdVectorUint8 &data)
 {
-    return _Encoder->Encode(Compute(data));
+    return HashExtensions::ComputeEncodedHash(data, _Encoder->Clone(), _HashAlgorithm);
 }
 
 String ShaHasher::ComputeEncoded(const String &data)
 {
-    return ComputeEncoded(ConverterExtensions::StringToStdVectorUint8(data));
+    return HashExtensions::ComputeEncodedHash(data, _Encoder->Clone(), _HashAlgorithm);
 }
 
-bool ShaHasher::Verify(const StdVectorUint8 &data,
-                       const StdVectorUint8 &expected)
+bool ShaHasher::Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected)
 {
-    return Compute(data) == expected;
-}
-
-bool ShaHasher::VerifyEncoded(const StdVectorUint8 &data,
-                              const String &expected)
-{
-    return ComputeEncoded(data) == expected;
+    return HashExtensions::VerifyHash(data, expected);
 }
 
 bool ShaHasher::Verify(const String &data, const StdVectorUint8 &expected)
 {
-    return Verify(ConverterExtensions::StringToStdVectorUint8(data), expected);
+    return HashExtensions::VerifyHash(data, expected);
+}
+
+bool ShaHasher::VerifyEncoded(const StdVectorUint8 &data, const String &expected)
+{
+    return HashExtensions::VerifyEncodedHash(data, expected, _Encoder->Clone(), _HashAlgorithm);
 }
 
 bool ShaHasher::VerifyEncoded(const String &data, const String &expected)
 {
-    return VerifyEncoded(ConverterExtensions::StringToStdVectorUint8(data),
-                         expected);
+    return HashExtensions::VerifyEncodedHash(data, expected, _Encoder->Clone(), _HashAlgorithm);
 }
 
 String ShaHasher::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -1960,16 +1704,14 @@ String ShaHasher::Serialize(const bool &indent) const
         writer.StartObject();
 
         writer.Key(CNAMEOF(Name));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
         writer.Key(CNAMEOF(HashAlgorithm));
         writer.Int(HashAlgorithmEnumExtensions::ToIntegral(_HashAlgorithm));
 
         writer.Key(CNAMEOF(Encoder));
         String serialized = _Encoder->Serialize(indent);
-        writer.RawValue(serialized.c_str(), serialized.size(),
-                        rapidjson::kObjectType);
+        writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
 
         writer.EndObject();
         String json = String(sb.GetString(), sb.GetSize());
@@ -1981,11 +1723,29 @@ String ShaHasher::Serialize(const bool &indent) const
     }
 }
 
-std::unique_ptr<IHasher> ShaHasher::Deserialize(
-    const String &json,
-    const std::function<std::unique_ptr<IHasher>(String)> &resolver)
+std::unique_ptr<IHasher> ShaHasher::Deserialize(const String &json)
 {
-    return resolver(json);
+    try
+    {
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+        {
+            throw true;
+        }
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(
+            document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
+        return std::make_unique<ShaHasher>(algorithm, std::move(encoder));
+    }
+    catch (...)
+    {
+        throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
 std::unique_ptr<IHasher> ShaHasher::Clone() const
@@ -1993,62 +1753,35 @@ std::unique_ptr<IHasher> ShaHasher::Clone() const
     return std::make_unique<ShaHasher>(*this);
 }
 
-DeserializeResolver<IHasher> ShaHasher::DefaultDeserializeResolver()
-{
-    return [](const String &json) -> std::unique_ptr<IHasher>
-    {
-        USING_NS_INSANE_EXCEPTION;
+// MARK: ███ HmacHasher ███
 
-        try
-        {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-            {
-                throw true;
-            }
-            std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(
-                document[CNAMEOF_TRIM_GET(GetEncoder)]);
-            HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(
-                document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
-            return std::make_unique<ShaHasher>(algorithm, std::move(encoder));
-        }
-        catch (...)
-        {
-            throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
+HmacHasher::HmacHasher(const StdVectorUint8 &key, const HashAlgorithm &hashAlgorithm, std::unique_ptr<IEncoder> &&encoder) : IHasher(HMAC_HASHER_NAME_STRING), _HashAlgorithm(hashAlgorithm), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance())), _Key(key.empty() ? RandomExtensions::NextBytes(SHA512_DIGEST_LENGTH) : key)
+{
 }
 
-// ███ HmacHasher ███
+HmacHasher::HmacHasher(const HmacHasher &instance) : HmacHasher(instance.GetKey(), instance.GetHashAlgorithm(), instance.GetEncoder())
+{
+}
 
-HmacHasher::HmacHasher(const StdVectorUint8 &key,
-                       const HashAlgorithm &hashAlgorithm,
-                       std::unique_ptr<IEncoder> &&encoder)
-    : IHasher(HMAC_HASHER_NAME_STRING), _HashAlgorithm(hashAlgorithm),
-      _Encoder(encoder ? std::move(encoder)
-                       : std::move(Base64Encoder::DefaultInstance())),
-      _Key(key.empty() ? RandomExtensions::NextBytes(SHA512_DIGEST_LENGTH)
-                       : key) {}
-
-HmacHasher::HmacHasher(const HmacHasher &instance)
-    : HmacHasher(instance.GetKey(), instance.GetHashAlgorithm(),
-                 instance.GetEncoder()) {}
-
-HashAlgorithm HmacHasher::GetHashAlgorithm() const { return _HashAlgorithm; }
+HashAlgorithm HmacHasher::GetHashAlgorithm() const
+{
+    return _HashAlgorithm;
+}
 
 std::unique_ptr<IEncoder> HmacHasher::GetEncoder() const
 {
     return _Encoder->Clone();
 }
 
-StdVectorUint8 HmacHasher::GetKey() const { return _Key; }
+StdVectorUint8 HmacHasher::GetKey() const
+{
+    return _Key;
+}
 
-String HmacHasher::GetKeyEncoded() const { return _Encoder->Encode(_Key); }
+String HmacHasher::GetKeyEncoded() const
+{
+    return _Encoder->Encode(_Key);
+}
 
 StdVectorUint8 HmacHasher::Compute(const StdVectorUint8 &data)
 {
@@ -2070,35 +1803,28 @@ String HmacHasher::ComputeEncoded(const String &data)
     return ComputeEncoded(ConverterExtensions::StringToStdVectorUint8(data));
 }
 
-bool HmacHasher::Verify(const StdVectorUint8 &data,
-                        const StdVectorUint8 &expected)
+bool HmacHasher::Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected)
 {
     return Compute(data) == expected;
 }
 
-bool HmacHasher::VerifyEncoded(const StdVectorUint8 &data,
-                               const String &expected)
+bool HmacHasher::Verify(const String &data, const StdVectorUint8 &expected)
+{
+    return Compute(data) == expected;
+}
+
+bool HmacHasher::VerifyEncoded(const StdVectorUint8 &data, const String &expected)
 {
     return ComputeEncoded(data) == expected;
 }
 
-bool HmacHasher::Verify(const String &data, const StdVectorUint8 &expected)
-{
-    return Verify(ConverterExtensions::StringToStdVectorUint8(data), expected);
-}
-
 bool HmacHasher::VerifyEncoded(const String &data, const String &expected)
 {
-    return VerifyEncoded(ConverterExtensions::StringToStdVectorUint8(data),
-                         expected);
+    return ComputeEncoded(data) == expected;
 }
 
 String HmacHasher::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_STR;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -2106,8 +1832,7 @@ String HmacHasher::Serialize(const bool &indent) const
         writer.StartObject();
 
         writer.Key(CNAMEOF_TRIM_GET(GetName));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
         writer.Key(CNAMEOF_TRIM_GET(GetKey));
         String key = GetKeyEncoded();
@@ -2118,8 +1843,7 @@ String HmacHasher::Serialize(const bool &indent) const
 
         writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
         String serialized = _Encoder->Serialize(indent);
-        writer.RawValue(serialized.c_str(), serialized.size(),
-                        rapidjson::kStringType);
+        writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kStringType);
 
         writer.EndObject();
         String json = String(sb.GetString(), sb.GetSize());
@@ -2136,76 +1860,65 @@ std::unique_ptr<IHasher> HmacHasher::Clone() const
     return std::make_unique<HmacHasher>(*this);
 }
 
-std::unique_ptr<IHasher>
-HmacHasher::Deserialize(const String &json,
-                        const DeserializeResolver<IHasher> &resolver)
+std::unique_ptr<IHasher> HmacHasher::Deserialize(const String &json)
 {
-    return resolver(json);
-}
-
-DeserializeResolver<IHasher> HmacHasher::DefaultDeserializeResolver()
-{
-    return [](const String &json) -> std::unique_ptr<IHasher>
+    try
     {
-        USING_NS_INSANE_EXCEPTION;
-
-        try
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
         {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetHashAlgorithm)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-            {
-                throw true;
-            }
-            std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(
-                document[CNAMEOF_TRIM_GET(GetEncoder)]);
-            HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(
-                document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
-            StdVectorUint8 key =
-                encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
-            return std::make_unique<HmacHasher>(key, algorithm, std::move(encoder));
+            throw true;
         }
-        catch (...)
-        {
-            throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(
+            document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
+        StdVectorUint8 key =
+            encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
+        return std::make_unique<HmacHasher>(key, algorithm, std::move(encoder));
+    }
+    catch (...)
+    {
+        throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
-// ███ Argon2Hasher ███
+// MARK: ███ Argon2Hasher ███
 
-Argon2Hasher::Argon2Hasher(const StdVectorUint8 &salt,
-                           const unsigned int &iterations,
-                           const unsigned int &memorySizeKiB,
-                           const unsigned int &degreeOfParallelism,
-                           const Argon2Variant argon2Variant,
-                           const unsigned int &derivedKeyLength,
-                           std::unique_ptr<IEncoder> &&encoder)
-    : IHasher(ARGON2_HASHER_NAME_STRING), _Salt(salt), _Iterations(iterations),
-      _MemorySizeKiB(memorySizeKiB), _DegreeOfParallelism(degreeOfParallelism),
-      _DerivedKeyLength(derivedKeyLength), _Argon2Variant(argon2Variant),
-      _Encoder(encoder ? std::move(encoder)
-                       : std::move(Base64Encoder::DefaultInstance())) {}
+Argon2Hasher::Argon2Hasher(const StdVectorUint8 &salt, const unsigned int &iterations, const unsigned int &memorySizeKiB, const unsigned int &degreeOfParallelism, const Argon2Variant argon2Variant, const unsigned int &derivedKeyLength, std::unique_ptr<IEncoder> &&encoder)
+    : IHasher(ARGON2_HASHER_NAME_STRING), _Salt(salt), _Iterations(iterations), _MemorySizeKiB(memorySizeKiB), _DegreeOfParallelism(degreeOfParallelism), _DerivedKeyLength(derivedKeyLength), _Argon2Variant(argon2Variant), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+{
+}
 
 Argon2Hasher::Argon2Hasher(const Argon2Hasher &instance)
-    : Argon2Hasher(instance.GetSalt(), instance.GetIterations(),
-                   instance.GetMemorySizeKiB(),
-                   instance.GetDegreeOfParallelism(),
-                   instance.GetArgon2Variant(), instance.GetDerivedKeyLength(),
-                   instance.GetEncoder()) {}
+    : Argon2Hasher(instance.GetSalt(), instance.GetIterations(), instance.GetMemorySizeKiB(), instance.GetDegreeOfParallelism(), instance.GetArgon2Variant(), instance.GetDerivedKeyLength(), instance.GetEncoder())
+{
+}
 
-StdVectorUint8 Argon2Hasher::GetSalt() const { return _Salt; }
+StdVectorUint8 Argon2Hasher::GetSalt() const
+{
+    return _Salt;
+}
 
-String Argon2Hasher::GetSaltEncoded() const { return _Encoder->Encode(_Salt); }
+String Argon2Hasher::GetSaltEncoded() const
+{
+    return _Encoder->Encode(_Salt);
+}
 
-unsigned int Argon2Hasher::GetIterations() const { return _Iterations; }
+unsigned int Argon2Hasher::GetIterations() const
+{
+    return _Iterations;
+}
 
-unsigned int Argon2Hasher::GetMemorySizeKiB() const { return _MemorySizeKiB; }
+unsigned int Argon2Hasher::GetMemorySizeKiB() const
+{
+    return _MemorySizeKiB;
+}
 
 unsigned int Argon2Hasher::GetDegreeOfParallelism() const
 {
@@ -2217,7 +1930,10 @@ unsigned int Argon2Hasher::GetDerivedKeyLength() const
     return _DerivedKeyLength;
 }
 
-Argon2Variant Argon2Hasher::GetArgon2Variant() const { return _Argon2Variant; }
+Argon2Variant Argon2Hasher::GetArgon2Variant() const
+{
+    return _Argon2Variant;
+}
 
 std::unique_ptr<IEncoder> Argon2Hasher::GetEncoder() const
 {
@@ -2226,9 +1942,7 @@ std::unique_ptr<IEncoder> Argon2Hasher::GetEncoder() const
 
 StdVectorUint8 Argon2Hasher::Compute(const StdVectorUint8 &data)
 {
-    return HashExtensions::ComputeArgon2(data, _Salt, _Iterations, _MemorySizeKiB,
-                                         _DegreeOfParallelism, _Argon2Variant,
-                                         _DerivedKeyLength);
+    return HashExtensions::ComputeArgon2(data, _Salt, _Iterations, _MemorySizeKiB, _DegreeOfParallelism, _Argon2Variant, _DerivedKeyLength);
 }
 
 StdVectorUint8 Argon2Hasher::Compute(const String &data)
@@ -2246,35 +1960,29 @@ String Argon2Hasher::ComputeEncoded(const String &data)
     return ComputeEncoded(ConverterExtensions::StringToStdVectorUint8(data));
 }
 
-bool Argon2Hasher::Verify(const StdVectorUint8 &data,
-                          const StdVectorUint8 &expected)
+bool Argon2Hasher::Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected)
 {
     return Compute(data) == expected;
 }
 
-bool Argon2Hasher::VerifyEncoded(const StdVectorUint8 &data,
-                                 const String &expected)
+bool Argon2Hasher::Verify(const String &data, const StdVectorUint8 &expected)
+{
+    return Compute(data)== expected;
+}
+
+bool Argon2Hasher::VerifyEncoded(const StdVectorUint8 &data, const String &expected)
 {
     return ComputeEncoded(data) == expected;
 }
 
-bool Argon2Hasher::Verify(const String &data, const StdVectorUint8 &expected)
-{
-    return Verify(ConverterExtensions::StringToStdVectorUint8(data), expected);
-}
 
 bool Argon2Hasher::VerifyEncoded(const String &data, const String &expected)
 {
-    return VerifyEncoded(ConverterExtensions::StringToStdVectorUint8(data),
-                         expected);
+    return ComputeEncoded(data) == expected;
 }
 
 String Argon2Hasher::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_STR;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -2282,8 +1990,7 @@ String Argon2Hasher::Serialize(const bool &indent) const
         writer.StartObject();
 
         writer.Key(CNAMEOF_TRIM_GET(GetName));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
         writer.Key(CNAMEOF_TRIM_GET(GetSalt));
         String salt = GetSaltEncoded();
@@ -2291,31 +1998,26 @@ String Argon2Hasher::Serialize(const bool &indent) const
 
         writer.Key(CNAMEOF_TRIM_GET(GetIterations));
         String numberSizeT = IntegralExtensions::ToString(GetIterations());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetMemorySizeKiB));
         numberSizeT = IntegralExtensions::ToString(GetMemorySizeKiB());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetDegreeOfParallelism));
         numberSizeT = IntegralExtensions::ToString(GetDegreeOfParallelism());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetArgon2Variant));
         writer.Int(Argon2VariantEnumExtensions::ToIntegral(GetArgon2Variant()));
 
         writer.Key(CNAMEOF_TRIM_GET(GetDerivedKeyLength));
         numberSizeT = IntegralExtensions::ToString(GetDerivedKeyLength());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
         String serialized = _Encoder->Serialize(indent);
-        writer.RawValue(serialized.c_str(), serialized.size(),
-                        rapidjson::kObjectType);
+        writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
 
         writer.EndObject();
         String json = String(sb.GetString(), sb.GetSize());
@@ -2332,87 +2034,76 @@ std::unique_ptr<IHasher> Argon2Hasher::Clone() const
     return std::make_unique<Argon2Hasher>(*this);
 }
 
-std::unique_ptr<IHasher>
-Argon2Hasher::Deserialize(const String &json,
-                          const DeserializeResolver<IHasher> &resolver)
+std::unique_ptr<IHasher> Argon2Hasher::Deserialize(const String &json)
 {
-    return resolver(json);
-}
-
-DeserializeResolver<IHasher> Argon2Hasher::DefaultDeserializeResolver()
-{
-    return [](const String &json) -> std::unique_ptr<IHasher>
+    try
     {
-        USING_NS_INSANE_EXCEPTION;
-        try
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetMemorySizeKiB)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetDegreeOfParallelism)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetArgon2Variant)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
         {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetMemorySizeKiB)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetDegreeOfParallelism)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetArgon2Variant)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-            {
-                throw true;
-            }
-            std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(
-                document[CNAMEOF_TRIM_GET(GetEncoder)]);
-            StdVectorUint8 salt =
-                encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-            size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
-            size_t memorySizeKiB =
-                document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint();
-            size_t degreeOfParallelism =
-                document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint();
-            size_t derivedKeyLength =
-                document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
-            Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(
-                document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
-            return std::make_unique<Argon2Hasher>(
-                salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant,
-                derivedKeyLength, std::move(encoder));
+            throw true;
         }
-        catch (...)
-        {
-            throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        StdVectorUint8 salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
+        size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
+        size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint();
+        size_t degreeOfParallelism = document[CNAMEOF_TRIM_GET(GetDegreeOfParallelism)].GetUint();
+        size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
+        Argon2Variant argon2Variant = Argon2VariantEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetArgon2Variant)].GetInt());
+        return std::make_unique<Argon2Hasher>(salt, iterations, memorySizeKiB, degreeOfParallelism, argon2Variant, derivedKeyLength, std::move(encoder));
+    }
+    catch (...)
+    {
+        throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
-// ███ ScryptHasher ███
+// MARK: ███ ScryptHasher ███
 
-ScryptHasher::ScryptHasher(const StdVectorUint8 &salt,
-                           const unsigned int &iterations,
-                           const unsigned int &blocksize,
-                           const unsigned int &parallelism,
-                           const unsigned int &derivedKeyLength,
-                           std::unique_ptr<IEncoder> &&encoder)
-    : IHasher(SCRYPT_HASHER_NAME_STRING), _Salt(salt), _Iterations(iterations),
-      _BlockSize(blocksize), _Parallelism(parallelism),
-      _DerivedKeyLength(derivedKeyLength),
-      _Encoder(encoder ? std::move(encoder)
-                       : std::move(Base64Encoder::DefaultInstance())) {}
+ScryptHasher::ScryptHasher(const StdVectorUint8 &salt, const unsigned int &iterations, const unsigned int &blocksize, const unsigned int &parallelism, const unsigned int &derivedKeyLength, std::unique_ptr<IEncoder> &&encoder)
+    : IHasher(SCRYPT_HASHER_NAME_STRING), _Salt(salt), _Iterations(iterations), _BlockSize(blocksize), _Parallelism(parallelism), _DerivedKeyLength(derivedKeyLength), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
+{
+}
 
 ScryptHasher::ScryptHasher(const ScryptHasher &instance)
-    : ScryptHasher(instance.GetSalt(), instance.GetIterations(),
-                   instance.GetBlockSize(), instance.GetParallelism(),
-                   instance.GetDerivedKeyLength(), instance.GetEncoder()) {}
+    : ScryptHasher(instance.GetSalt(), instance.GetIterations(), instance.GetBlockSize(), instance.GetParallelism(), instance.GetDerivedKeyLength(), instance.GetEncoder())
+{
+}
 
-StdVectorUint8 ScryptHasher::GetSalt() const { return _Salt; }
+StdVectorUint8 ScryptHasher::GetSalt() const
+{
+    return _Salt;
+}
 
-String ScryptHasher::GetSaltEncoded() const { return _Encoder->Encode(_Salt); }
+String ScryptHasher::GetSaltEncoded() const
+{
+    return _Encoder->Encode(_Salt);
+}
 
-unsigned int ScryptHasher::GetIterations() const { return _Iterations; }
+unsigned int ScryptHasher::GetIterations() const
+{
+    return _Iterations;
+}
 
-unsigned int ScryptHasher::GetBlockSize() const { return _BlockSize; }
+unsigned int ScryptHasher::GetBlockSize() const
+{
+    return _BlockSize;
+}
 
-unsigned int ScryptHasher::GetParallelism() const { return _Parallelism; }
+unsigned int ScryptHasher::GetParallelism() const
+{
+    return _Parallelism;
+}
 
 unsigned int ScryptHasher::GetDerivedKeyLength() const
 {
@@ -2426,8 +2117,7 @@ std::unique_ptr<IEncoder> ScryptHasher::GetEncoder() const
 
 StdVectorUint8 ScryptHasher::Compute(const StdVectorUint8 &data)
 {
-    return HashExtensions::ComputeScrypt(data, _Salt, _Iterations, _BlockSize,
-                                         _Parallelism, _DerivedKeyLength);
+    return HashExtensions::ComputeScrypt(data, _Salt, _Iterations, _BlockSize, _Parallelism, _DerivedKeyLength);
 }
 
 StdVectorUint8 ScryptHasher::Compute(const String &data)
@@ -2445,27 +2135,25 @@ String ScryptHasher::ComputeEncoded(const String &data)
     return ComputeEncoded(ConverterExtensions::StringToStdVectorUint8(data));
 }
 
-bool ScryptHasher::Verify(const StdVectorUint8 &data,
-                          const StdVectorUint8 &expected)
+bool ScryptHasher::Verify(const StdVectorUint8 &data, const StdVectorUint8 &expected)
 {
     return Compute(data) == expected;
 }
 
-bool ScryptHasher::VerifyEncoded(const StdVectorUint8 &data,
-                                 const String &expected)
+bool ScryptHasher::Verify(const String &data, const StdVectorUint8 &expected)
+{
+    return Compute(data) == expected;
+}
+
+bool ScryptHasher::VerifyEncoded(const StdVectorUint8 &data, const String &expected)
 {
     return ComputeEncoded(data) == expected;
 }
 
-bool ScryptHasher::Verify(const String &data, const StdVectorUint8 &expected)
-{
-    return Verify(ConverterExtensions::StringToStdVectorUint8(data), expected);
-}
 
 bool ScryptHasher::VerifyEncoded(const String &data, const String &expected)
 {
-    return VerifyEncoded(ConverterExtensions::StringToStdVectorUint8(data),
-                         expected);
+    return ComputeEncoded(data) == expected;
 }
 
 std::unique_ptr<IHasher> ScryptHasher::Clone() const
@@ -2473,53 +2161,8 @@ std::unique_ptr<IHasher> ScryptHasher::Clone() const
     return std::make_unique<ScryptHasher>(*this);
 }
 
-DeserializeResolver<IHasher> ScryptHasher::DefaultDeserializeResolver()
-{
-    return [](const String &json) -> std::unique_ptr<IHasher>
-    {
-        USING_NS_INSANE_EXCEPTION;
-        try
-        {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetBlockSize)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetParallelism)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-            {
-                throw true;
-            }
-            std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(
-                document[CNAMEOF_TRIM_GET(GetEncoder)]);
-            StdVectorUint8 salt =
-                encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
-            size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
-            size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint();
-            size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint();
-            size_t derivedKeyLength =
-                document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
-            return std::make_unique<ScryptHasher>(salt, iterations, blockSize,
-                                                  parallelism, derivedKeyLength,
-                                                  std::move(encoder));
-        }
-        catch (...)
-        {
-            throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
-}
-
 String ScryptHasher::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_STR;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -2528,8 +2171,7 @@ String ScryptHasher::Serialize(const bool &indent) const
         writer.StartObject();
 
         writer.Key(CNAMEOF_TRIM_GET(GetName));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
         writer.Key(CNAMEOF_TRIM_GET(GetSalt));
         String salt = GetSaltEncoded();
@@ -2537,28 +2179,23 @@ String ScryptHasher::Serialize(const bool &indent) const
 
         writer.Key(CNAMEOF_TRIM_GET(GetIterations));
         String numberSizeT = IntegralExtensions::ToString(GetIterations());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetBlockSize));
         numberSizeT = IntegralExtensions::ToString(GetBlockSize());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetParallelism));
         numberSizeT = IntegralExtensions::ToString(GetParallelism());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetDerivedKeyLength));
         numberSizeT = IntegralExtensions::ToString(GetDerivedKeyLength());
-        writer.RawValue(numberSizeT.data(), numberSizeT.length(),
-                        rapidjson::kNumberType);
+        writer.RawValue(numberSizeT.data(), numberSizeT.length(), rapidjson::kNumberType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetEncoder));
         String serialized = _Encoder->Serialize(indent);
-        writer.RawValue(serialized.c_str(), serialized.size(),
-                        rapidjson::kObjectType);
+        writer.RawValue(serialized.c_str(), serialized.size(), rapidjson::kObjectType);
 
         writer.EndObject();
         String json = String(sb.GetString(), sb.GetSize());
@@ -2570,68 +2207,67 @@ String ScryptHasher::Serialize(const bool &indent) const
     }
 }
 
-std::unique_ptr<IHasher>
-ScryptHasher::Deserialize(const String &json,
-                          const DeserializeResolver<IHasher> &resolver)
+std::unique_ptr<IHasher> ScryptHasher::Deserialize(const String &json)
 {
-    return resolver(json);
+    try
+    {
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetSalt)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetIterations)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetBlockSize)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetParallelism)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetDerivedKeyLength)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
+        {
+            throw true;
+        }
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        StdVectorUint8 salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
+        size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
+        size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint();
+        size_t parallelism = document[CNAMEOF_TRIM_GET(GetParallelism)].GetUint();
+        size_t derivedKeyLength = document[CNAMEOF_TRIM_GET(GetDerivedKeyLength)].GetUint();
+        return std::make_unique<ScryptHasher>(salt, iterations, blockSize, parallelism, derivedKeyLength, std::move(encoder));
+    }
+    catch (...)
+    {
+        throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
-// ███ DefaultProtectorsFunctions ███
-static inline const std::map<String,
-                             std::function<std::unique_ptr<ISecretProtector>()>>
-    DefaultProtectorFunctions = {{AES_CBC_PROTECTOR_NAME_STRING, []()
-                                  {
-                                      return AesCbcProtector::DefaultInstance();
-                                  }}};
+// MARK: ███ IEncryptor ███
 
-// ███ ISecretProtector ███
-ISecretProtector::ISecretProtector(const String &name) : _Name(name) {}
-
-String ISecretProtector::GetName() { return _Name; }
-
-// ███ AesCbcProtector ███
-AesCbcProtector::AesCbcProtector()
-    : ISecretProtector(AES_CBC_PROTECTOR_NAME_STRING) {}
-
-StdVectorUint8 AesCbcProtector::Protect(const StdVectorUint8 &secret,
-                                        const StdVectorUint8 &key)
+IEncryptor::IEncryptor(const String &name) : IJsonSerialize(name)
 {
-    return AesExtensions::EncryptAesCbc(secret, key, AesCbcPadding::Pkcs7);
 }
 
-StdVectorUint8 AesCbcProtector::Unprotect(const StdVectorUint8 &secret,
-                                          const StdVectorUint8 &key)
+// MARK:███ AesCbcEncryptor ███
+AesCbcEncryptor::AesCbcEncryptor(const StdVectorUint8 &key, const AesCbcPadding &padding, std::unique_ptr<IEncoder> &&encoder)
+    : IEncryptor(AES_CBC_ENCRYPTOR_NAME_STRING), _Key(key), _Padding(padding), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
 {
-    return AesExtensions::DecryptAesCbc(secret, key, AesCbcPadding::Pkcs7);
 }
-
-std::unique_ptr<ISecretProtector> AesCbcProtector::DefaultInstance()
-{
-    return std::make_unique<AesCbcProtector>();
-}
-
-// ███ IEncryptor ███
-
-IEncryptor::IEncryptor(const String &name) : ISecureJsonSerialize(name) {}
-
-// ███ AesCbcEncryptor ███
-AesCbcEncryptor::AesCbcEncryptor(const StdVectorUint8 &key,
-                                 const AesCbcPadding &padding,
-                                 std::unique_ptr<IEncoder> &&encoder)
-    : IEncryptor(AES_CBC_ENCRYPTOR_NAME_STRING), _Key(key), _Padding(padding),
-      _Encoder(encoder ? std::move(encoder)
-                       : std::move(Base64Encoder::DefaultInstance())) {}
 
 AesCbcEncryptor::AesCbcEncryptor(const AesCbcEncryptor &instance)
-    : AesCbcEncryptor(instance.GetKey(), instance.GetPadding(),
-                      instance.GetEncoder()) {}
+    : AesCbcEncryptor(instance.GetKey(), instance.GetPadding(), instance.GetEncoder()) {}
 
-StdVectorUint8 AesCbcEncryptor::GetKey() const { return _Key; }
+StdVectorUint8 AesCbcEncryptor::GetKey() const
+{
+    return _Key;
+}
 
-String AesCbcEncryptor::GetKeyEncoded() const { return _Encoder->Encode(_Key); }
+String AesCbcEncryptor::GetKeyEncoded() const
+{
+    return _Encoder->Encode(_Key);
+}
 
-AesCbcPadding AesCbcEncryptor::GetPadding() const { return _Padding; }
+AesCbcPadding AesCbcEncryptor::GetPadding() const
+{
+    return _Padding;
+}
 
 std::unique_ptr<IEncoder> AesCbcEncryptor::GetEncoder() const
 {
@@ -2673,14 +2309,8 @@ std::unique_ptr<IEncryptor> AesCbcEncryptor::Clone() const
     return std::make_unique<AesCbcEncryptor>(*this);
 }
 
-String AesCbcEncryptor::Serialize(
-    const StdVectorUint8 &serializeKey, const bool &indent,
-    const std::unique_ptr<ISecretProtector> &protector) const
+String AesCbcEncryptor::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_STR;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -2688,18 +2318,11 @@ String AesCbcEncryptor::Serialize(
         writer.StartObject();
 
         writer.Key(CNAMEOF_TRIM_GET(GetName));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
-
-        writer.Key(CNAMEOF(Protector));
-        writer.String(
-            protector->GetName().c_str(),
-            static_cast<rapidjson::SizeType>(protector->GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
         writer.Key(CNAMEOF_TRIM_GET(GetKey));
-        String value = _Encoder->Encode(protector->Protect(GetKey(), serializeKey));
-        writer.String(value.data(),
-                      static_cast<rapidjson::SizeType>(value.length()));
+        String value = _Encoder->Encode(GetKey());
+        writer.String(value.data(), static_cast<rapidjson::SizeType>(value.length()));
 
         writer.Key(CNAMEOF_TRIM_GET(GetPadding));
         value = AesCbcPaddingEnumExtensions::ToIntegralString(GetPadding());
@@ -2719,89 +2342,55 @@ String AesCbcEncryptor::Serialize(
     }
 }
 
-ProtectorResolver AesCbcEncryptor::DefaultProtectorResolver()
+std::unique_ptr<IEncryptor> AesCbcEncryptor::Deserialize(const String &json)
 {
-    return [](const String &name) -> std::unique_ptr<ISecretProtector>
+    try
     {
-        USING_NS_INSANE_EXCEPTION;
-        try
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+              document.HasMember(CNAMEOF(Protector)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
         {
-            std::function<std::unique_ptr<ISecretProtector>()> protectorFx =
-                DefaultProtectorFunctions.at(name);
-            return protectorFx();
+            throw true;
         }
-        catch (...)
-        {
-            throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__,
-                                          __LINE__);
-        }
-    };
-}
-
-SecureDeserializeResolver<IEncryptor>
-AesCbcEncryptor::DefaultDeserializeResolver()
-{
-    return [](const String &json,
-              const StdVectorUint8 &serializeKey) -> std::unique_ptr<IEncryptor>
+        String protectorName = document[CNAMEOF(Protector)].GetString();
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        StdVectorUint8 key = encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
+        AesCbcPadding padding = AesCbcPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
+        return std::make_unique<AesCbcEncryptor>(key, padding, std::move(encoder));
+    }
+    catch (...)
     {
-        USING_NS_INSANE_EXCEPTION;
-        try
-        {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-                  document.HasMember(CNAMEOF(Protector)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetKey)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-            {
-                throw true;
-            }
-            String protectorName = document[CNAMEOF(Protector)].GetString();
-            std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(
-                document[CNAMEOF_TRIM_GET(GetEncoder)]);
-            std::unique_ptr<ISecretProtector> protector =
-                DefaultProtectorResolver()(protectorName);
-            StdVectorUint8 key = protector->Unprotect(
-                encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString()),
-                serializeKey);
-            AesCbcPadding padding = AesCbcPaddingEnumExtensions::Parse(
-                document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
-            return std::make_unique<AesCbcEncryptor>(key, padding,
-                                                     std::move(encoder));
-        }
-        catch (...)
-        {
-            throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
+        throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
-std::unique_ptr<IEncryptor> AesCbcEncryptor::Deserialize(
-    const String &json, const StdVectorUint8 &serializeKey,
-    const SecureDeserializeResolver<IEncryptor> &deserializeResolver)
-{
-    return deserializeResolver(json, serializeKey);
-}
+// MARK: ███ RsaEncryptor ███
 
-// ███ RsaEncryptor ███
-
-RsaEncryptor::RsaEncryptor(const RsaKeyPair &keyPair, const RsaPadding &padding,
-                           std::unique_ptr<IEncoder> &&encoder)
-    : IEncryptor(RSA_ENCRYPTOR_NAME_STRING), _KeyPair(keyPair),
-      _Padding(padding),
-      _Encoder(encoder ? std::move(encoder)
-                       : std::move(Base64Encoder::DefaultInstance())) {}
-
-RsaEncryptor::RsaEncryptor(const RsaEncryptor &instance) : RsaEncryptor(instance.GetKeyPair(), instance.GetPadding(), instance.GetEncoder())
+RsaEncryptor::RsaEncryptor(const RsaKeyPair &keyPair, const RsaPadding &padding, std::unique_ptr<IEncoder> &&encoder)
+    : IEncryptor(RSA_ENCRYPTOR_NAME_STRING), _KeyPair(keyPair), _Padding(padding), _Encoder(encoder ? std::move(encoder) : std::move(Base64Encoder::DefaultInstance()))
 {
 }
 
-RsaKeyPair RsaEncryptor::GetKeyPair() const { return _KeyPair; }
+RsaEncryptor::RsaEncryptor(const RsaEncryptor &instance)
+    : RsaEncryptor(instance.GetKeyPair(), instance.GetPadding(), instance.GetEncoder())
+{
+}
 
-RsaPadding RsaEncryptor::GetPadding() const { return _Padding; }
+RsaKeyPair RsaEncryptor::GetKeyPair() const
+{
+    return _KeyPair;
+}
+
+RsaPadding RsaEncryptor::GetPadding() const
+{
+    return _Padding;
+}
 
 std::unique_ptr<IEncoder> RsaEncryptor::GetEncoder() const
 {
@@ -2843,12 +2432,8 @@ std::unique_ptr<IEncryptor> RsaEncryptor::Clone() const
     return std::make_unique<RsaEncryptor>(*this);
 }
 
-String RsaEncryptor::Serialize(const StdVectorUint8 &serializeKey, const bool &indent, const std::unique_ptr<ISecretProtector> &protector) const
+String RsaEncryptor::Serialize(const bool &indent) const
 {
-    USING_NS_INSANE_EXCEPTION;
-    USING_NS_INSANE_STR;
-    USING_NS_INSANE_CORE;
-    USING_NS_INSANE_INTERNAL_CORE;
     try
     {
         rapidjson::StringBuffer sb;
@@ -2856,25 +2441,11 @@ String RsaEncryptor::Serialize(const StdVectorUint8 &serializeKey, const bool &i
         writer.StartObject();
 
         writer.Key(CNAMEOF_TRIM_GET(GetName));
-        writer.String(GetName().c_str(),
-                      static_cast<rapidjson::SizeType>(GetName().length()));
+        writer.String(GetName().c_str(), static_cast<rapidjson::SizeType>(GetName().length()));
 
-        writer.Key(CNAMEOF(Protector));
-        writer.String(
-            protector->GetName().c_str(),
-            static_cast<rapidjson::SizeType>(protector->GetName().length()));
         String value;
         writer.Key(CNAMEOF_TRIM_GET(GetKeyPair));
-        RsaKeyPair keypair = RsaKeyPair(
-            _Encoder->Encode(
-                protector->Protect(ConverterExtensions::StringToStdVectorUint8(
-                                       _KeyPair.GetPublicKey()),
-                                   serializeKey)),
-            _Encoder->Encode(
-                protector->Protect(ConverterExtensions::StringToStdVectorUint8(
-                                       _KeyPair.GetPrivateKey()),
-                                   serializeKey)));
-        value = keypair.Serialize();
+        value = _KeyPair.Serialize();
         writer.RawValue(value.data(), value.length(), rapidjson::kObjectType);
 
         writer.Key(CNAMEOF_TRIM_GET(GetPadding));
@@ -2895,92 +2466,41 @@ String RsaEncryptor::Serialize(const StdVectorUint8 &serializeKey, const bool &i
     }
 }
 
-ProtectorResolver RsaEncryptor::DefaultProtectorResolver()
+std::unique_ptr<IEncryptor> RsaEncryptor::Deserialize(const String &json)
 {
-    return [](const String &name) -> std::unique_ptr<ISecretProtector>
+    try
     {
-        USING_NS_INSANE_EXCEPTION;
-        try
+        rapidjson::Document document;
+        document.Parse(json.c_str(), json.length());
+        if (document.HasParseError() ||
+            !(document.IsObject() &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
+              document.HasMember(CNAMEOF(Protector)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetKeyPair)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
+              document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
         {
-            std::function<std::unique_ptr<ISecretProtector>()> protectorFx =
-                DefaultProtectorFunctions.at(name);
-            return protectorFx();
+            throw true;
         }
-        catch (...)
-        {
-            throw NotImplementedException(INSANE_FUNCTION_SIGNATURE, __FILE__,
-                                          __LINE__);
-        }
-    };
-}
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        String publicKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPublicKey));
+        String privateKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPrivateKey));
+        publicKey = ConverterExtensions::StdVectorUint8ToString(encoder->Decode(publicKey));
+        privateKey = ConverterExtensions::StdVectorUint8ToString(encoder->Decode(privateKey));
 
-SecureDeserializeResolver<IEncryptor>
-RsaEncryptor::DefaultDeserializeResolver()
-{
-    return [](const String &json,
-              const StdVectorUint8 &serializeKey) -> std::unique_ptr<IEncryptor>
+        RsaKeyPair keypair{publicKey, privateKey};
+        RsaPadding padding = RsaPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
+        return std::make_unique<RsaEncryptor>(keypair, padding, std::move(encoder));
+    }
+    catch (...)
     {
-        USING_NS_INSANE_EXCEPTION;
-        USING_NS_INSANE_CORE;
-        USING_NS_INSANE_INTERNAL_CORE;
-        try
-        {
-            rapidjson::Document document;
-            document.Parse(json.c_str(), json.length());
-            if (document.HasParseError() ||
-                !(document.IsObject() &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetName)) &&
-                  document.HasMember(CNAMEOF(Protector)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetKeyPair)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetPadding)) &&
-                  document.HasMember(CNAMEOF_TRIM_GET(GetEncoder))))
-            {
-                throw true;
-            }
-            String protectorName = document[CNAMEOF(Protector)].GetString();
-            std::unique_ptr<IEncoder> encoder = InternalDefaultDeserializeIEncoder(
-                document[CNAMEOF_TRIM_GET(GetEncoder)]);
-            std::unique_ptr<ISecretProtector> protector =
-                DefaultProtectorResolver()(protectorName);
-
-            auto keyPairJson =
-                RapidJsonExtensions::ToJson(document[CNAMEOF_TRIM_GET(GetKeyPair)]);
-            String publicKey = RapidJsonExtensions::GetStringValue(
-                document[CNAMEOF_TRIM_GET(GetKeyPair)],
-                CNAMEOF_TRIM_GET(RsaKeyPair::GetPublicKey));
-            String privateKey = RapidJsonExtensions::GetStringValue(
-                document[CNAMEOF_TRIM_GET(GetKeyPair)],
-                CNAMEOF_TRIM_GET(RsaKeyPair::GetPrivateKey));
-            publicKey = ConverterExtensions::StdVectorUint8ToString(
-                protector->Unprotect(encoder->Decode(publicKey), serializeKey));
-            privateKey = ConverterExtensions::StdVectorUint8ToString(
-                protector->Unprotect(encoder->Decode(privateKey), serializeKey));
-
-            RsaKeyPair keypair{publicKey, privateKey};
-            RsaPadding padding = RsaPaddingEnumExtensions::Parse(
-                document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
-            return std::make_unique<RsaEncryptor>(keypair, padding,
-                                                  std::move(encoder));
-        }
-        catch (...)
-        {
-            throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
-        }
-    };
+        throw DeserializeException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
+    }
 }
 
-std::unique_ptr<IEncryptor> RsaEncryptor::Deserialize(
-    const String &json, const StdVectorUint8 &serializeKey,
-    const SecureDeserializeResolver<IEncryptor> &deserializeResolver)
-{
-    return deserializeResolver(json, serializeKey);
-}
-
-// ███ CryptoTests ███
+// MARK: ███ CryptoTests ███
 void CryptoTests::HexEncodingExtensionsTests(const bool &showValues)
 {
-    USING_NS_INSANE_TEST;
-    USING_NS_INSANE_CORE;
     StdVectorUint8 testTytes = {0xff, 0xa, 1, 0x22};
     String hexStringUppercase = "FF0A0122";
     String hexStringLowercase = "ff0a0122";
@@ -2995,38 +2515,26 @@ void CryptoTests::HexEncodingExtensionsTests(const bool &showValues)
     dataStdVector8 = testTytes;
     resultStr = HexEncodingExtensions::EncodeToHex(dataStdVector8);
     expectedStr = hexStringLowercase;
-    TestExtensions::Equals(
-        NAMEOF(HexEncodingExtensions) + "- Encode - 1", expectedStr, resultStr,
-        LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Encode - 1", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStdVector8 = testTytes;
     resultStr = HexEncodingExtensions::EncodeToHex(dataStdVector8, true);
     expectedStr = hexStringUppercase;
-    TestExtensions::Equals(
-        NAMEOF(HexEncodingExtensions) + "- Encode - 2", expectedStr, resultStr,
-        LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Encode - 2", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStr = hexStringUppercase;
     resultStdVector8 = HexEncodingExtensions::DecodeFromHex(dataStr);
     expectedStdVector8 = testTytes;
-    TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 1",
-                           expectedStdVector8, resultStdVector8,
-                           LambdaExtensions::GetStdVectorUint8OutFunction(),
-                           showValues);
+    TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 1", expectedStdVector8, resultStdVector8, LambdaExtensions::GetStdVectorUint8OutFunction(), showValues);
 
     dataStr = hexStringLowercase;
     resultStdVector8 = HexEncodingExtensions::DecodeFromHex(dataStr);
     expectedStdVector8 = testTytes;
-    TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 2",
-                           expectedStdVector8, resultStdVector8,
-                           LambdaExtensions::GetStdVectorUint8OutFunction(),
-                           showValues);
+    TestExtensions::Equals(NAMEOF(HexEncodingExtensions) + "- Decode - 2", expectedStdVector8, resultStdVector8, LambdaExtensions::GetStdVectorUint8OutFunction(), showValues);
 }
 
 void CryptoTests::Base32EncodingExtensionsTests(const bool &showValues)
 {
-    USING_NS_INSANE_TEST;
-    USING_NS_INSANE_CORE;
     String TestString = "helloworld";
     String TestString2 = "A";
     String UpperBase32Result = "NBSWY3DPO5XXE3DE";
@@ -3046,55 +2554,38 @@ void CryptoTests::Base32EncodingExtensionsTests(const bool &showValues)
     dataStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString2);
     resultStr = Base32EncodingExtensions::EncodeToBase32(dataStdVector8);
     expectedStr = UpperBase32Result2;
-    TestExtensions::Equals(
-        NAMEOF(Base32EncodingExtensions) + "- Encode - 1", expectedStr, resultStr,
-        LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + "- Encode - 1", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString);
     resultStr = Base32EncodingExtensions::EncodeToBase32(dataStdVector8);
     expectedStr = UpperBase32Result;
-    TestExtensions::Equals(
-        NAMEOF(Base32EncodingExtensions) + " - Encode - 2", expectedStr,
-        resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 2", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString);
     resultStr =
         Base32EncodingExtensions::EncodeToBase32(dataStdVector8, false, true);
     expectedStr = LowerBase32Result;
-    TestExtensions::Equals(
-        NAMEOF(Base32EncodingExtensions) + " - Encode - 3", expectedStr,
-        resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 3", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString2);
     resultStr = Base32EncodingExtensions::EncodeToBase32(dataStdVector8, false);
     expectedStr = UpperBase32Result2;
-    TestExtensions::Equals(
-        NAMEOF(Base32EncodingExtensions) + " - Encode - 4", expectedStr,
-        resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 4", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString2);
-    resultStr =
-        Base32EncodingExtensions::EncodeToBase32(dataStdVector8, false, true);
+    resultStr = Base32EncodingExtensions::EncodeToBase32(dataStdVector8, false, true);
     expectedStr = LowerBase32Result2;
-    TestExtensions::Equals(
-        NAMEOF(Base32EncodingExtensions) + " - Encode - 5", expectedStr,
-        resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 5", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString2);
-    resultStr =
-        Base32EncodingExtensions::EncodeToBase32(dataStdVector8, true, false);
+    resultStr = Base32EncodingExtensions::EncodeToBase32(dataStdVector8, true, false);
     expectedStr = UpperBase32Result2NoPadding;
-    TestExtensions::Equals(
-        NAMEOF(Base32EncodingExtensions) + " - Encode - 6", expectedStr,
-        resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 6", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString2);
-    resultStr =
-        Base32EncodingExtensions::EncodeToBase32(dataStdVector8, true, true);
+    resultStr = Base32EncodingExtensions::EncodeToBase32(dataStdVector8, true, true);
     expectedStr = LowerBase32Result2NoPadding;
-    TestExtensions::Equals(
-        NAMEOF(Base32EncodingExtensions) + " - Encode - 7", expectedStr,
-        resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
+    TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Encode - 7", expectedStr, resultStr, LambdaExtensions::GetDefaultOutFunction<String>(), showValues);
 
     dataStr = UpperBase32Result;
     resultStdVector8 = Base32EncodingExtensions::DecodeFromBase32(dataStr);
@@ -3108,7 +2599,8 @@ void CryptoTests::Base32EncodingExtensionsTests(const bool &showValues)
     resultStdVector8 = Base32EncodingExtensions::DecodeFromBase32(dataStr);
     expectedStdVector8 = ConverterExtensions::StringToStdVectorUint8(TestString);
     TestExtensions::Equals(NAMEOF(Base32EncodingExtensions) + " - Decode - 2",
-                           expectedStdVector8, resultStdVector8,
+                           expectedStdVector8,
+                           resultStdVector8,
                            LambdaExtensions::GetStdVectorUint8OutFunction(),
                            showValues);
 
@@ -3147,8 +2639,6 @@ void CryptoTests::Base32EncodingExtensionsTests(const bool &showValues)
 
 void CryptoTests::Base64EncodingExtensionsTests(const bool &showValues)
 {
-    USING_NS_INSANE_TEST;
-    USING_NS_INSANE_CORE;
     StdVectorUint8 testBytes = {
         0x30, 0x82, 0x02, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86,
         0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00, 0x03, 0x82, 0x02, 0x0f, 0x00,

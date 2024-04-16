@@ -9,20 +9,15 @@ param (
     $EmscriptenCompiler
 )
 $ErrorActionPreference = "Stop"
-Import-Module -Name "$(Get-Item "$PSScriptRoot/Z-PsCoreFxs.ps1")" -Force -NoClobber
-Write-InfoDarkGray "▶▶▶ Running: $PSCommandPath"
-$BotanVersion = & "$PSScriptRoot/submodules/PsBotan/X-PsBotan.ps1" -GetLastVersion
 
 if ($EmscriptenCompiler.IsPresent) {
-    & "$PSScriptRoot/submodules/PsEmscripten/X-PsEmscripten-SDK.ps1" -Install
-    $BotanDir = "$(Get-UserHome)/.CppLibs/Botan-$BotanVersion-Release-Emscripten-ForInsane"
-    Write-InfoMagenta $BotanDir
-    if (!(Test-Path -Path $BotanDir -PathType Container)) {
-        Write-Warning "Botan $BotanVersion($BotanDir) does not exist. Compile it with ""https://github.com/Satancito/InsaneEmscripten""."
-        exit
+    Import-Module -Name "$PSScriptRoot/submodules/PsBotan/Z-PsBotan.ps1" -Force -NoClobber
+    #Install-EmscriptenSDK
+    $botanIncludeDir = "$(Get-CppLibsDir)/$($__PSBOTAN_EMSCRIPTEN_CONFIGURATIONS.Release.DistDirName)/include/botan-$__PSBOTAN_BOTAN_MAJOR_VERSION"
+    if(!(Test-Path -Path "$botanIncludeDir" -PathType Container))
+    {
+        throw "Botan lib dir not detected. Generate with `"$__PSBOTAN_GITHUB_URL`"."
     }
-    $BotanDir = "$BotanDir/include/botan-$("$BotanVersion".Split(".") | Select-Object -First 1)"
-
     $objDir = "$PSScriptRoot/Build/obj"
     $dbBuildDir = "$PSScriptRoot/Build/clangd"
     New-Item -Path "$objDir" -ItemType Directory -Force | Out-Null
@@ -35,7 +30,7 @@ if ($EmscriptenCompiler.IsPresent) {
         -s USE_ICU=1 `
         -I "Include" `
         -I "submodules/CommonCppIncludes" `
-        -I "$BotanDir" `
+        -I "$botanIncludeDir" `
         -std=c++20 `
         -Wall `
         -Wextra `
@@ -47,8 +42,10 @@ if ($EmscriptenCompiler.IsPresent) {
         -Wmissing-declarations `
         -Wpointer-arith `
         -Wcast-qual `
-        -Wshorten-64-to-32 
+        -Wshorten-64-to-32 `
+        -Wtautological-compare
     Write-Host "Creating compiler database file ""compile_commands.json""..."
     Join-CompileCommandsJson -SourceDir $dbBuildDir -DestinationDir $PSScriptRoot
     exit
 }
+

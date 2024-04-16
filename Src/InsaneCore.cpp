@@ -1,5 +1,6 @@
 ﻿#include <Insane/InsaneCore.h>
 #include <Insane/InsaneString.h>
+#include <cstdint>
 #include <iostream>
 USING_NS_INSANE_CORE;
 USING_NS_INSANE_INTERFACES;
@@ -209,23 +210,16 @@ String ConverterExtensions::StdVectorUint8ToString(const StdVectorUint8 &vector)
 	return String(vector.begin(), vector.end());
 }
 
-// ███ LambdaFunctions ███
+// ███ LambdaExtensions ███
+
 OutFunction<StdVectorUint8> LambdaExtensions::GetStdVectorUint8OutFunction()
 {
-	return [](const StdVectorUint8 &v, std::ostream &out) -> std::ostream&
-	{
-		out << "["s;
-		for (size_t i = 0; i < v.size(); ++i)
-		{
-			out << v[i];
-			if (i != v.size() - 1)
-			{
-				out << ", ";
-			}
-		}
-		out << "]"s;
-		return out;
-	};
+	return GetStdVectorOutFunction<uint8_t>();
+}
+
+OutFunction<StdVectorInt8> LambdaExtensions::GetStdVectorInt8OutFunction()
+{
+	return GetStdVectorOutFunction<int8_t>();
 }
 
 // ███ IBaseSerialize ███
