@@ -164,10 +164,9 @@ Base64EncodingExtensions::EncodeBase64ToUrlEncodedBase64(const String &base64)
 
 IEncoder::IEncoder(const String &name) : IJsonSerialize(name) {}
 
-std::unique_ptr<IEncoder>
-IEncoder::Deserialize(const String &json)
+std::unique_ptr<IEncoder> IEncoder::Deserialize(MAYBE_UNUSED_ATTRIB const String &json)
 {
-    return IJsonSerialize<IEncoder>::Deserialize(json);
+    throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 }
 
 const std::unique_ptr<IEncoder> IEncoder::DefaultInstance()
@@ -868,10 +867,10 @@ bool HashExtensions::VerifyEncodedScrypt(const String &data, const StdVectorUint
 
 // MARK: ███ DefaultEncoderFunctions ███
 
-static inline const std::map<String, std::unique_ptr<IEncoder>> DefaultEncoders = {
-    {HEX_ENCODER_NAME_STRING, HexEncoder::DefaultInstance()},
-    {BASE32_ENCODER_NAME_STRING, Base32Encoder::DefaultInstance()},
-    {BASE64_ENCODER_NAME_STRING, Base64Encoder::DefaultInstance()},
+static inline const std::map<String, std::function<UniquePtrIEncoder()>> DefaultEncoders = {
+    {HEX_ENCODER_NAME_STRING,  &HexEncoder::DefaultInstance},
+    {BASE32_ENCODER_NAME_STRING, &Base32Encoder::DefaultInstance},
+    {BASE64_ENCODER_NAME_STRING, &Base64Encoder::DefaultInstance},
 };
 
 // MARK: ███ AesExtensions ███
@@ -1630,9 +1629,9 @@ IHasher::IHasher(const String &name) : IJsonSerialize(name)
 {
 }
 
-std::unique_ptr<IHasher> IHasher::Deserialize(const String &json)
+std::unique_ptr<IHasher> IHasher::Deserialize(MAYBE_UNUSED_ATTRIB const String &json)
 {
-    return IJsonSerialize<IHasher>::Deserialize(json);
+    throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 }
 
 // MARK: ███ ShaHasher ███
@@ -1737,7 +1736,7 @@ std::unique_ptr<IHasher> ShaHasher::Deserialize(const String &json)
         {
             throw true;
         }
-        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())();
         HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(
             document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
         return std::make_unique<ShaHasher>(algorithm, std::move(encoder));
@@ -1875,7 +1874,7 @@ std::unique_ptr<IHasher> HmacHasher::Deserialize(const String &json)
         {
             throw true;
         }
-        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())();
         HashAlgorithm algorithm = HashAlgorithmEnumExtensions::Parse(
             document[CNAMEOF_TRIM_GET(GetHashAlgorithm)].GetInt());
         StdVectorUint8 key =
@@ -1967,14 +1966,13 @@ bool Argon2Hasher::Verify(const StdVectorUint8 &data, const StdVectorUint8 &expe
 
 bool Argon2Hasher::Verify(const String &data, const StdVectorUint8 &expected)
 {
-    return Compute(data)== expected;
+    return Compute(data) == expected;
 }
 
 bool Argon2Hasher::VerifyEncoded(const StdVectorUint8 &data, const String &expected)
 {
     return ComputeEncoded(data) == expected;
 }
-
 
 bool Argon2Hasher::VerifyEncoded(const String &data, const String &expected)
 {
@@ -2053,7 +2051,7 @@ std::unique_ptr<IHasher> Argon2Hasher::Deserialize(const String &json)
         {
             throw true;
         }
-        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())();
         StdVectorUint8 salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
         size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
         size_t memorySizeKiB = document[CNAMEOF_TRIM_GET(GetMemorySizeKiB)].GetUint();
@@ -2150,7 +2148,6 @@ bool ScryptHasher::VerifyEncoded(const StdVectorUint8 &data, const String &expec
     return ComputeEncoded(data) == expected;
 }
 
-
 bool ScryptHasher::VerifyEncoded(const String &data, const String &expected)
 {
     return ComputeEncoded(data) == expected;
@@ -2225,7 +2222,7 @@ std::unique_ptr<IHasher> ScryptHasher::Deserialize(const String &json)
         {
             throw true;
         }
-        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())();
         StdVectorUint8 salt = encoder->Decode(document[CNAMEOF_TRIM_GET(GetSalt)].GetString());
         size_t iterations = document[CNAMEOF_TRIM_GET(GetIterations)].GetUint();
         size_t blockSize = document[CNAMEOF_TRIM_GET(GetBlockSize)].GetUint();
@@ -2359,7 +2356,7 @@ std::unique_ptr<IEncryptor> AesCbcEncryptor::Deserialize(const String &json)
             throw true;
         }
         String protectorName = document[CNAMEOF(Protector)].GetString();
-        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())();
         StdVectorUint8 key = encoder->Decode(document[CNAMEOF_TRIM_GET(GetKey)].GetString());
         AesCbcPadding padding = AesCbcPaddingEnumExtensions::Parse(document[CNAMEOF_TRIM_GET(GetPadding)].GetInt());
         return std::make_unique<AesCbcEncryptor>(key, padding, std::move(encoder));
@@ -2482,7 +2479,7 @@ std::unique_ptr<IEncryptor> RsaEncryptor::Deserialize(const String &json)
         {
             throw true;
         }
-        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())->Clone();
+        std::unique_ptr<IEncoder> encoder = DefaultEncoders.at(document[CNAMEOF_TRIM_GET(GetEncoder)][CNAMEOF_TRIM_GET(GetName)].GetString())();
         String publicKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPublicKey));
         String privateKey = RapidJsonExtensions::GetStringValue(document[CNAMEOF_TRIM_GET(GetKeyPair)], CNAMEOF_TRIM_GET(RsaKeyPair::GetPrivateKey));
         publicKey = ConverterExtensions::StdVectorUint8ToString(encoder->Decode(publicKey));

@@ -355,7 +355,7 @@ namespace InsaneIO::Insane::Interfaces
         IJsonSerialize(const String &name) : IBaseSerialize(name) {}
         [[nodiscard]] virtual String Serialize(const bool &indent = false) const = 0;
 
-        [[nodiscard]] static std::unique_ptr<T> Deserialize([[maybe_unused]] const String &json)
+        [[nodiscard]] static std::unique_ptr<IJsonSerialize> Deserialize(MAYBE_UNUSED_ATTRIB const String &json)
         {
             throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
         }
