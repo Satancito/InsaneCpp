@@ -3,7 +3,8 @@
 #define INSANE_PREPROCESSOR_H
 
 #include <map>
-
+#define NODISCARD_ATTRIB [[nodiscard]]
+#define MAYBE_UNUSED_ATTRIB [[maybe_unused]]
 
 #define STDCALL _stdcall
 #define CDECL _cdecl
@@ -36,9 +37,6 @@
 #define DLLIMPORT
 #define DLLEXPORT __attribute__((visibility("default")))
 #define DLLPRIVATE __attribute__((visibility("hidden")))
-#define NODISCARD_ATTRIB [[nodiscard]]
-#define MAYBE_UNUSED_ATTRIB [[maybe_unused]]
-
 
 // LINUX - Ubuntu, Fedora, , Centos, Debian, RedHat
 #elif (__LINUX__ || __gnu_linux__ || __linux__ || __linux || linux)
