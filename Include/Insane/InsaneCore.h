@@ -10,7 +10,6 @@
 #include <iomanip>
 #include <set>
 #include <sstream>
-#include <map>
 
 #define CONSOLE_PAUSE_STRING ("Press enter to continue...:"s)
 #define CONSOLE_PAUSE_ANY_STRING ("Press any key to continue...:"s)

@@ -10,7 +10,6 @@
 #include <type_traits>
 #include <Insane/InsaneCore.h>
 #include <iostream>
-#include <map>
 
 #define __TEST_OK_STRING ("Test OK. ✅"s)
 #define __TEST_FAILED_STRING ("Test Failed. ❌"s)

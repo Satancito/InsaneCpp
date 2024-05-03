@@ -7,7 +7,6 @@
 #include <Insane/InsaneException.h>
 #include <Insane/InsanePreprocessor.h>
 #include <Insane/InsaneString.h>
-#include <map>
 
 
 #define USING_NS_INSANE_CRYPTO using namespace InsaneIO::Insane::Cryptography
