@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 if ($EmscriptenCompiler.IsPresent) {
     Import-Module -Name "$PSScriptRoot/submodules/PsBotan/Z-PsBotan.ps1" -Force -NoClobber
     #Install-EmscriptenSDK
-    $botanIncludeDir = "$(Get-CppLibsDir)/$($__PSBOTAN_EMSCRIPTEN_CONFIGURATIONS.Release.DistDirName)/include/botan-$__PSBOTAN_BOTAN_MAJOR_VERSION"
+    $botanIncludeDir = "$(Get-CppLibsDir)/$($__PSBOTAN_EMSCRIPTEN_BUILD_CONFIGURATIONS.WasmRelease.DistDirName)/include/botan-$__PSBOTAN_BOTAN_MAJOR_VERSION"
     if(!(Test-Path -Path "$botanIncludeDir" -PathType Container))
     {
         throw "Botan lib dir not detected. Generate with `"$__PSBOTAN_GITHUB_URL`"."
@@ -32,6 +32,7 @@ if ($EmscriptenCompiler.IsPresent) {
         -I "submodules/CommonCppIncludes" `
         -I "$botanIncludeDir" `
         -std=c++20 `
+        -DINSANE_EXPORTS=1 `
         -Wall `
         -Wextra `
         -Wpedantic `
