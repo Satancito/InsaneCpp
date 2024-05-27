@@ -164,7 +164,7 @@ Base64EncodingExtensions::EncodeBase64ToUrlEncodedBase64(const String &base64)
 
 IEncoder::IEncoder(const String &name) : IJsonSerialize(name) {}
 
-std::unique_ptr<IEncoder> IEncoder::Deserialize(MAYBE_UNUSED_ATTRIB const String &json)
+std::unique_ptr<IEncoder> IEncoder::Deserialize(INSANE_MAYBE_UNUSED_ATTRIB const String &json)
 {
     throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 }
@@ -1629,7 +1629,7 @@ IHasher::IHasher(const String &name) : IJsonSerialize(name)
 {
 }
 
-std::unique_ptr<IHasher> IHasher::Deserialize(MAYBE_UNUSED_ATTRIB const String &json)
+std::unique_ptr<IHasher> IHasher::Deserialize(INSANE_MAYBE_UNUSED_ATTRIB const String &json)
 {
     throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
 }

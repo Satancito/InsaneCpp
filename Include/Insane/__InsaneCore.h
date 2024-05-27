@@ -6,7 +6,7 @@
 #define USING_NS_INSANE_INTERNAL_CORE using namespace InsaneIO::Insane::Internal::Core
 namespace InsaneIO::Insane::Internal::Core
 {
-	class DLLPRIVATE RapidJsonExtensions {
+	class INSANE_PRIVATE RapidJsonExtensions {
 	public:
 		[[nodiscard]] static String ToJson(const rapidjson::Value& value);
 		[[nodiscard]] static String Prettify(const String& json);

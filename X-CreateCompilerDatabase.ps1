@@ -53,7 +53,7 @@ if ($EmscriptenCompiler.IsPresent) {
     if (!(Test-Path -Path "$botanIncludeDir" -PathType Container)) {
         throw "Botan lib dir not detected. Generate with `"$__PSBOTAN_GITHUB_URL`"."
     }
-    $CXXFLAGS += @("-s USE_ICU=1", "-I$botanIncludeDir")
+    $CXXFLAGS += @("-sUSE_ICU=1", "-I$botanIncludeDir")
 }
 if($AndroidCompiler.IsPresent){
     Install-AndroidNDK
@@ -85,8 +85,8 @@ Write-Host "Compiling ""$CppFile""..."
 Write-Host "Creating compiler database file ""compile_commands.json""..."
 Join-CompileCommandsJson -SourceDir $dbBuildDir -DestinationDir $PSScriptRoot
 
-# Remove-Item -Path "$objDir" -Force -Recurse -ErrorAction Ignore
-# Remove-Item -Path "$dbBuildDir" -Force -Recurse -ErrorAction Ignore
+Remove-Item -Path "$objDir" -Force -Recurse -ErrorAction Ignore
+Remove-Item -Path "$dbBuildDir" -Force -Recurse -ErrorAction Ignore
 exit
 
 

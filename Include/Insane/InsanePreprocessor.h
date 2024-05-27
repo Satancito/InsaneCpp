@@ -3,8 +3,8 @@
     #define INSANE_PREPROCESSOR_H
 
     #include <map>
-    #define __NODISCARD_ATTRIB [[nodiscard]]
-    #define __MAYBE_UNUSED_ATTRIB [[maybe_unused]]
+    #define INSANE_NODISCARD_ATTRIB [[nodiscard]]
+    #define INSANE_MAYBE_UNUSED_ATTRIB [[maybe_unused]]
 
     #define __STDCALL__ _stdcall
     #define __CDECL__ _cdecl
@@ -216,9 +216,9 @@ static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown co
     #define VA_ARGS_SEPARATOR_STRING (", "s)
     #define NAMESPACE_SEPARATOR_STRING ("::"s)
 
-    #ifdef WINDOWS_PLATFORM
+    #ifdef INSANE_WINDOWS_PLATFORM
         #define NEW_LINE_STRING ("\r\n"s)
-    #elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
+    #elif INSANE_LINUX_PLATFORM || INSANE_ANDROID_PLATFORM || INSANE_EMSCRIPTEN_PLATFORM
         #define NEW_LINE_STR ("\n"s)
     #endif
 

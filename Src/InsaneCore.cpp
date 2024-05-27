@@ -14,9 +14,9 @@ String DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
 	String format = String("%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<int64_t>(1000)));
 	if (toUTC)
 	{
-#ifdef WINDOWS_PLATFORM
+#ifdef INSANE_WINDOWS_PLATFORM
 		gmtime_s(&tm, &timet);
-#elif LINUX_PLATFORM || EMSCRIPTEN_PLATFORM || MACOS_PLATFORM
+#elif INSANE_LINUX_PLATFORM || INSANE_EMSCRIPTEN_PLATFORM || INSANE_ANDROID_PLATFORM
 		gmtime_r(&timet, &tm);
 #else
 		static_assert(false, "Unknown Platform");
@@ -25,9 +25,9 @@ String DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
 	}
 	else
 	{
-#ifdef WINDOWS_PLATFORM
+#ifdef INSANE_WINDOWS_PLATFORM
 		localtime_s(&tm, &timet);
-#elif LINUX_PLATFORM || EMSCRIPTEN_PLATFORM || MACOS_PLATFORM
+#elif INSANE_LINUX_PLATFORM || INSANE_EMSCRIPTEN_PLATFORM || INSANE_ANDROID_PLATFORM
 		localtime_r(&timet, &tm);
 #else
 		static_assert(false, "Unknown Platform");
@@ -44,11 +44,11 @@ String DateTimeExtensions::CurrentISO8601DateTime(bool toUTC)
 void Console::Clear()
 {
 
-#ifdef WINDOWS_PLATFORM
+#ifdef INSANE_WINDOWS_PLATFORM
 	std::system("cls");
-#elif LINUX_PLATFORM || defined MACOS_PLATFORM
+#elif INSANE_LINUX_PLATFORM | INSANE_ANDROID_PLATFORM
 	std::system("clear");
-#elif EMSCRIPTEN_PLATFORM
+#elif INSANE_EMSCRIPTEN_PLATFORM
 	emscripten::val::global()["console"].call<void>("clear");
 #else
 	static_assert(false, "Unknown Platform");
@@ -57,7 +57,7 @@ void Console::Clear()
 
 void Console::EnableVirtualTermimalProcessing()
 {
-#if defined WINDOWS_PLATFORM
+#if defined INSANE_WINDOWS_PLATFORM
 	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	DWORD dwMode = 0;
 	GetConsoleMode(hOut, &dwMode);
@@ -143,12 +143,12 @@ int Console::PauseAny(const bool &printWhenPressed, const String &message)
 {
 	std::cout << message << SPACE_STRING;
 	int ch;
-#ifdef WINDOWS_PLATFORM
+#ifdef INSANE_WINDOWS_PLATFORM
 	while (!_kbhit())
 	{
 	}
 	ch = _getch();
-#elif LINUX_PLATFORM || MACOS_PLATFORM || EMSCRIPTEN_PLATFORM
+#elif INSANE_LINUX_PLATFORM || INSANE_EMSCRIPTEN_PLATFORM ||INSANE_ANDROID_PLATFORM
 	struct termios oldt, newt;
 	tcgetattr(STDIN_FILENO, &oldt);
 	newt = oldt;
