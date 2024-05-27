@@ -8,3 +8,7 @@
 [submodule "CommonCppIncludes"]
 	path = submodules/CommonCppIncludes
 	url = https://github.com/Satancito/CommonCppIncludes.git
+[submodule "PsICU"]
+	path = submodules/PsICU
+	url = https://github.com/Satancito/PsICU
+	branch = main
