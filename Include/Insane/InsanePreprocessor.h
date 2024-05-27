@@ -3,12 +3,12 @@
     #define INSANE_PREPROCESSOR_H
 
     #include <map>
-    #define NODISCARD_ATTRIB [[nodiscard]]
-    #define MAYBE_UNUSED_ATTRIB [[maybe_unused]]
+    #define __NODISCARD_ATTRIB [[nodiscard]]
+    #define __MAYBE_UNUSED_ATTRIB [[maybe_unused]]
 
-    #define STDCALL _stdcall
-    #define CDECL _cdecl
-    #define EXTERNC extern "C"
+    #define __STDCALL__ _stdcall
+    #define __CDECL__ _cdecl
+    #define __EXTERNC__ extern "C"
 
     // WINDOWS
     #if (_WIN32)
@@ -16,15 +16,15 @@
         #include <Windows.h>
         #include <conio.h>
         #if _WIN64
-            #define IS64 1
+            #define INSANE_IS64 1
         #else
-            #define IS32 1
+            #define INSANE_IS32 1
         #endif
-        #define WINDOWS_PLATFORM 1
-        #define DLLCALL STDCALL
-        #define DLLIMPORT _declspec(dllimport)
-        #define DLLEXPORT _declspec(dllexport)
-        #define DLLPRIVATE
+        #define INSANE_WINDOWS_PLATFORM 1
+        #define INSANE_CALL __STDCALL__
+        #define INSANE_IMPORT _declspec(dllimport)
+        #define INSANE_EXPORT _declspec(dllexport)
+        #define INSANE_PRIVATE
 
     // EMSCRIPTEN
     #elif (__EMSCRIPTEN__)
@@ -33,75 +33,55 @@
         #include <termios.h>
         #include <unistd.h>
         #if (__SIZEOF_POINTER__ == 4)
-            #define IS32 1
+            #define INSANE_IS32 1
         #else
-            #define IS64 1
+            #define INSANE_IS64 1
         #endif
-        #define EMSCRIPTEN_PLATFORM 1
-        #define DLLCALL
-        #define DLLIMPORT
-        #define DLLEXPORT __attribute__((visibility("default")))
-        #define DLLPRIVATE __attribute__((visibility("hidden")))
+        #define INSANE_EMSCRIPTEN_PLATFORM 1
+        #define INSANE_CALL
+        #define INSANE_IMPORT
+        #define INSANE_EXPORT __attribute__((visibility("default")))
+        #define INSANE_PRIVATE __attribute__((visibility("hidden")))
 
     // ANDROID
     #elif (__ANDROID__ || ANDROID)
         #include <termios.h>
         #include <unistd.h>
         #if (_LP64_ || _LP64)
-            #define IS64 1
+            #define INSANE_IS64 1
         #else
-            #define IS32 1
+            #define INSANE_IS32 1
         #endif
-        #define ANDROID_PLATFORM 1
-        #define DLLCALL
-        #define DLLIMPORT
-        #define DLLEXPORT __attribute__((visibility("default")))
-        #define DLLPRIVATE __attribute__((visibility("hidden")))
+        #define INSANE_ANDROID_PLATFORM 1
+        #define INSANE_CALL
+        #define INSANE_IMPORT
+        #define INSANE_EXPORT __attribute__((visibility("default")))
+        #define INSANE_PRIVATE __attribute__((visibility("hidden")))
 
     // LINUX - Ubuntu, Fedora, , Centos, Debian, RedHat
     #elif (__LINUX__ || __gnu_linux__ || __linux__ || __linux || linux)
-        #define LINUX_PLATFORM 1
         #include <termios.h>
         #include <unistd.h>
-
-        #define DLLCALL CDECL
-        #define DLLIMPORT
-        #define DLLEXPORT __attribute__((visibility("default")))
-        #define DLLPRIVATE __attribute__((visibility("hidden")))
         #define CoTaskMemAlloc(p) malloc(p)
         #define CoTaskMemFree(p) free(p)
         #if (_LP64_ || _LP64)
-            #define IS64 1
+            #define INSANE_IS64 1
         #else
-            #define IS32 1
+            #define INSANE_IS32 1
         #endif
-
-    // MACOS
-    #elif defined(__APPLE__)
-        #include <termios.h>
-        #include <unistd.h>
-
-        #define DLLCALL
-        #define DLLIMPORT
-        #define DLLEXPORT __attribute__((visibility("default")))
-        #define DLLPRIVATE __attribute__((visibility("hidden")))
-        #include "TargetConditionals.h"
-        #if TARGET_OS_IPHONE && TARGET_IPHONE_SIMULATOR
-            #define IOS_SIMULATOR_PLATFORM 1
-        #elif TARGET_OS_IPHONE
-            #define IOS_PLATFORM 1
-        #elif TARGET_OS_MAC
-            #define MACOS_PLATFORM 1
-        #else
-
-        #endif
-
+        #define INSANE_LINUX_PLATFORM 1
+        #define INSANE_CALL __CDECL__
+        #define INSANE_IMPORT
+        #define INSANE_EXPORT __attribute__((visibility("default")))
+        #define INSANE_PRIVATE __attribute__((visibility("hidden")))
+    #elif
+static_assert(false, "Invalid platform");
     #endif
 
     #ifdef INSANE_EXPORTS
-        #define INSANE_API DLLEXPORT
+        #define INSANE_API INSANE_EXPORT
     #else
-        #define INSANE_API DLLIMPORT
+        #define INSANE_API INSANE_IMPORT
     #endif
 
     #if defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
@@ -119,7 +99,7 @@
     #elif defined(__HP_aCC)
         #define INSANE_FUNCTION_SIGNATURE __PRETTY_FUNCTION__
     #else
-        static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown compiler");
+static_assert(false, "INSANE_FUNCTION_SIGNATURE macro not defined for unknown compiler");
     #endif
 
     #define INSANE_REPEAT_MAX 512
