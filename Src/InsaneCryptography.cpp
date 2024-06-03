@@ -1216,7 +1216,9 @@ int RandomExtensions::NextValue(int min, int max)
 
 int RandomExtensions::NextValue()
 {
-    return NextValue(INT_MIN, INT_MAX);
+    StdVectorUint8 intBytes = NextBytes(4);
+    int num = (intBytes[0] << 24) | (intBytes[1] << 16) | (intBytes[2] << 8) | intBytes[3];
+    return num;
 }
 
 // MARK: ███ RsaKeyPair ███
