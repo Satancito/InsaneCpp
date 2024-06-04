@@ -62,7 +62,7 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~ExceptionBase() = default;
-		ExceptionBase(const String &name, const String &function, const String &file, const int &line, const String &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		ExceptionBase(const String &name, const String &function, const String &file, const int &line, const String &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: _ErrorName(name),
 			  _ErrorFunction(function),
 			  _ErrorFile(file),
@@ -121,7 +121,7 @@ namespace InsaneIO::Insane::Exception
 			return _DebugType;
 		}
 
-		[[nodiscard]] std::unique_ptr<ExceptionBase> GetInnerException() const noexcept
+		[[nodiscard]] std::shared_ptr<ExceptionBase> GetInnerException() const noexcept
 		{
 			return _InnerException ? _InnerException->Clone() : nullptr;
 		}
@@ -136,9 +136,9 @@ namespace InsaneIO::Insane::Exception
 			return (tag.empty() ? tag : header + LINE_FEED_STRING + "▶ \"" + tag + "\"" + LINE_FEED_STRING + LINE_FEED_STRING) + CreateExceptionMessage() + (_InnerException ? LINE_FEED_STRING + LINE_FEED_STRING + _InnerException->GetStackTrace(EMPTY_STRING) : EMPTY_STRING) + (tag.empty() ? tag : LINE_FEED_STRING + footer);
 		}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<ExceptionBase>(*this);
+			return std::make_shared<ExceptionBase>(*this);
 		}
 
 		void Debug(const String &tag)
@@ -156,7 +156,7 @@ namespace InsaneIO::Insane::Exception
 		const int _ErrorLine;
 		const String _ErrorMessage;
 		const int _ErrorCode;
-		const std::unique_ptr<ExceptionBase> _InnerException;
+		const std::shared_ptr<ExceptionBase> _InnerException;
 		const DebugType _DebugType;
 		String CreateExceptionMessage() const
 		{
@@ -174,12 +174,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~ParseException() = default;
-		ParseException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		ParseException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<ParseException>(*this);
+			return std::make_shared<ParseException>(*this);
 		}
 
 	private:
@@ -189,12 +189,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~CryptoException() = default;
-		CryptoException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		CryptoException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<CryptoException>(*this);
+			return std::make_shared<CryptoException>(*this);
 		}
 
 	private:
@@ -204,12 +204,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~ArgumentException() = default;
-		ArgumentException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		ArgumentException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<ArgumentException>(*this);
+			return std::make_shared<ArgumentException>(*this);
 		}
 
 	private:
@@ -219,12 +219,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~NotImplementedException() = default;
-		NotImplementedException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		NotImplementedException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<NotImplementedException>(*this);
+			return std::make_shared<NotImplementedException>(*this);
 		}
 
 	private:
@@ -234,12 +234,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~SerializeException() = default;
-		SerializeException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		SerializeException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<SerializeException>(*this);
+			return std::make_shared<SerializeException>(*this);
 		}
 
 	private:
@@ -249,12 +249,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~DeserializeException() = default;
-		DeserializeException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		DeserializeException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<DeserializeException>(*this);
+			return std::make_shared<DeserializeException>(*this);
 		}
 
 	private:
@@ -264,12 +264,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~AbstractImplementationException() = default;
-		AbstractImplementationException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		AbstractImplementationException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<AbstractImplementationException>(*this);
+			return std::make_shared<AbstractImplementationException>(*this);
 		}
 
 	private:
@@ -279,12 +279,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~ConvertException() = default;
-		ConvertException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		ConvertException(const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<ConvertException>(*this);
+			return std::make_shared<ConvertException>(*this);
 		}
 
 	private:
@@ -294,12 +294,12 @@ namespace InsaneIO::Insane::Exception
 	{
 	public:
 		virtual ~JsException ()  = default;
-		JsException (const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::unique_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
+		JsException (const String &function, const String &file, const int &line, const std::string &message = EMPTY_STRING, const int &code = 0, std::shared_ptr<ExceptionBase> &&innerException = nullptr, DebugType debugType = DebugType::Trace)
 			: ExceptionBase(__FUNCTION__, function, file, line, message, code, std::move(innerException), debugType) {}
 
-		[[nodiscard]] virtual std::unique_ptr<ExceptionBase> Clone() const override
+		[[nodiscard]] virtual std::shared_ptr<ExceptionBase> Clone() const override
 		{
-			return std::make_unique<JsException >(*this);
+			return std::make_shared<JsException >(*this);
 		}
 
 	private:

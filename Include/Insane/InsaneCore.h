@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <Insane/InsaneString.h>
+#include <memory>
 #ifndef INSANE_CORE_H
 #define INSANE_CORE_H
 #include <Insane/Insane.h>
@@ -332,9 +333,6 @@ namespace InsaneIO::Insane::Core
 
 namespace InsaneIO::Insane::Interfaces
 {
-    // // ███ DeserializeResolver ███
-    // template <typename T>
-    // using DeserializeResolver = std::function<std::unique_ptr<T>(const String &json)>;
 
     // ███ IBaseSerialize ███
     class INSANE_API IBaseSerialize
@@ -356,7 +354,7 @@ namespace InsaneIO::Insane::Interfaces
         IJsonSerialize(const String &name) : IBaseSerialize(name) {}
         [[nodiscard]] virtual String Serialize(const bool &indent = false) const = 0;
 
-        [[nodiscard]] static std::unique_ptr<IJsonSerialize> Deserialize(INSANE_MAYBE_UNUSED_ATTRIB const String &json)
+        [[nodiscard]] static std::shared_ptr<IJsonSerialize> Deserialize(INSANE_MAYBE_UNUSED_ATTRIB const String &json)
         {
             throw AbstractImplementationException(INSANE_FUNCTION_SIGNATURE, __FILE__, __LINE__);
         }

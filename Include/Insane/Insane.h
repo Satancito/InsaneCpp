@@ -1,4 +1,5 @@
 #pragma once
+#include "Insane/Insane.h"
 #include <ostream>
 #ifndef INSANE_BASE_H
 #define INSANE_BASE_H
@@ -11,31 +12,36 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
+#include <map>
 
 #include <Insane/InsanePreprocessor.h>
 
-// typedef uint8_t UnsignedInt8; //TODO
-// typedef int8_t SignedInt8;
-// typedef uint16_t UnsignedInt16;
-// typedef int16_t SignedInt16;
-// typedef uint32_t UnsignedInt32;
-// typedef int32_t SignedInt32;
-// typedef uint64_t UnsignedInt64;
-// typedef int64_t SignedInt64;
+using SignedChar = char;
+using SignedInt8 = int8_t;
+using SignedInt16 = int16_t;
+using SignedInt32 = int32_t;
+using SignedInt64 = int64_t;
+using UnsignedInt8 = uint8_t;
+using UnsignedInt16 = uint16_t;
+using UnsignedInt32 = uint32_t;
+using UnsignedInt64 = uint64_t;
+using UnsignedChar = unsigned char;
 
-typedef unsigned char UnsignedChar;
-typedef char SignedChar;
 using String = std::string;
 using StdString = std::string;
 
 template <typename T>
 using StdVector = std::vector<T>;
-using StdVectorUint8 = StdVector<uint8_t>;
-using StdVectorInt8 = StdVector<int8_t>;
-using StdVectorChar = StdVector<char>;
+using StdVectorUint8 = StdVector<UnsignedInt8>;
+using StdVectorInt8 = StdVector<SignedInt8>;
+using StdVectorChar = StdVector<SignedChar>;
+using StdVectorUchar = StdVector<UnsignedChar>;
 
 template <typename T>
 using StdUniquePtr = std::unique_ptr<T>;
+
+template <typename T>
+using StdSharedPtr = std::shared_ptr<T>;
 
 template <typename T>
 using OutFunction = std::function<std::ostream &(const T &, std::ostream &)>;
@@ -87,7 +93,7 @@ namespace InsaneIO::Insane
 		class INSANE_API IClone
 		{
 		public:
-			virtual std::unique_ptr<T> Clone() const = 0;
+			virtual std::shared_ptr<T> Clone() const = 0;
 		};
 	}
 }
